@@ -1,0 +1,6 @@
+{
+    "cmake.useCMakePresets":"always",
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "g:/develop_sunjiashuai_trunk_release/engine/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "joshuaengine",
+  "dependencies": [
+    "glfw3",
+    "glm",
+    "vulkan-memory-allocator",
+    "doctest"
+  ]
+}

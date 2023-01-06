@@ -1,0 +1,36 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "Windows",
+            "cmakeExecutable": "${sourceDir}/Tools/Cmake/bin/cmake.exe",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "PLATFORM_WINDOWS": "ON",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_TOOLCHAIN_FILE": "g:/develop_sunjiashuai_trunk_release/engine/vcpkg/scripts/buildsystems/vcpkg.cmake"
+            },
+            "environment": {
+                "PATH": "${sourceDir}/Tools/Cmake/bin/;$penv{PATH};"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "Debug",
+            "configurePreset": "Windows",
+            "configuration": "Debug",
+            "jobs": 17
+        },
+        {
+            "name": "Release",
+            "configurePreset": "Windows",
+            "configuration": "RelWithDebInfo"
+        },
+        {
+            "name": "Profile",
+            "configurePreset": "Windows",
+            "configuration": "Profile"
+        }
+    ]
+}
