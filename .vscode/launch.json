@@ -8,7 +8,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "name": "Debug",
-            "program": "${workspaceFolder}/build/Debug/ImguiTest.exe",
+            "program": "${workspaceFolder}/build/ImguiTest.exe",
             "args": [],
             "cwd": "${workspaceFolder}"
         }

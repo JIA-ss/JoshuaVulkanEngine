@@ -14,29 +14,29 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-int createwindow_main()
+namespace _01
 {
-    glfwInit();
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Vulkan window", nullptr, nullptr);
+struct WindowSetting
+{
+    unsigned int width;
+    unsigned int height;
+    const char* name;
+};
 
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+class Window
+{
+public:
+    explicit Window(const WindowSetting& setting);
+    virtual ~Window();
 
-    std::cout << extensionCount << " extensions supported" << std::endl;
+    void initWindow();
+    const GLFWwindow* getInternalWindow() { return glfwWindow; }
+    bool shouldClose();
+protected:
+    GLFWwindow* glfwWindow = nullptr;
+    WindowSetting setting;
+};
 
-    glm::mat4 matrix;
-    glm::vec4 vec;
-    auto test = matrix * vec;
-
-    while(!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-    }
-
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
-
-    return 0;
+int createWindow();
 }

@@ -3,9 +3,11 @@
     "configurePresets": [
         {
             "name": "Windows",
+            "generator": "Ninja",
             "cmakeExecutable": "${sourceDir}/Tools/Cmake/bin/cmake.exe",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": "${sourceDir}/Tools/ninja/ninja.exe",
                 "PLATFORM_WINDOWS": "ON",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_TOOLCHAIN_FILE": "g:/develop_sunjiashuai_trunk_release/engine/vcpkg/scripts/buildsystems/vcpkg.cmake"
