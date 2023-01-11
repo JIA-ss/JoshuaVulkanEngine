@@ -25,6 +25,7 @@ std::string to_string(vk::PhysicalDeviceType type)
         VK_PHYSICAL_DEVICE_TYPE_STRING_CASE(eVirtualGpu)
     }
 #undef VK_PHYSICAL_DEVICE_TYPE_STRING_CASE
+    return "";
 }
 
 namespace cpp_demo {
