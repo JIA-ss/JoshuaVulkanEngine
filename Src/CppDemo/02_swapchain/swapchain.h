@@ -17,6 +17,9 @@ public:
         vk::PresentModeKHR present;
     };
 private:
+    std::vector<vk::Image> m_vkImages;
+    std::vector<vk::ImageView> m_vkImageViews;
+
     vk::SwapchainKHR m_vkSwapchain;
     SwapchainInfo m_swapchainInfo;
 public:
@@ -25,6 +28,8 @@ public:
 
 private:
     void queryInfo(int windowWidth, int windowHeight);
+    void getImages();
+    void createImageViews();
 };
 
 }

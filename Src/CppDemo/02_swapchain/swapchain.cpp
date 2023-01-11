@@ -39,11 +39,19 @@ Swapchain::Swapchain(int windowWidth, int windowHeight)
     }
 
     m_vkSwapchain = Context::GetInstance().GetDevice().createSwapchainKHR(createInfo);
+
+    getImages();
+    createImageViews();
 }
 
 Swapchain::~Swapchain()
 {
-    Context::GetInstance().GetDevice().destroySwapchainKHR(m_vkSwapchain);
+    auto& device = Context::GetInstance().GetDevice();
+    for (auto& imageView : m_vkImageViews)
+    {
+        device.destroyImageView(imageView);
+    }
+    device.destroySwapchainKHR(m_vkSwapchain);
 }
 
 void Swapchain::queryInfo(int windowWidth, int windowHeight)
@@ -80,6 +88,34 @@ void Swapchain::queryInfo(int windowWidth, int windowHeight)
             m_swapchainInfo.present = present;
             break;
         }
+    }
+}
+
+void Swapchain::getImages()
+{
+    m_vkImages = Context::GetInstance().GetDevice().getSwapchainImagesKHR(m_vkSwapchain);
+}
+
+void Swapchain::createImageViews()
+{
+    m_vkImageViews.resize(m_vkImages.size());
+    for(int i = 0; i < m_vkImages.size(); i++)
+    {
+        vk::ImageViewCreateInfo createInfo;
+        vk::ComponentMapping mapping;
+        vk::ImageSubresourceRange range;
+        range.setBaseMipLevel(0)
+                .setLevelCount(1)
+                .setBaseArrayLayer(0)
+                .setLayerCount(1)
+                .setAspectMask(vk::ImageAspectFlagBits::eColor);
+
+        createInfo.setImage(m_vkImages[i])
+                    .setViewType(vk::ImageViewType::e2D)
+                    .setComponents(mapping)
+                    .setFormat(m_swapchainInfo.format.format)
+                    .setSubresourceRange(range);
+        m_vkImageViews[i] = Context::GetInstance().GetDevice().createImageView(createInfo);
     }
 }
 
