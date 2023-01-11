@@ -4,6 +4,8 @@
     "glfw3",
     "glm",
     "vulkan-memory-allocator",
-    "doctest"
+    "doctest",
+    "boost-filesystem",
+    "boost-system"
   ]
 }

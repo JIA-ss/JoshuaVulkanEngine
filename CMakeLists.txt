@@ -2,10 +2,12 @@ cmake_minimum_required (VERSION 3.20.0)
 
 project("ImguiTest")
 
-option(PLATFORM_WINDOWS "Windows Platform" OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+option(PLATFORM_WINDOWS "Windows Platform" OFF)
+
 
 SET(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Lib)
 SET(GUID_DIR ${LIB_DIR}/guid)
@@ -42,6 +44,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Src)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system filesystem)
+
 
 add_executable(ImguiTest ${MAIN_SRC_FILES})
 target_link_libraries(ImguiTest 
@@ -49,9 +53,27 @@ target_link_libraries(ImguiTest
     glm::glm
     ${VULKAN_LIBRARY}
     unofficial::vulkan-memory-allocator::vulkan-memory-allocator
+    ${Boost_LIBRARIES}
 )
+
+
 target_include_directories(ImguiTest
     PUBLIC ${LIB_DIR}
     PUBLIC ${IMGUI_DIR}
     PUBLIC ${VulkanInclude}
+    PUBLIC ${Boost_INCLUDE_DIR}
 )
+
+message("[GLSLC] Compile Files In ${GLSL_SHADER_DIR} Begin")
+find_program(GLSLC_PROGRAM glslc REQUIRED)
+set(GLSL_SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Shader/GLSL)
+file(GLOB GLSL_SHADERS ${GLSL_SHADER_DIR}/*.vert ${GLSL_SHADER_DIR}/*.frag)
+foreach(GLSL_SHADER ${GLSL_SHADERS})
+    get_filename_component(SHADER_NAME ${GLSL_SHADER} NAME)
+    set(GLSL_SHADER_SPRIV_PATH ${GLSL_SHADER_DIR}/SPRI-V/${SHADER_NAME}.spv)
+    execute_process(COMMAND ${GLSLC_PROGRAM} ${GLSL_SHADER} -o ${GLSL_SHADER_SPRIV_PATH})
+    message("glsl compiling ${GLSL_SHADER} to ${GLSL_SHADER_SPRIV_PATH}")
+endforeach()
+message("[GLSLC] Compile Files In ${GLSL_SHADER_DIR} Finish")
+
+message("CMAKE_CXX_STANDARD ${CMAKE_CXX_STANDARD} ")

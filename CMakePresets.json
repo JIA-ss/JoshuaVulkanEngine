@@ -1,19 +1,26 @@
 {
-    "version": 3,
+    "version": 4,
     "configurePresets": [
         {
             "name": "Windows",
             "generator": "Ninja Multi-Config",
-            //"cmakeExecutable": "${sourceDir}/Tools/Cmake/bin/cmake.exe",
+            "cmakeExecutable": "G:/Gdevelop_sunjiashuai_trunk_2/engine/tools/BuildTool/Cmake/bin/cmake.exe",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
-                //"CMAKE_BUILD_TYPE": "Debug",
-                //"CMAKE_MAKE_PROGRAM": "${sourceDir}/Tools/ninja/ninja.exe",
+                "CMAKE_CXX_COMPILER": "G:/Gdevelop_sunjiashuai_trunk_2/engine/tools/BuildTool/llvm/bin/clang++.exe",
+                "CMAKE_C_COMPILER": "G:/Gdevelop_sunjiashuai_trunk_2/engine/tools/BuildTool/llvm/bin/clang.exe",
+                "CMAKE_MAKE_PROGRAM":"G:/Gdevelop_sunjiashuai_trunk_2/engine/tools/BuildTool/CMake/bin/ninja.exe",
+                "VCPKG_INSTALL_OPTIONS": "--clean-buildtrees-after-build",
                 "CMAKE_CONFIGURATION_TYPES": "Debug;RelWithDebInfo;Profile",
                 "VCPKG_MANIFEST_INSTALL": "ON",
                 "PLATFORM_WINDOWS": "ON",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_TOOLCHAIN_FILE": "g:/develop_sunjiashuai_trunk_release/engine/vcpkg/scripts/buildsystems/vcpkg.cmake"
+                "CMAKE_TOOLCHAIN_FILE": "g:/develop_sunjiashuai_trunk_release/engine/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                "Boost_NO_BOOST_CMAKE": "ON",
+                "Boost_NO_WARN_NEW_VERSIONS": "ON"
+            },
+            "environment": {
+                "PATH": "G:/Gdevelop_sunjiashuai_trunk_2/engine/tools/BuildTool/powershell-core;G:/Gdevelop_sunjiashuai_trunk_2/engine/tools/BuildTool/Cmake/bin/;$penv{PATH};G:/Gdevelop_sunjiashuai_trunk_2/engine/tools/BuildTool/llvm/bin/"
             }
         }
     ],
