@@ -6,35 +6,8 @@
 #include <stdint.h>
 #include <vector>
 #include <unordered_map>
+#include "vulkan/vulkan.hpp"
 using namespace _03;
-
-
-std::unordered_map< VkInstance, PFN_vkCreateDebugUtilsMessengerEXT > CreateDebugUtilsMessengerEXTDispatchTable;
-std::unordered_map< VkInstance, PFN_vkDestroyDebugUtilsMessengerEXT > DestroyDebugUtilsMessengerEXTDispatchTable;
-std::unordered_map< VkInstance, PFN_vkSubmitDebugUtilsMessageEXT > SubmitDebugUtilsMessageEXTDispatchTable;
-
-
-void loadDebugUtilsCommands( VkInstance instance ){
-	PFN_vkVoidFunction temp_fp;
-
-	temp_fp = vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );
-	if( !temp_fp ) throw "Failed to load vkCreateDebugUtilsMessengerEXT"; // check shouldn't be necessary (based on spec)
-	CreateDebugUtilsMessengerEXTDispatchTable[instance] = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>( temp_fp );
-
-	temp_fp = vkGetInstanceProcAddr( instance, "vkDestroyDebugUtilsMessengerEXT" );
-	if( !temp_fp ) throw "Failed to load vkDestroyDebugUtilsMessengerEXT"; // check shouldn't be necessary (based on spec)
-	DestroyDebugUtilsMessengerEXTDispatchTable[instance] = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>( temp_fp );
-
-	temp_fp = vkGetInstanceProcAddr( instance, "vkSubmitDebugUtilsMessageEXT" );
-	if( !temp_fp ) throw "Failed to load vkSubmitDebugUtilsMessageEXT"; // check shouldn't be necessary (based on spec)
-	SubmitDebugUtilsMessageEXTDispatchTable[instance] = reinterpret_cast<PFN_vkSubmitDebugUtilsMessageEXT>( temp_fp );
-}
-
-void unloadDebugUtilsCommands( VkInstance instance ){
-	CreateDebugUtilsMessengerEXTDispatchTable.erase( instance );
-	DestroyDebugUtilsMessengerEXTDispatchTable.erase( instance );
-	SubmitDebugUtilsMessageEXTDispatchTable.erase( instance );
-}
 
 
 const std::vector<const char*> validationLayers =
@@ -47,6 +20,19 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
     return VK_FALSE;
 }
 
+VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
+{
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != nullptr)
+    {
+        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+    }
+    else
+    {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
 
 void _03::VulkanInstance::initVulkan()
 {
@@ -57,16 +43,19 @@ void _03::VulkanInstance::initVulkan()
 
 void _03::VulkanInstance::cleanUp()
 {
-    vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+    //vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     _02::VulkanInstance::cleanUp();
 }
 
 void _03::VulkanInstance::createInstance()
 {
+
+#ifndef NDEBUG
     if (!checkValidationLayerSupport())
     {
         throw std::runtime_error("validation layers requested, but not avaliable");
     }
+#endif
 
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -84,19 +73,14 @@ void _03::VulkanInstance::createInstance()
     createInfo.enabledExtensionCount = extensions.size();
     createInfo.ppEnabledExtensionNames = extensions.data();
 
-    {
+#ifndef NDEBUG
         // for debug layer
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
         createInfo.enabledLayerCount = validationLayers.size();
         createInfo.ppEnabledLayerNames = validationLayers.data();
         populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
-    }
-
-    loadDebugUtilsCommands(instance);
-
-	auto dispatched_cmd = CreateDebugUtilsMessengerEXTDispatchTable.at( instance );
-	return dispatched_cmd( instance, &createInfo, nullptr, debugMessenger);
+#endif
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
     {
@@ -106,17 +90,15 @@ void _03::VulkanInstance::createInstance()
 
 void _03::VulkanInstance::setupDebugMessenger()
 {
+#ifndef NDEBUG
     VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
     populateDebugMessengerCreateInfo(createInfo);
 
-    PFN_vkVoidFunction temp_fp;
-    if (!temp_fp) throw "Failed to load vkCreateDebugUtilsMessengerEXT"; // check shouldn't be necessary (based on spec)
-    CreateDebugUtilsMess
-
-    if (vkCreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
+    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to set up debug messenger!");
     }
+#endif
 }
 
 void _03::VulkanInstance::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -153,7 +135,7 @@ void _03::VulkanInstance::pickPhysicalDevice()
         if (isDeviceSuitable(device))
         {
             physicalDevice = device;
-            //break;
+            break;
         }
     }
 
@@ -239,7 +221,9 @@ std::vector<const char*> _03::VulkanInstance::getRequiredExtensions()
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#ifndef NDEBUG
+    extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+#endif
 
     return extensions;
 }

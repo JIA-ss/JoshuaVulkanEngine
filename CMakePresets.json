@@ -3,17 +3,19 @@
     "configurePresets": [
         {
             "name": "Windows",
-            "generator": "Ninja",
+            "generator": "Ninja Multi-Config",
             "cmakeExecutable": "${sourceDir}/Tools/Cmake/bin/cmake.exe",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_MAKE_PROGRAM": "${sourceDir}/Tools/ninja/ninja.exe",
+                "CMAKE_CONFIGURATION_TYPES": "Debug;RelWithDebInfo;Profile",
+                "VCPKG_MANIFEST_INSTALL": "ON",
                 "PLATFORM_WINDOWS": "ON",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_TOOLCHAIN_FILE": "g:/develop_sunjiashuai_trunk_release/engine/vcpkg/scripts/buildsystems/vcpkg.cmake"
             },
             "environment": {
-                "PATH": "${sourceDir}/Tools/Cmake/bin/;$penv{PATH};"
+                "PATH": "${sourceDir}/Tools/Cmake/bin/;${sourceDir}/Tools/llvm/bin/;$penv{PATH}"
             }
         }
     ],
