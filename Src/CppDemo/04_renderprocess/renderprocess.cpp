@@ -146,7 +146,7 @@ int renderProcessDemo(const std::string& vertexSource, const std::string& fragSo
                                         .InitSwapchain(1920, 1080);
     Shader::Init(vertexSource, fragSource);
     context.InitRenderProcess(1920, 1080);
-
+    context.GetSwapchain().CreateFrameBuffers(1920, 1080);
 
 
     while(!window.shouldClose())

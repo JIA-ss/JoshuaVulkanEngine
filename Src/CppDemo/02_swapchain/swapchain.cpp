@@ -47,6 +47,10 @@ Swapchain::Swapchain(int windowWidth, int windowHeight)
 Swapchain::~Swapchain()
 {
     auto& device = Context::GetInstance().GetDevice();
+    for (auto& framebuffer: m_vkFramebuffers)
+    {
+        device.destroyFramebuffer(framebuffer);
+    }
     for (auto& imageView : m_vkImageViews)
     {
         device.destroyImageView(imageView);
@@ -116,6 +120,21 @@ void Swapchain::createImageViews()
                     .setFormat(m_swapchainInfo.format.format)
                     .setSubresourceRange(range);
         m_vkImageViews[i] = Context::GetInstance().GetDevice().createImageView(createInfo);
+    }
+}
+
+void Swapchain::CreateFrameBuffers(int windowWidth, int windowHeight)
+{
+    m_vkFramebuffers.resize(m_vkImages.size());
+    for (int i = 0; i < m_vkImages.size(); i++)
+    {
+        vk::FramebufferCreateInfo createInfo;
+        createInfo.setAttachments(m_vkImageViews[i])
+                    .setWidth(windowWidth)
+                    .setHeight(windowHeight)
+                    .setRenderPass(Context::GetInstance().GetRenderProcess().GetRenderPass())
+                    .setLayers(1);
+        m_vkFramebuffers[i] = Context::GetInstance().GetDevice().createFramebuffer(createInfo);
     }
 }
 

@@ -13,6 +13,10 @@ private:
     vk::RenderPass m_vkRenderpass;
 public:
     ~RenderProcess() = default;
+    inline vk::Pipeline& GetPipeline() { return m_vkPipeline; }
+    inline vk::PipelineLayout& GetPipelineLayout() { return m_vkPipelineLayout; }
+    inline vk::RenderPass& GetRenderPass() { return m_vkRenderpass; }
+
     void Init(int windowWidth, int windowHeight);
     void Destroy();
 private:

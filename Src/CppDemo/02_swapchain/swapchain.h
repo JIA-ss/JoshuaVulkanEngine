@@ -19,6 +19,7 @@ public:
 private:
     std::vector<vk::Image> m_vkImages;
     std::vector<vk::ImageView> m_vkImageViews;
+    std::vector<vk::Framebuffer> m_vkFramebuffers;
 
     vk::SwapchainKHR m_vkSwapchain;
     SwapchainInfo m_swapchainInfo;
@@ -26,10 +27,12 @@ public:
     Swapchain(int windowWidth, int windowHeight);
     ~Swapchain();
     const SwapchainInfo& GetSwapchainInfo() { return m_swapchainInfo; }
+    void CreateFrameBuffers(int windowWidth, int windowHeight);
 private:
     void queryInfo(int windowWidth, int windowHeight);
     void getImages();
     void createImageViews();
+
 };
 
 }

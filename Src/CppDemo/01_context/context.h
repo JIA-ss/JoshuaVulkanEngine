@@ -60,6 +60,7 @@ public:
     inline vk::Queue& GetPresentQueue() { return m_vkPresentQueue; }
     inline Context::QueueFamilyIndices& GetQueueFamilyIndices() { return m_queueFamilyIndices; }
     inline Swapchain& GetSwapchain() { return *m_pSwapchain; }
+    inline RenderProcess& GetRenderProcess() { return *m_pRenderProcess; }
 
 private:
     void createVkInstance(const std::vector<const char*>& extensions);
