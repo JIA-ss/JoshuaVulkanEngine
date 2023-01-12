@@ -37,6 +37,8 @@ Shader::Shader(const std::string& vertexSource, const std::string& fragSource)
     createInfo.codeSize = fragSource.size();
     createInfo.pCode = (uint32_t*)fragSource.data();
     m_vkShaderModuleFragment = device.createShaderModule(createInfo);
+
+    initStage();
 }
 
 Shader::~Shader()
@@ -46,6 +48,16 @@ Shader::~Shader()
     device.destroyShaderModule(m_vkShaderModuleFragment);
 }
 
+void Shader::initStage()
+{
+    m_vkShaderStages.resize(2);
+    m_vkShaderStages[0].setStage(vk::ShaderStageFlagBits::eVertex)
+                        .setModule(m_vkShaderModuleVertex)
+                        .setPName("main");
+    m_vkShaderStages[1].setStage(vk::ShaderStageFlagBits::eFragment)
+                        .setModule(m_vkShaderModuleFragment)
+                        .setPName("main");
+}
 
 int shaderDemo(boost::filesystem::path& resourcesPath)
 {

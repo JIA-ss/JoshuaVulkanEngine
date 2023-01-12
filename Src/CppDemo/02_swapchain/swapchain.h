@@ -25,7 +25,7 @@ private:
 public:
     Swapchain(int windowWidth, int windowHeight);
     ~Swapchain();
-
+    const SwapchainInfo& GetSwapchainInfo() { return m_swapchainInfo; }
 private:
     void queryInfo(int windowWidth, int windowHeight);
     void getImages();

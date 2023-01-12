@@ -7,9 +7,22 @@
 #include <sstream>
 
 
-namespace util { namespace file {
+namespace util {
 
-bool fileExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat)
+std::_Iosb<int>::_Openmode convertOpenMode(file::eFileOpenMode mode)
+{
+    switch (mode) {
+    case file::eFileOpenMode::kBinary:
+        return std::ios_base::binary;
+    case file::eFileOpenMode::kText:
+    default:
+        return static_cast<std::_Iosb<int>::_Openmode>(0x00);
+    }
+}
+
+
+
+bool file::fileExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat)
 {
     boost::system::error_code err;
     auto file_status = boost::filesystem::status(path, err);
@@ -27,7 +40,7 @@ bool fileExist(const boost::filesystem::path& path, boost::filesystem::file_stat
     return true;
 }
 
-bool dirExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat)
+bool file::dirExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat)
 {
     boost::system::error_code err;
     auto file_status = boost::filesystem::status(path, err);
@@ -44,7 +57,7 @@ bool dirExist(const boost::filesystem::path& path, boost::filesystem::file_statu
     return true;
 }
 
-bool fileOrDirExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat)
+bool file::fileOrDirExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat)
 {
     boost::system::error_code err;
     auto file_status = boost::filesystem::status(path, err);
@@ -62,7 +75,7 @@ bool fileOrDirExist(const boost::filesystem::path& path, boost::filesystem::file
 }
 
 
-bool canRead(const boost::filesystem::path& path)
+bool file::canRead(const boost::filesystem::path& path)
 {
     boost::filesystem::file_status stat;
     if (!fileExist(path, &stat))
@@ -82,7 +95,7 @@ bool canRead(const boost::filesystem::path& path)
     return true;
 }
 
-bool canWrite(const boost::filesystem::path& path)
+bool file::canWrite(const boost::filesystem::path& path)
 {
     boost::filesystem::file_status stat;
     if (!fileExist(path, &stat))
@@ -102,7 +115,7 @@ bool canWrite(const boost::filesystem::path& path)
     return true;
 }
 
-bool makeFileReadable(const boost::filesystem::path& path)
+bool file::makeFileReadable(const boost::filesystem::path& path)
 {
     if (canRead(path))
     {
@@ -119,7 +132,7 @@ bool makeFileReadable(const boost::filesystem::path& path)
     return !err;
 }
 
-bool makeFileWritable(const boost::filesystem::path& path)
+bool file::makeFileWritable(const boost::filesystem::path& path)
 {
     if (canWrite(path))
     {
@@ -138,7 +151,7 @@ bool makeFileWritable(const boost::filesystem::path& path)
     return !err;
 }
 
-bool readFile(const boost::filesystem::path& path, std::string &content)
+bool file::readFile(const boost::filesystem::path& path, std::string &content, eFileOpenMode mode)
 {
     if (!fileExist(path))
     {
@@ -149,8 +162,11 @@ bool readFile(const boost::filesystem::path& path, std::string &content)
     {
         return false;
     }
+
+    auto openMode = std::ios_base::in | convertOpenMode(mode);
+
     std::fstream file;
-    file.open(path.string(), std::ios_base::in);
+    file.open(path.string(), openMode);
     if (file.is_open())
     {
         std::stringstream ss;
@@ -162,7 +178,7 @@ bool readFile(const boost::filesystem::path& path, std::string &content)
     return false;
 }
 
-bool readFile(const boost::filesystem::path& path, std::vector<char> &content)
+bool file::readFile(const boost::filesystem::path& path, std::vector<char> &content, eFileOpenMode mode)
 {
     if (!fileExist(path))
     {
@@ -174,8 +190,10 @@ bool readFile(const boost::filesystem::path& path, std::vector<char> &content)
         return false;
     }
 
+    auto openMode = std::ios_base::in | convertOpenMode(mode);
+
     std::fstream file;
-    file.open(path.string(), std::ios_base::in | std::ios_base::binary);
+    file.open(path.string(), openMode);
     if (file.is_open())
     {
         std::filebuf* pbuf = file.rdbuf();
@@ -189,7 +207,7 @@ bool readFile(const boost::filesystem::path& path, std::vector<char> &content)
     return false;
 }
 
-bool writeFile(const boost::filesystem::path& path, const std::string& content)
+bool file::writeFile(const boost::filesystem::path& path, const std::string& content, eFileOpenMode mode, bool trunc)
 {
     if (fileExist(path) && !makeFileWritable(path))
     {
@@ -197,7 +215,13 @@ bool writeFile(const boost::filesystem::path& path, const std::string& content)
     }
 
     std::fstream file;
-    file.open(path.string(), std::ios_base::out | std::ios_base::trunc);
+    auto openMode = std::ios_base::out | convertOpenMode(mode);
+    if (trunc)
+    {
+        openMode |= std::ios_base::trunc;
+    }
+
+    file.open(path.string(), openMode);
     if (file.is_open())
     {
         file << content;
@@ -206,15 +230,21 @@ bool writeFile(const boost::filesystem::path& path, const std::string& content)
     }
     return false;
 }
-bool writeFile(const boost::filesystem::path& path, const std::vector<char>& content)
+bool file::writeFile(const boost::filesystem::path& path, const std::vector<char>& content, eFileOpenMode mode, bool trunc)
 {
     if (fileExist(path) && !makeFileWritable(path))
     {
         return false;
     }
 
+    auto openMode = std::ios_base::out | convertOpenMode(mode);
+    if (trunc)
+    {
+        openMode |= std::ios_base::trunc;
+    }
+
     std::fstream file;
-    file.open(path.string(), std::ios_base::out | std::ios_base::trunc);
+    file.open(path.string(), openMode);
     if (file.is_open())
     {
         file.write(content.data(), content.size());
@@ -225,4 +255,4 @@ bool writeFile(const boost::filesystem::path& path, const std::vector<char>& con
 }
 
 
-}}
+}

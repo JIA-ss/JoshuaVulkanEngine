@@ -1,4 +1,5 @@
 #include "CppDemo/03_shader/shader.h"
+#include "CppDemo/04_renderprocess/renderprocess.h"
 #include "Demo/01_createwindow/createwindow.h"
 #include "Demo/02_createVulkanInstance/createVulkanInstance.h"
 #include "Demo/03_physicalDeviceAndQueue/physicalDeviceAndQueue.h"
@@ -24,5 +25,9 @@ int main(int argc, char* argv[])
     //return _02::createVulkanInstance();
     //return _03::physicalDeviceAndQueue();
     //return cpp_demo::contextDemo();
-    return cpp_demo::shaderDemo(resourcesPath);
+    //return cpp_demo::shaderDemo(resourcesPath);
+    std::string vertexSource, fragSource;
+    util::file::readFile(resourcesPath/"Shader\\GLSL\\SPRI-V\\shader.vert.spv", vertexSource, util::file::eFileOpenMode::kBinary);
+    util::file::readFile(resourcesPath/"Shader\\GLSL\\SPRI-V\\shader.frag.spv", fragSource, util::file::eFileOpenMode::kBinary);
+    return cpp_demo::renderProcessDemo(vertexSource, fragSource);
 }

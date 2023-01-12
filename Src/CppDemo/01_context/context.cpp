@@ -1,5 +1,6 @@
 #include "context.h"
 #include "CppDemo/02_swapchain/swapchain.h"
+#include "CppDemo/04_renderprocess/renderprocess.h"
 #include "Demo/01_createwindow/createwindow.h"
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_enums.hpp"
@@ -63,19 +64,35 @@ Context& Context::Init(const std::vector<const char*>& extensions, CreateSurface
 
 Context& Context::InitSwapchain(int windowWidth, int windowHeight)
 {
+    assert(!m_pSwapchain);
     m_pSwapchain.reset(new Swapchain(windowWidth, windowHeight));
     return *m_contextInstance;
 }
 
 Context& Context::DestroySwapchain()
 {
+    assert(m_pSwapchain);
     m_pSwapchain.reset();
+    return *m_contextInstance;
+}
+
+Context& Context::InitRenderProcess(int windowWidth, int windowHeight)
+{
+    assert(!m_pRenderProcess);
+    m_pRenderProcess.reset(new RenderProcess());
+    m_pRenderProcess->Init(windowWidth, windowHeight);
+    return *m_contextInstance;
+}
+Context& Context::DestroyRenderProcess()
+{
+    assert(m_pRenderProcess);
+    m_pRenderProcess->Destroy();
+    m_pRenderProcess.reset();
     return *m_contextInstance;
 }
 
 void Context::Quit()
 {
-    m_contextInstance->DestroySwapchain();
     m_contextInstance.reset();
 }
 
