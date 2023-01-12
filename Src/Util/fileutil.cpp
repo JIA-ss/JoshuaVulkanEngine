@@ -6,9 +6,8 @@
 #include <ios>
 #include <sstream>
 
-#define _GLIBCXX_USE_CXX11_ABI 0
 
-namespace util {
+namespace util { namespace file {
 
 bool fileExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat)
 {
@@ -226,4 +225,4 @@ bool writeFile(const boost::filesystem::path& path, const std::vector<char>& con
 }
 
 
-}
+}}

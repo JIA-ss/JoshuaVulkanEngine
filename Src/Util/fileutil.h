@@ -4,7 +4,7 @@
 #include <vector>
 #include <boost/filesystem.hpp>
 
-namespace util {
+namespace util { namespace file {
 
 bool fileExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat = nullptr);
 bool dirExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat = nullptr);
@@ -22,4 +22,4 @@ bool readFile(const boost::filesystem::path& path, std::vector<char>& content);
 bool writeFile(const boost::filesystem::path& path, const std::string& content);
 bool writeFile(const boost::filesystem::path& path, const std::vector<char>& content);
 
-}
+}}

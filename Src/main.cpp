@@ -10,15 +10,15 @@ int main()
     //return _02::createVulkanInstance();
     //return _03::physicalDeviceAndQueue();
     std::string path = "G:/vscode_proj/JoshuaVulkanEngine/Shader/GLSL/shader.frag";
-    assert(util::fileExist(path));
-    assert(!util::fileExist(path + ".tmp"));
+    assert(util::file::fileExist(path));
+    assert(!util::file::fileExist(path + ".tmp"));
     std::string content;
     std::vector<char> b_content;
-    assert(util::readFile(path, content));
+    assert(util::file::readFile(path, content));
     assert(!content.empty());
-    assert(util::readFile(path, b_content));
+    assert(util::file::readFile(path, b_content));
     assert(!b_content.empty());
 
-    assert(util::writeFile(path + ".tmp2", content));
+    assert(util::file::writeFile(path + ".tmp2", content));
     return cpp_demo::contextDemo();
 }
