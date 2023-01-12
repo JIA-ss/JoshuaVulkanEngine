@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/filesystem/path.hpp>
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
@@ -25,4 +26,5 @@ private:
     explicit Shader(const std::string& vertexSource, const std::string& fragSource);
 };
 
+int shaderDemo(boost::filesystem::path& resourcesPath);
 }

@@ -64,9 +64,10 @@ target_include_directories(ImguiTest
     PUBLIC ${Boost_INCLUDE_DIR}
 )
 
-message("[GLSLC] Compile Files In ${GLSL_SHADER_DIR} Begin")
+
 find_program(GLSLC_PROGRAM glslc REQUIRED)
-set(GLSL_SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Shader/GLSL)
+set(GLSL_SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Resources/Shader/GLSL)
+message("[GLSLC] Compile Files In ${GLSL_SHADER_DIR} Begin")
 file(GLOB GLSL_SHADERS ${GLSL_SHADER_DIR}/*.vert ${GLSL_SHADER_DIR}/*.frag)
 foreach(GLSL_SHADER ${GLSL_SHADERS})
     get_filename_component(SHADER_NAME ${GLSL_SHADER} NAME)

@@ -1,5 +1,8 @@
 #include "shader.h"
+#include "Demo/01_createwindow/createwindow.h"
+#include "Util/fileutil.h"
 #include "vulkan/vulkan_structs.hpp"
+#include <GLFW/glfw3.h>
 #include <stdint.h>
 #include "CppDemo/01_context/context.h"
 
@@ -41,6 +44,35 @@ Shader::~Shader()
     auto& device = Context::GetInstance().GetDevice();
     device.destroyShaderModule(m_vkShaderModuleVertex);
     device.destroyShaderModule(m_vkShaderModuleFragment);
+}
+
+
+int shaderDemo(boost::filesystem::path& resourcesPath)
+{
+    std::cout << "[shaderDemo] resourcesPath: " << resourcesPath << std::endl;
+    _01::Window window(_01::WindowSetting{1920, 1080, "Vulkan Shader Demo"});
+    window.initWindow();
+
+    Context::Init(window.getRequiredInstanceExtensions(), window.getCreateSurfaceFunc())
+            .InitSwapchain(window.getWindowSetting().width, window.getWindowSetting().height);
+
+    auto shaderPath = resourcesPath / "Shader\\GLSL";
+    auto vertexShader = shaderPath / "shader.vert";
+    auto fragShader = shaderPath / "shader.frag";
+
+    std::string vertShaderSource, fragShaderSource;
+    util::file::readFile(vertexShader, vertShaderSource);
+    util::file::readFile(fragShader, fragShaderSource);
+    Shader::Init(vertShaderSource, fragShaderSource);
+
+    while(!window.shouldClose())
+    {
+        glfwPollEvents();
+    }
+
+    Context::GetInstance().DestroySwapchain()
+                            .Quit();
+    return 0;
 }
 
 }

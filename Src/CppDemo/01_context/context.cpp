@@ -55,20 +55,22 @@ Context::~Context()
     m_vkInstance.destroy();
 }
 
-void Context::Init(const std::vector<const char*>& extensions, CreateSurfaceFunc createSurfaceFunc)
+Context& Context::Init(const std::vector<const char*>& extensions, CreateSurfaceFunc createSurfaceFunc)
 {
     m_contextInstance.reset(new Context(extensions, createSurfaceFunc));
+    return *m_contextInstance;
 }
 
-Swapchain& Context::InitSwapchain(int windowWidth, int windowHeight)
+Context& Context::InitSwapchain(int windowWidth, int windowHeight)
 {
     m_pSwapchain.reset(new Swapchain(windowWidth, windowHeight));
-    return *m_pSwapchain;
+    return *m_contextInstance;
 }
 
-void Context::DestroySwapchain()
+Context& Context::DestroySwapchain()
 {
     m_pSwapchain.reset();
+    return *m_contextInstance;
 }
 
 void Context::Quit()

@@ -37,7 +37,7 @@ private:
     std::unique_ptr<Swapchain> m_pSwapchain;
 
 public:
-    static void Init(const std::vector<const char*>& extensions,
+    static Context& Init(const std::vector<const char*>& extensions,
                         CreateSurfaceFunc createSurfaceFunc);
     static void Quit();
     static Context& GetInstance();
@@ -45,8 +45,8 @@ public:
 
 public:
 
-    Swapchain& InitSwapchain(int windowWidth, int windowHeight);
-    void DestroySwapchain();
+    Context& InitSwapchain(int windowWidth, int windowHeight);
+    Context& DestroySwapchain();
 
     inline vk::SurfaceKHR& GetSurface() { return m_vkSurfaceKHR; }
     inline vk::PhysicalDevice& GetPhysicalDevice() { return m_vkPhysicalDevice; }
