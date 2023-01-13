@@ -91,6 +91,19 @@ Context& Context::DestroyRenderProcess()
     return *m_contextInstance;
 }
 
+Context& Context::InitRenderer()
+{
+    assert(!m_pRenderer);
+    m_pRenderer.reset(new Renderer());
+    return *m_contextInstance;
+}
+Context& Context::DestroyRenderer()
+{
+    assert(m_pRenderer);
+    m_pRenderer.reset();
+    return *m_contextInstance;
+}
+
 void Context::Quit()
 {
     m_contextInstance.reset();

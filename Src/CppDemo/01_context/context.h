@@ -3,6 +3,7 @@
 
 #include "CppDemo/02_swapchain/swapchain.h"
 #include "CppDemo/04_renderprocess/renderprocess.h"
+#include "CppDemo/05_render/renderer.h"
 #include <functional>
 #include <optional>
 #include <stdint.h>
@@ -37,6 +38,7 @@ private:
     Context::QueueFamilyIndices m_queueFamilyIndices;
     std::unique_ptr<Swapchain> m_pSwapchain;
     std::unique_ptr<RenderProcess> m_pRenderProcess;
+    std::unique_ptr<Renderer> m_pRenderer;
 
 public:
     static Context& Init(const std::vector<const char*>& extensions,
@@ -53,6 +55,9 @@ public:
     Context& InitRenderProcess(int windowWidth, int windowHeight);
     Context& DestroyRenderProcess();
 
+    Context& InitRenderer();
+    Context& DestroyRenderer();
+
     inline vk::SurfaceKHR& GetSurface() { return m_vkSurfaceKHR; }
     inline vk::PhysicalDevice& GetPhysicalDevice() { return m_vkPhysicalDevice; }
     inline vk::Device& GetDevice() { return m_vkDevice; }
@@ -61,6 +66,7 @@ public:
     inline Context::QueueFamilyIndices& GetQueueFamilyIndices() { return m_queueFamilyIndices; }
     inline Swapchain& GetSwapchain() { return *m_pSwapchain; }
     inline RenderProcess& GetRenderProcess() { return *m_pRenderProcess; }
+    inline Renderer& GetRenderer() { return *m_pRenderer; }
 
 private:
     void createVkInstance(const std::vector<const char*>& extensions);

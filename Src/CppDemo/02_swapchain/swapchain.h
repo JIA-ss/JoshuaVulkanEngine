@@ -26,7 +26,11 @@ private:
 public:
     Swapchain(int windowWidth, int windowHeight);
     ~Swapchain();
-    const SwapchainInfo& GetSwapchainInfo() { return m_swapchainInfo; }
+    inline const SwapchainInfo& GetSwapchainInfo() { return m_swapchainInfo; }
+    inline vk::SwapchainKHR& GetSwapchain() { return m_vkSwapchain; }
+    inline std::vector<vk::Framebuffer>& GetFramebuffers() { return m_vkFramebuffers; }
+    inline vk::Framebuffer& GetFramebuffer(int index) { assert(index >= 0 && index < m_vkFramebuffers.size()); return m_vkFramebuffers[index]; }
+
     void CreateFrameBuffers(int windowWidth, int windowHeight);
 private:
     void queryInfo(int windowWidth, int windowHeight);
