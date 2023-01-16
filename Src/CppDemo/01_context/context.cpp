@@ -2,6 +2,7 @@
 #include "CppDemo/02_swapchain/swapchain.h"
 #include "CppDemo/04_renderprocess/renderprocess.h"
 #include "Demo/01_createwindow/createwindow.h"
+#include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_handles.hpp"
@@ -10,6 +11,7 @@
 #include <array>
 #include <memory>
 #include <stdexcept>
+
 
 
 std::string to_string(vk::PhysicalDeviceType type)
@@ -117,6 +119,11 @@ Context& Context::GetInstance()
 
 void Context::createVkInstance(const std::vector<const char*>& extensions)
 {
+    static vk::DynamicLoader ld;
+    static vk::DynamicLoader  dl;
+    PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
+            dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 #ifndef NDEBUG
     std::cout << "=== === SUPPORT LAYERS === ===" << std::endl;
     // output all support layers
@@ -149,6 +156,8 @@ void Context::createVkInstance(const std::vector<const char*>& extensions)
                 .setPEnabledExtensionNames(extensions);
 
     m_vkInstance = vk::createInstance(createInfo);
+
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(m_vkInstance);
 }
 
 void Context::pickUpPhysicalDevice()

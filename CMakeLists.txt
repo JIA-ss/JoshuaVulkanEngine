@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.20.0)
 
-project("ImguiTest")
+project("VulkanRHI")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -47,8 +47,11 @@ find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 
 
-add_executable(ImguiTest ${MAIN_SRC_FILES})
-target_link_libraries(ImguiTest 
+add_executable(VulkanRHI ${MAIN_SRC_FILES})
+
+target_compile_definitions(VulkanRHI PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
+
+target_link_libraries(VulkanRHI
     glfw
     glm::glm
     ${VULKAN_LIBRARY}
@@ -57,7 +60,7 @@ target_link_libraries(ImguiTest
 )
 
 
-target_include_directories(ImguiTest
+target_include_directories(VulkanRHI
     PUBLIC ${LIB_DIR}
     PUBLIC ${IMGUI_DIR}
     PUBLIC ${VulkanInclude}

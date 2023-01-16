@@ -8,7 +8,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "name": "Debug",
-            "program": "${workspaceFolder}/build/Debug/ImguiTest.exe",
+            "program": "${workspaceFolder}/build/Debug/VulkanRHI.exe",
             "cwd": ".",
             "args": [
                 "${workspaceFolder}/Resources"
@@ -18,7 +18,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "RelWithDebInfo",
-            "program": "${workspaceFolder}/build/RelWithDebInfo/ImguiTest.exe",
+            "program": "${workspaceFolder}/build/RelWithDebInfo/VulkanRHI.exe",
         }
     ]
 }
