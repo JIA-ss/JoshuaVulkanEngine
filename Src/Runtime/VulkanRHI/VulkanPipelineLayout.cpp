@@ -22,5 +22,6 @@ VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice* device, VulkanDescripto
 
 VulkanPipelineLayout::~VulkanPipelineLayout()
 {
-
+    m_vulkanDevice->GetVkDevice().destroyPipelineLayout(m_vkPipelineLayout);
+    m_vkPipelineLayout = nullptr;
 }
