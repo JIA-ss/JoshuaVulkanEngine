@@ -9,10 +9,46 @@
 #include "Runtime/Platform/PlatformWindow.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Util/fileutil.h"
+#include <GLFW/glfw3.h>
 #include <boost/filesystem/path.hpp>
 
 #include "Runtime/VulkanRHI/VulkanContext.h"
 #include "vulkan/vulkan_core.h"
+
+
+std::unique_ptr<platform::PlatformWindow> window = nullptr;
+
+void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::path& resourcesPath)
+{
+    window = platform::CreatePlatformWindow(1920, 1080, "RHI");
+    window->Init();
+    auto extensions = window->GetRequiredExtensions();
+    std::vector<const char*> enabledInstanceExtensions;
+    auto& ctx = RHI::VulkanContext::CreateInstance();
+    ctx.Init(
+        RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
+        RHI::VulkanPhysicalDevice::Config { window.get() }
+        );
+
+}
+
+void Run()
+{
+    while(!window->ShouldClose())
+    {
+        glfwPollEvents();
+    }
+}
+
+void Shutdown()
+{
+    RHI::VulkanContext::GetInstance().Destroy();
+    window->Destroy();
+    RHI::VulkanContext::DestroyInstance();
+    window.reset();
+}
+
+
 int main(int argc, char* argv[])
 {
     if (argc < 2)
@@ -44,16 +80,9 @@ int main(int argc, char* argv[])
     // window.initWindow();
 
 
-    std::unique_ptr<platform::PlatformWindow> window = platform::CreatePlatformWindow(1920, 1080, "RHI");
-    window->Init();
-    auto extensions = window->GetRequiredExtensions();
-    std::vector<const char*> enabledInstanceExtensions;
-    auto& ctx = RHI::VulkanContext::CreateInstance();
-    ctx.Init(
-        RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
-        RHI::VulkanPhysicalDevice::Config { window.get() }
-        );
-    ctx.Destroy();
-    window->Destroy();
-    RHI::VulkanContext::DestroyInstance();
+    StartUp(exePath, resourcesPath);
+
+    Run();
+
+    Shutdown();
 }

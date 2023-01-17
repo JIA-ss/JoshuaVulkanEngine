@@ -1,6 +1,7 @@
 #include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/VulkanInstance.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
+#include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "VulkanRHI.h"
 #include <memory>
 RHI_NAMESPACE_BEGIN
@@ -14,6 +15,7 @@ private:
     std::unique_ptr<VulkanInstance> m_pInstance;
     std::unique_ptr<VulkanPhysicalDevice> m_pPhysicalDevice;
     std::unique_ptr<VulkanDevice> m_pDevice;
+    std::unique_ptr<VulkanShaderSet> m_pShaderSet;
 public:
     static VulkanContext& CreateInstance();
     static void DestroyInstance();

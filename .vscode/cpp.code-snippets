@@ -1,0 +1,25 @@
+{
+    "Print to conaole":
+    {
+        "prefix": "RHICPP",
+        "body": [
+            "#include \"${TM_FILENAME_BASE}.h\"",
+            "#include \"Runtime/VulkanRHI/VulkanRHI.h\"",
+			"#include <vulkan/vulkan.hpp>",
+            "",
+            "RHI_NAMESPACE_USING",
+            "",
+            "${TM_FILENAME_BASE}::${TM_FILENAME_BASE}()",
+            "{",
+			"",
+            "}",
+            "",
+			"",
+			"${TM_FILENAME_BASE}::~${TM_FILENAME_BASE}()",
+			"{",
+			"",
+			"}"
+        ],
+        "description": "A RHI cpp file template."
+    }
+}

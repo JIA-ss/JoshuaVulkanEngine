@@ -3,6 +3,7 @@
 #include "Runtime/VulkanRHI/VulkanInstance.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
+#include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include <assert.h>
 #include <stdio.h>
 RHI_NAMESPACE_USING
@@ -34,10 +35,12 @@ void VulkanContext::Init(
     m_pInstance.reset(new VulkanInstance(instanceConfig));
     m_pPhysicalDevice.reset(new VulkanPhysicalDevice(physicalConfig, m_pInstance.get()));
     m_pDevice.reset(new VulkanDevice(m_pPhysicalDevice.get()));
+    m_pShaderSet.reset(new VulkanShaderSet(m_pDevice.get()));
 }
 
 void VulkanContext::Destroy()
 {
+    m_pShaderSet.reset();
     m_pDevice.reset();
     m_pPhysicalDevice.reset();
     m_pInstance.reset();

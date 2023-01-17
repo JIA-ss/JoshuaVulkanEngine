@@ -1,0 +1,24 @@
+{
+    "Print to conaole":
+    {
+        "prefix": "RHIH",
+        "body": [
+            "#pragma once",
+            "#include \"Runtime/VulkanRHI/VulkanRHI.h\"",
+            "#include <vulkan/vulkan.hpp>",
+            "",
+            "RHI_NAMESPACE_BEGIN",
+            "",
+            "class ${TM_FILENAME_BASE}",
+            "{",
+            "public:",
+            "private:",
+            "public:",
+            "\t${TM_FILENAME_BASE}();",
+			"\t~${TM_FILENAME_BASE}();",
+            "};",
+            "RHI_NAMESPACE_END"
+        ],
+        "description": "A RHI h file template."
+    }
+}
