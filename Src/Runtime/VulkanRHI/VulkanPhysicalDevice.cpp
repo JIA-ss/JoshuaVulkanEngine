@@ -1,14 +1,23 @@
 #include "VulkanPhysicalDevice.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanContext.h"
+#include "vulkan/vulkan_core.h"
+#include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_handles.hpp"
+
 #include <iostream>
+#include <iterator>
+#include <set>
+
 RHI_NAMESPACE_USING
 
 VulkanPhysicalDevice::VulkanPhysicalDevice(const Config& config, VulkanInstance* instance)
 {
-    m_window = config.window;
+    std::cout << "=== === === VulkanPhysicalDevice Construct Begin === === ===" << std::endl;
+
+    m_config = config;
     m_pVulkanInstance = instance;
+    createVkSurface();
 
     auto devices = m_pVulkanInstance->GetVkInstance().enumeratePhysicalDevices();
     if (devices.empty())
@@ -18,57 +27,42 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(const Config& config, VulkanInstance*
         return;
     }
 
-    m_vkPhysicalDevice = devices.front();
-    m_physicalDeviceInfo.deviceProps = m_vkPhysicalDevice.getProperties();
-    m_physicalDeviceInfo.deviceFeatures = m_vkPhysicalDevice.getFeatures();
-    m_physicalDeviceInfo.deviceMemoryProps = m_vkPhysicalDevice.getMemoryProperties();
-    m_physicalDeviceInfo.deviceQueueFamilyProps = m_vkPhysicalDevice.getQueueFamilyProperties();
-    m_physicalDeviceInfo.deviceExtensionProps = m_vkPhysicalDevice.enumerateDeviceExtensionProperties();
-    for (auto& extension : m_physicalDeviceInfo.deviceExtensionProps)
-    {
-        m_physicalDeviceInfo.supportedExtensions.emplace_back(extension.extensionName);
-    }
+    pickUpDevice(devices);
+    queryDeviceInfo();
 
-
-    std::cout << "Device: " << m_physicalDeviceInfo.deviceProps.deviceName << std::endl;
-    std::cout << "API: "
-                            << (m_physicalDeviceInfo.deviceProps.apiVersion >> 22)
-                            << "."
-                            << ((m_physicalDeviceInfo.deviceProps.apiVersion >> 12) & 0x3ff)
-                            << "."
-                            << (m_physicalDeviceInfo.deviceProps.apiVersion & 0xfff)
-                        << std::endl;
-
-	// Derived examples can override this to set actual features (based on above readings) to enable for logical device creation
-	// getEnabledFeatures();
+    std::cout << "=== === === VulkanPhysicalDevice Construct End === === ===" << std::endl;
 }
 
-vk::SurfaceKHR VulkanPhysicalDevice::CreateVkSurface()
+void VulkanPhysicalDevice::createVkSurface()
 {
-    if (m_window)
+    if (m_config.window)
     {
-        return m_window->CreateSurface(m_pVulkanInstance);
+        m_vkSurface = m_config.window->CreateSurface(m_pVulkanInstance);
+#ifndef NDEBUG
+        std::cout << "[Create Surface]" << std::endl;
+#endif
     }
-    return {};
 }
 
-void VulkanPhysicalDevice::DestroyVkSurface(vk::SurfaceKHR& surface)
+void VulkanPhysicalDevice::destroyVkSurface()
 {
-    if (m_window)
+    if (m_vkSurface && m_config.window)
     {
-        m_window->DestroySurface(m_pVulkanInstance, &surface);
+        m_config.window->DestroySurface(m_pVulkanInstance, &m_vkSurface);
     }
 }
 
 VulkanPhysicalDevice::~VulkanPhysicalDevice()
 {
-
+    destroyVkSurface();
 }
 
-VulkanPhysicalDevice::QueueFamilyIndices VulkanPhysicalDevice::QueryQueueFamilyIndices(vk::SurfaceKHR& surface)
+bool VulkanPhysicalDevice::queryQueueFamilyIndices(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface, QueueFamilyIndices& queueIndices)
 {
-    VulkanPhysicalDevice::QueueFamilyIndices queueIndices;
-    auto props = m_physicalDeviceInfo.deviceQueueFamilyProps;
+    queueIndices.graphic.reset();
+    queueIndices.present.reset();
+
+    auto props = device.getQueueFamilyProperties();
     for (int i = 0; i < props.size(); i++)
     {
         const auto& property = props[i];
@@ -77,7 +71,7 @@ VulkanPhysicalDevice::QueueFamilyIndices VulkanPhysicalDevice::QueryQueueFamilyI
             queueIndices.graphic = i;
         }
 
-        if (!queueIndices.present.has_value() && (m_vkPhysicalDevice.getSurfaceSupportKHR(i, surface)))
+        if (!queueIndices.present.has_value() && (device.getSurfaceSupportKHR(i, surface)))
         {
             queueIndices.present = i;
         }
@@ -87,8 +81,63 @@ VulkanPhysicalDevice::QueueFamilyIndices VulkanPhysicalDevice::QueryQueueFamilyI
             break;
         }
     }
-    assert(queueIndices);
-    return queueIndices;
+    bool result = queueIndices;
+    return result;
+}
+
+bool VulkanPhysicalDevice::checkSupportExtension(const vk::PhysicalDevice& device)
+{
+    auto avaliable_extensions = device.enumerateDeviceExtensionProperties();
+    std::set<std::string> required;
+    std::set<std::string> avaliable;
+    std::transform(m_config.requiredExtensions.begin(), m_config.requiredExtensions.end(), m_config.requiredExtensions.begin(),
+        [&required](const char* extension) { required.insert(std::string(extension)); return extension; });
+    std::transform(avaliable_extensions.begin(), avaliable_extensions.end(), avaliable_extensions.begin(),
+        [&avaliable](const vk::ExtensionProperties& prop){ avaliable.insert(std::string(prop.extensionName)); return prop; });
+
+    std::set<std::string> intersection;
+    std::set_intersection(required.begin(), required.end(), avaliable.begin(), avaliable.end(), std::inserter(intersection, intersection.begin()));
+
+    if (intersection.size() != required.size())
+    {
+        std::set<std::string> unsupport;
+        std::set_difference(required.begin(), required.end(), intersection.begin(), intersection.end(), std::inserter(unsupport, unsupport.begin()));
+        for (auto& unsp : unsupport)
+        {
+            std::cerr << "unsupport extension: " << unsp << "\n";
+        }
+        return false;
+    }
+
+    return true;
+}
+
+bool VulkanPhysicalDevice::checkSupportSwapchain(const vk::PhysicalDevice& device)
+{
+    // auto capabilities = device.getSurfaceCapabilitiesKHR(m_vkSurface);
+    auto formats = device.getSurfaceFormatsKHR(m_vkSurface);
+    if (formats.empty())
+    {
+        return false;
+    }
+    auto presentMode = device.getSurfacePresentModesKHR(m_vkSurface);
+    if (presentMode.empty())
+    {
+        return false;
+    }
+    return true;
+}
+
+bool VulkanPhysicalDevice::checkSupportFeatures(const vk::PhysicalDevice& device)
+{
+    if (!m_config.requiredFeatures.has_value())
+    {
+        return true;
+    }
+    vk::PhysicalDeviceFeatures avaliableFeatures = device.getFeatures();
+
+    assert(false); // need to check device support the feature;
+    return avaliableFeatures.samplerAnisotropy == m_config.requiredFeatures->samplerAnisotropy;
 }
 
 bool VulkanPhysicalDevice::SupportExtension(const std::string& extension)
@@ -97,4 +146,85 @@ bool VulkanPhysicalDevice::SupportExtension(const std::string& extension)
                         m_physicalDeviceInfo.supportedExtensions.end(), 
                         extension)
                 != m_physicalDeviceInfo.supportedExtensions.end();
+}
+
+void VulkanPhysicalDevice::pickUpDevice(const std::vector<vk::PhysicalDevice>& devices)
+{
+    for (const vk::PhysicalDevice& device : devices)
+    {
+        if (!queryQueueFamilyIndices(device, m_vkSurface, m_queueFamilyIndices) ||
+            !checkSupportExtension(device) ||
+            !checkSupportSwapchain(device) ||
+            !checkSupportFeatures(device))
+        {
+            continue;
+        }
+
+        m_vkPhysicalDevice = device;
+        break;
+    }
+
+    if (!m_vkPhysicalDevice)
+    {
+        std::cerr << "cannot find suitable device\n";
+    }
+    //m_vkPhysicalDevice = devices.front();
+}
+
+void VulkanPhysicalDevice::queryDeviceInfo()
+{
+    if (!m_vkPhysicalDevice)
+    {
+        assert(false);
+        return;
+    }
+
+    m_physicalDeviceInfo.deviceProps = m_vkPhysicalDevice.getProperties();
+    auto avaliableExtensions = m_vkPhysicalDevice.enumerateDeviceExtensionProperties();
+    for (auto& extension : avaliableExtensions)
+    {
+        m_physicalDeviceInfo.supportedExtensions.emplace_back(extension.extensionName);
+    }
+
+    vk::SampleCountFlags counts = m_physicalDeviceInfo.deviceProps.limits.framebufferColorSampleCounts &
+                                    m_physicalDeviceInfo.deviceProps.limits.framebufferDepthSampleCounts;
+    if (counts & vk::SampleCountFlagBits::e64)
+    {
+        m_physicalDeviceInfo.maxUsableSampleCount = vk::SampleCountFlagBits::e64;
+    }
+    else if (counts & vk::SampleCountFlagBits::e32)
+    {
+        m_physicalDeviceInfo.maxUsableSampleCount = vk::SampleCountFlagBits::e32;
+    }
+    else if (counts & vk::SampleCountFlagBits::e16)
+    {
+        m_physicalDeviceInfo.maxUsableSampleCount = vk::SampleCountFlagBits::e16;
+    }
+    else if (counts & vk::SampleCountFlagBits::e8)
+    {
+        m_physicalDeviceInfo.maxUsableSampleCount = vk::SampleCountFlagBits::e8;
+    }
+    else if (counts & vk::SampleCountFlagBits::e4)
+    {
+        m_physicalDeviceInfo.maxUsableSampleCount = vk::SampleCountFlagBits::e4;
+    }
+    else
+    {
+        m_physicalDeviceInfo.maxUsableSampleCount = vk::SampleCountFlagBits::e1;
+    }
+
+
+    std::cout << "[Pick Physical Device]" << std::endl
+                <<"Name: "  << m_physicalDeviceInfo.deviceProps.deviceName << std::endl
+                << "API: "
+                            << (m_physicalDeviceInfo.deviceProps.apiVersion >> 22)
+                            << "."
+                            << ((m_physicalDeviceInfo.deviceProps.apiVersion >> 12) & 0x3ff)
+                            << "."
+                            << (m_physicalDeviceInfo.deviceProps.apiVersion & 0xfff)
+                        << std::endl
+                << "MaxUsableSampleCount: " << (int)m_physicalDeviceInfo.maxUsableSampleCount << std::endl;
+
+	// Derived examples can override this to set actual features (based on above readings) to enable for logical device creation
+	// getEnabledFeatures();
 }

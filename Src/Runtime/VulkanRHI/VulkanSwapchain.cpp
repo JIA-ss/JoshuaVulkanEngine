@@ -1,12 +1,16 @@
 #include "VulkanSwapchain.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
+#include <iostream>
 RHI_NAMESPACE_USING
 
 
 VulkanSwapchain::VulkanSwapchain(VulkanDevice* device)
     : m_pVulkanDevice(device)
 {
+    std::cout << "=== === === VulkanSwapchain Construct Begin === === ===" << std::endl;
+
+
     queryInfo();
 
 
@@ -39,6 +43,8 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice* device)
 
     getImages();
     createImageViews();
+
+    std::cout << "=== === === VulkanSwapchain Construct End === === ===" << std::endl;
 }
 
 VulkanSwapchain::~VulkanSwapchain()
@@ -69,7 +75,6 @@ void VulkanSwapchain::queryInfo()
 
     auto capabilities = m_pVulkanDevice->GetSurfaceCapabilities();
     m_swapchainInfo.imageCount = std::clamp<uint32_t>(2, capabilities.minImageCount, capabilities.maxImageCount);
-
     m_swapchainInfo.imageExtent.width = std::clamp<uint32_t>(windowWidth, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
     m_swapchainInfo.imageExtent.height = std::clamp<uint32_t>(windowHeight, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
     m_swapchainInfo.transform = capabilities.currentTransform;

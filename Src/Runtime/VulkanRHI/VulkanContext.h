@@ -26,8 +26,7 @@ public:
     inline VulkanPhysicalDevice& GetVulkanPhysicalDevice() { assert(m_pPhysicalDevice); return *m_pPhysicalDevice; }
 
     void Init(const VulkanInstance::Config& instanceConfig,
-                const VulkanPhysicalDevice::Config& physicalConfig,
-                const VulkanDevice::Config& deviceConfig);
+                const VulkanPhysicalDevice::Config& physicalConfig);
     void Destroy();
 };
 

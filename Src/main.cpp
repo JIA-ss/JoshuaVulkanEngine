@@ -23,6 +23,8 @@ int main(int argc, char* argv[])
 
     boost::filesystem::path exePath = argv[0];
     boost::filesystem::path resourcesPath = argv[1];
+    util::file::setExePath(exePath);
+    util::file::setResourcePath(resourcesPath);
 #ifndef NDEBUG
     std::cout << "exePath: " << exePath << std::endl;
     std::cout << "resourcesPath: " << resourcesPath << std::endl;
@@ -49,8 +51,7 @@ int main(int argc, char* argv[])
     auto& ctx = RHI::VulkanContext::CreateInstance();
     ctx.Init(
         RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
-        RHI::VulkanPhysicalDevice::Config { window.get() },
-        RHI::VulkanDevice::Config {  }
+        RHI::VulkanPhysicalDevice::Config { window.get() }
         );
     ctx.Destroy();
     window->Destroy();

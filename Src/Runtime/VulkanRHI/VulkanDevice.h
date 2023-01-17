@@ -1,6 +1,8 @@
 #pragma once
 
+#include "Runtime/VulkanRHI/VulkanCommandPool.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
+#include "Runtime/VulkanRHI/VulkanPipelineCache.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanSwapchain.h"
 #include "vulkan/vulkan_enums.hpp"
@@ -11,39 +13,34 @@ RHI_NAMESPACE_BEGIN
 class VulkanDevice
 {
 public:
-    struct Config
-    {
-        std::optional<vk::PhysicalDeviceFeatures> enableFeatures;
-        vk::QueueFlags requestedQueueTypes;
-        std::vector<const char*> enableExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-    };
+
 private:
-    Config m_config;
-
     VulkanPhysicalDevice* m_vulkanPhysicalDevice = nullptr;
-    VulkanPhysicalDevice::QueueFamilyIndices m_queueFamilyIndices;
+    const VulkanPhysicalDevice::QueueFamilyIndices* m_queueFamilyIndices  = nullptr;
 
-    vk::SurfaceKHR m_vkSurfaceKHR;
+    vk::SurfaceKHR* m_vkSurfaceKHR = nullptr;
     vk::Device m_vkDevice;
     vk::Queue m_vkGraphicQueue;
     vk::Queue m_vkPresentQueue;
 
     std::unique_ptr<VulkanSwapchain> m_pVulkanSwapchain;
+    std::unique_ptr<VulkanCommandPool> m_pVulkanCmdPool;
+    std::unique_ptr<VulkanPipelineCache> m_pVulkanPipelineCache;
 public:
-    explicit VulkanDevice(const Config& config, VulkanPhysicalDevice* physicalDevice);
+    explicit VulkanDevice(VulkanPhysicalDevice* physicalDevice);
     ~VulkanDevice();
 
     std::vector<vk::PresentModeKHR> GetSurfacePresentMode();
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormat();
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities();
 
-    inline const VulkanPhysicalDevice::QueueFamilyIndices& GetQueueFamilyIndices() { return m_queueFamilyIndices; }
-    inline vk::SurfaceKHR& GetVkSurface() { return m_vkSurfaceKHR; }
+    inline const VulkanPhysicalDevice::QueueFamilyIndices& GetQueueFamilyIndices() { return *m_queueFamilyIndices; }
+    inline vk::SurfaceKHR& GetVkSurface() { return *m_vkSurfaceKHR; }
     inline vk::Device& GetVkDevice() { return m_vkDevice; }
     inline VulkanPhysicalDevice* GetVulkanPhysicalDevice() { return m_vulkanPhysicalDevice; }
 private:
     void setUpQueueCreateInfos(vk::DeviceCreateInfo& createInfo, std::vector<vk::DeviceQueueCreateInfo>& queueInfo);
-    void setUpExtensions(vk::DeviceCreateInfo& createInfo);
+    void setUpExtensions(vk::DeviceCreateInfo& createInfo, std::vector<const char*>& enabledExtensions);
 };
 
 RHI_NAMESPACE_END

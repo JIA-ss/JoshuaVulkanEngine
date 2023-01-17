@@ -29,12 +29,11 @@ VulkanContext& VulkanContext::GetInstance()
 
 void VulkanContext::Init(
     const VulkanInstance::Config& instanceConfig,
-    const VulkanPhysicalDevice::Config& physicalConfig,
-    const VulkanDevice::Config& deviceConfig)
+    const VulkanPhysicalDevice::Config& physicalConfig)
 {
     m_pInstance.reset(new VulkanInstance(instanceConfig));
     m_pPhysicalDevice.reset(new VulkanPhysicalDevice(physicalConfig, m_pInstance.get()));
-    m_pDevice.reset(new VulkanDevice(deviceConfig, m_pPhysicalDevice.get()));
+    m_pDevice.reset(new VulkanDevice(m_pPhysicalDevice.get()));
 }
 
 void VulkanContext::Destroy()

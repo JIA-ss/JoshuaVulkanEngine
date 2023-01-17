@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <ios>
 #include <string>
 #include <vector>
@@ -11,6 +12,11 @@ enum class eFileOpenMode
 {
     kText, kBinary
 };
+bool setExePath(const boost::filesystem::path& path);
+boost::filesystem::path getExePath();
+
+bool setResourcePath(const boost::filesystem::path& path);
+boost::filesystem::path getResourcePath();
 
 bool fileExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat = nullptr);
 bool dirExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat = nullptr);
@@ -27,5 +33,5 @@ bool readFile(const boost::filesystem::path& path, std::vector<char>& content, e
 
 bool writeFile(const boost::filesystem::path& path, const std::string& content, eFileOpenMode mode = eFileOpenMode::kText, bool trunc = true);
 bool writeFile(const boost::filesystem::path& path, const std::vector<char>& content, eFileOpenMode mode = eFileOpenMode::kBinary, bool trunc = true);
-
+bool writeFile(const boost::filesystem::path& path, const unsigned char* file, std::size_t filesize, eFileOpenMode mode = eFileOpenMode::kBinary, bool trunc = true);
 }}

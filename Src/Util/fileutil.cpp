@@ -1,5 +1,6 @@
 #include "fileutil.h"
 #include <boost/filesystem/directory.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <fstream>
@@ -20,7 +21,28 @@ std::_Iosb<int>::_Openmode convertOpenMode(file::eFileOpenMode mode)
     }
 }
 
+static boost::filesystem::path g_exePath = "";
+static boost::filesystem::path g_resourcePath = "";
 
+bool file::setExePath(const boost::filesystem::path& path)
+{
+    g_exePath = path;
+    return true;
+}
+boost::filesystem::path file::getExePath()
+{
+    return g_exePath;
+}
+
+bool file::setResourcePath(const boost::filesystem::path& path)
+{
+    g_resourcePath = path;
+    return true;
+}
+boost::filesystem::path file::getResourcePath()
+{
+    return g_resourcePath;
+}
 
 bool file::fileExist(const boost::filesystem::path& path, boost::filesystem::file_status* stat)
 {
@@ -209,28 +231,15 @@ bool file::readFile(const boost::filesystem::path& path, std::vector<char> &cont
 
 bool file::writeFile(const boost::filesystem::path& path, const std::string& content, eFileOpenMode mode, bool trunc)
 {
-    if (fileExist(path) && !makeFileWritable(path))
-    {
-        return false;
-    }
-
-    std::fstream file;
-    auto openMode = std::ios_base::out | convertOpenMode(mode);
-    if (trunc)
-    {
-        openMode |= std::ios_base::trunc;
-    }
-
-    file.open(path.string(), openMode);
-    if (file.is_open())
-    {
-        file << content;
-        file.close();
-        return true;
-    }
-    return false;
+    return file::writeFile(path, (const unsigned char*)content.data(), content.size(), mode, trunc);
 }
+
 bool file::writeFile(const boost::filesystem::path& path, const std::vector<char>& content, eFileOpenMode mode, bool trunc)
+{
+    return file::writeFile(path, (const unsigned char*)content.data(), content.size(), mode, trunc);
+}
+
+bool file::writeFile(const boost::filesystem::path& path, const unsigned char* filecontent, std::size_t filesize, eFileOpenMode mode, bool trunc)
 {
     if (fileExist(path) && !makeFileWritable(path))
     {
@@ -247,12 +256,11 @@ bool file::writeFile(const boost::filesystem::path& path, const std::vector<char
     file.open(path.string(), openMode);
     if (file.is_open())
     {
-        file.write(content.data(), content.size());
+        file.write((char*)filecontent, filesize);
         file.close();
         return true;
     }
     return false;
 }
-
 
 }

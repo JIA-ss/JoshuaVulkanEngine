@@ -16,6 +16,8 @@ RHI_NAMESPACE_USING
 
 VulkanInstance::VulkanInstance(const VulkanInstance::Config& config)
 {
+    std::cout << "=== === === VulkanInstance Construct Begin === === ===" << std::endl;
+
     static vk::DynamicLoader  dl;
     PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
         dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
@@ -30,6 +32,9 @@ VulkanInstance::VulkanInstance(const VulkanInstance::Config& config)
     setUpInstanceLayers(createInfo);
     createVkInstance(createInfo);
     enableDebugValidationLayers();
+
+    std::cout << "=== === === VulkanInstance Construct End === === ===" << std::endl;
+
 }
 
 void VulkanInstance::setUpApplicationInfo(vk::InstanceCreateInfo& instanceCreateInfo, vk::ApplicationInfo& appInfo)
@@ -41,6 +46,13 @@ void VulkanInstance::setUpApplicationInfo(vk::InstanceCreateInfo& instanceCreate
             .setPEngineName(m_config.engineName)
             .setEngineVersion(1);
     instanceCreateInfo.setPApplicationInfo(&appInfo);
+
+#ifndef NDEBUG
+    std::cout << "[application info]" << std::endl;
+    std::cout << "api version:\t" << m_config.apiVersion << std::endl
+                << "app name:\t" << m_config.appName << std::endl
+                << "engine name:\t" << m_config.engineName << std::endl;
+#endif
 }
 
 void VulkanInstance::setUpInstanceExtensions(vk::InstanceCreateInfo& instanceCreateInfo)
@@ -82,6 +94,12 @@ void VulkanInstance::setUpInstanceExtensions(vk::InstanceCreateInfo& instanceCre
     }
 
     instanceCreateInfo.setPEnabledExtensionNames(m_instanceInfo.usingExtensions);
+#ifndef NDEBUG
+    std::cout << "[Instance Enabled Extensions]" << std::endl;
+    std::transform(m_instanceInfo.usingExtensions.begin(), m_instanceInfo.usingExtensions.end(), m_instanceInfo.usingExtensions.begin(),
+    [](const char* ext) { std::cout << ext << "\t"; return ext; });
+    std::cout << std::endl;
+#endif
 }
 
 
@@ -114,6 +132,13 @@ void VulkanInstance::setUpInstanceLayers(vk::InstanceCreateInfo& instanceCreateI
             m_instanceInfo.usingLayers.clear();
         }
     }
+
+#ifndef NDEBUG
+    std::cout << "[Instance Enabled Layers]" << std::endl;
+    std::transform(m_instanceInfo.usingLayers.begin(), m_instanceInfo.usingLayers.end(), m_instanceInfo.usingLayers.begin(),
+    [](const char* ext) { std::cout << ext << "\t"; return ext; });
+    std::cout << std::endl;
+#endif
 }
 
 void VulkanInstance::createVkInstance(vk::InstanceCreateInfo& instanceCreateInfo)
@@ -132,6 +157,12 @@ void VulkanInstance::enableDebugValidationLayers()
                 .setPfnUserCallback(VulkanInstance::debugUtilsMessengerCallback)
                 .setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation);
         m_vkDebugUtilMsgExt = m_vkInstance.createDebugUtilsMessengerEXT(debugInfo, nullptr, VULKAN_HPP_DEFAULT_DISPATCHER);
+
+#ifndef NDEBUG
+    std::cout << "[Enable Debug Validation Layers]" << std::endl;
+    std::cout << "message severity: eWarning | eError" << std::endl
+                << "message type: eGeneral | eValidation" << std::endl;
+#endif
     }
 }
 
