@@ -12,3 +12,11 @@
 - modify "CMAKE_TOOLCHAIN_FILE" to your vcpkg.cmake path
 - append  cmake/bin and llvm/bin path to "PATH" in "environment"
 7. Modify "CMAKE_TOOLCHAIN_FILE" in .vscode/setting.json to your vcpkg.cmake path
+
+# Steps of building the project
+1. open the project by VSCode
+2. install CMake Extension
+3. select configure preset to Windows
+4. execute cmake configure
+5. execute cmake build
+6. press F5 to debug the project
