@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Runtime/VulkanRHI/VulkanRHI.h"
+#include "vulkan/vulkan_handles.hpp"
 
 RHI_NAMESPACE_BEGIN
 
@@ -19,5 +20,7 @@ private:
 public:
     explicit VulkanPipelineLayout(VulkanDevice* device, VulkanDescriptorSetLayout* descLayout);
     ~VulkanPipelineLayout();
+
+    inline vk::PipelineLayout& GetVkPieplineLayout() { return m_vkPipelineLayout; }
 };
 RHI_NAMESPACE_END

@@ -8,6 +8,7 @@
 
 RHI_NAMESPACE_BEGIN
 class VulkanDevice;
+class VulkanRenderPipeline;
 class VulkanSwapchain
 {
 public:
@@ -38,7 +39,7 @@ public:
     inline std::vector<vk::Framebuffer>& GetFramebuffers() { return m_vkFramebuffers; }
     inline vk::Framebuffer& GetFramebuffer(int index) { assert(index >= 0 && index < m_vkFramebuffers.size()); return m_vkFramebuffers[index]; }
 
-    void CreateFrameBuffers();
+    void CreateFrameBuffers(VulkanRenderPipeline* pipeline);
 private:
     void queryInfo();
     void getImages();

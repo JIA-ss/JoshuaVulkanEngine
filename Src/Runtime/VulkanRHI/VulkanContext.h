@@ -1,6 +1,7 @@
 #include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/VulkanInstance.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
+#include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "VulkanRHI.h"
 #include <memory>
@@ -16,6 +17,7 @@ private:
     std::unique_ptr<VulkanPhysicalDevice> m_pPhysicalDevice;
     std::unique_ptr<VulkanDevice> m_pDevice;
     std::unique_ptr<VulkanShaderSet> m_pShaderSet;
+    std::unique_ptr<VulkanRenderPipeline> m_pRenderPipeline;
 public:
     static VulkanContext& CreateInstance();
     static void DestroyInstance();
@@ -26,7 +28,8 @@ public:
 
     inline VulkanInstance& GetVulkanInstance() { assert(m_pInstance); return *m_pInstance; }
     inline VulkanPhysicalDevice& GetVulkanPhysicalDevice() { assert(m_pPhysicalDevice); return *m_pPhysicalDevice; }
-
+    inline VulkanDevice& GetVulkanDevice() { assert(m_pDevice); return *m_pDevice; }
+    inline VulkanRenderPipeline& GetVulkanRenderPipeline() { assert(m_pRenderPipeline); return *m_pRenderPipeline;}
     void Init(const VulkanInstance::Config& instanceConfig,
                 const VulkanPhysicalDevice::Config& physicalConfig);
     void Destroy();

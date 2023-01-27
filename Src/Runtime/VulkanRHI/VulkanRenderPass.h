@@ -17,5 +17,7 @@ private:
 public:
     VulkanRenderPass(VulkanDevice* device, vk::Format colorFormat, vk::Format depthFormat, vk::SampleCountFlagBits sample);
     ~VulkanRenderPass();
+
+    inline vk::RenderPass& GetVkRenderPass() { return m_vkRenderPass; }
 };
 RHI_NAMESPACE_END

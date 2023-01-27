@@ -3,6 +3,7 @@
 #include "Runtime/VulkanRHI/VulkanPipelineCache.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanSwapchain.h"
+#include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Util/fileutil.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
@@ -134,4 +135,9 @@ vk::SurfaceCapabilitiesKHR VulkanDevice::GetSurfaceCapabilities()
 std::vector<vk::PresentModeKHR> VulkanDevice::GetSurfacePresentMode()
 {
     return m_vulkanPhysicalDevice->GetVkPhysicalDevice().getSurfacePresentModesKHR(*m_vkSurfaceKHR);;
+}
+
+void VulkanDevice::CreateSwapchainFramebuffer(VulkanRenderPipeline *renderPipeline)
+{
+    m_pVulkanSwapchain->CreateFrameBuffers(renderPipeline);
 }

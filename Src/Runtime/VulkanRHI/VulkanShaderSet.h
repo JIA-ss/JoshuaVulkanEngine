@@ -26,6 +26,7 @@ public:
     bool AddShader(const boost::filesystem::path& spvFile, vk::ShaderStageFlagBits type, const char *entryPoint = "main");
     void AppendVertexAttributeDescription();
 
+    std::vector<vk::PipelineShaderStageCreateInfo> GetShaderCreateInfos();
     const std::vector<vk::DescriptorSetLayoutBinding>& GetDescriptorSetLayoutBindings() { return m_descriptorSetLayoutBindings; }
 private:
     vk::ShaderModule createShaderModule(const boost::filesystem::path& spvFile);

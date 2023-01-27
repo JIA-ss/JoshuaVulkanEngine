@@ -6,10 +6,11 @@
     "configurations": [
         {
             "type": "cppvsdbg",
+            "console": "integratedTerminal",
             "request": "launch",
             "name": "Debug",
             "program": "${workspaceFolder}/build/Debug/VulkanRHI.exe",
-            "cwd": ".",
+            "cwd": "${workspaceFolder}",
             "args": [
                 "${workspaceFolder}/Resources"
             ]

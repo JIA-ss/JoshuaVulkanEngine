@@ -7,6 +7,7 @@
 
 #include "CppDemo/01_context/context.h"
 #include "Runtime/Platform/PlatformWindow.h"
+#include "Runtime/Render/Renderer.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Util/fileutil.h"
 #include <GLFW/glfw3.h>
@@ -20,7 +21,7 @@ std::unique_ptr<platform::PlatformWindow> window = nullptr;
 
 void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::path& resourcesPath)
 {
-    window = platform::CreatePlatformWindow(1920, 1080, "RHI");
+    window = platform::CreatePlatformWindow(1920 / 2, 1080 / 2, "RHI");
     window->Init();
     auto extensions = window->GetRequiredExtensions();
     std::vector<const char*> enabledInstanceExtensions;
@@ -34,9 +35,11 @@ void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::pa
 
 void Run()
 {
+    Render::Renderer rd;
     while(!window->ShouldClose())
     {
         glfwPollEvents();
+        rd.Render();
     }
 }
 

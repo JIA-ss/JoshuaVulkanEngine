@@ -1,6 +1,8 @@
 #include "VulkanSwapchain.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
+#include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
+#include "vulkan/vulkan_structs.hpp"
 #include <iostream>
 RHI_NAMESPACE_USING
 
@@ -52,6 +54,10 @@ VulkanSwapchain::~VulkanSwapchain()
     for (auto& imgView : m_vkImageViews)
     {
         m_pVulkanDevice->GetVkDevice().destroyImageView(imgView);
+    }
+    for (auto& framebuffer: m_vkFramebuffers)
+    {
+        m_pVulkanDevice->GetVkDevice().destroyFramebuffer(framebuffer);
     }
     m_pVulkanDevice->GetVkDevice().destroySwapchainKHR(m_vkSwapchain);
 }
@@ -118,20 +124,23 @@ void VulkanSwapchain::createImageViews()
     }
 }
 
-void VulkanSwapchain::CreateFrameBuffers()
+void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPipeline* pipeline)
 {
     int windowWidth = m_pVulkanDevice->GetVulkanPhysicalDevice()->GetWindowWidth();
     int windowHeight = m_pVulkanDevice->GetVulkanPhysicalDevice()->GetWindowHeight();
 
-    // m_vkFramebuffers.resize(m_vkImages.size());
-    // for (int i = 0; i < m_vkImages.size(); i++)
-    // {
-    //     vk::FramebufferCreateInfo createInfo;
-    //     createInfo.setAttachments(m_vkImageViews[i])
-    //                 .setWidth(windowWidth)
-    //                 .setHeight(windowHeight)
-    //                 .setRenderPass(Context::GetInstance().GetRenderProcess().GetRenderPass())
-    //                 .setLayers(1);
-    //     m_vkFramebuffers[i] = Context::GetInstance().GetDevice().createFramebuffer(createInfo);
-    // }
+    m_vkFramebuffers.resize(m_vkImageViews.size());
+    std::vector<vk::FramebufferCreateInfo> createInfos;
+    for (int i = 0; i < m_vkImageViews.size(); i++)
+    {
+        vk::FramebufferCreateInfo createInfo;
+        createInfo.setAttachments(m_vkImageViews[i])
+                    .setWidth(windowWidth)
+                    .setHeight(windowHeight)
+                    .setRenderPass(pipeline->GetVkRenderPass())
+                    .setLayers(1)
+                    .setAttachmentCount(1);
+        m_vkFramebuffers[i] = m_pVulkanDevice->GetVkDevice().createFramebuffer(createInfo);
+    }
+    //m_vkFramebuffers = m_pVulkanDevice->GetVkDevice().createFramebuffer(createInfos);
 }

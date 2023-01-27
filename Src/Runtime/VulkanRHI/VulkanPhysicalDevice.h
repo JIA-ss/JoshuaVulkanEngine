@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.hpp>
 #include <vector>
 #include <optional>
+#include <array>
 RHI_NAMESPACE_BEGIN
 
 class VulkanPhysicalDevice
@@ -57,6 +58,8 @@ public:
     inline vk::SurfaceKHR* GetPVkSurface() { return &m_vkSurface; }
     bool SupportExtension(const std::string& extension);
 
+    vk::Format QuerySupportedDepthFormat();
+
     inline int GetWindowWidth() { return m_config.window ? m_config.window->GetWindowSetting().width : 0; }
     inline int GetWindowHeight() { return m_config.window ? m_config.window->GetWindowSetting().height : 0; }
 private:
@@ -68,6 +71,7 @@ private:
     void queryDeviceInfo();
     void createVkSurface();
     void destroyVkSurface();
+    vk::Format querySupportFormat(const std::vector<vk::Format>& candidates, const vk::ImageTiling& imgTiling, const vk::FormatFeatureFlagBits& feature);
 };
 
 RHI_NAMESPACE_END

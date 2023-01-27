@@ -10,6 +10,7 @@
 #include "vulkan/vulkan_structs.hpp"
 RHI_NAMESPACE_BEGIN
 
+class VulkanRenderPipeline;
 class VulkanDevice
 {
 public:
@@ -34,10 +35,16 @@ public:
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormat();
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities();
 
+    void CreateSwapchainFramebuffer(VulkanRenderPipeline* renderPipeline);
+
     inline const VulkanPhysicalDevice::QueueFamilyIndices& GetQueueFamilyIndices() { return *m_queueFamilyIndices; }
     inline vk::SurfaceKHR& GetVkSurface() { return *m_vkSurfaceKHR; }
     inline vk::Device& GetVkDevice() { return m_vkDevice; }
     inline VulkanPhysicalDevice* GetVulkanPhysicalDevice() { return m_vulkanPhysicalDevice; }
+    inline VulkanSwapchain* GetPVulkanSwapchain() { return m_pVulkanSwapchain.get(); }
+    inline VulkanCommandPool* GetPVulkanCmdPool() { return m_pVulkanCmdPool.get(); }
+    inline vk::Queue& GetVkGraphicQueue() { return m_vkGraphicQueue; }
+    inline vk::Queue& GetVkPresentQueue() { return m_vkPresentQueue; }
 private:
     void setUpQueueCreateInfos(vk::DeviceCreateInfo& createInfo, std::vector<vk::DeviceQueueCreateInfo>& queueInfo);
     void setUpExtensions(vk::DeviceCreateInfo& createInfo, std::vector<const char*>& enabledExtensions);

@@ -4,6 +4,7 @@
 #include "Util/fileutil.h"
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_structs.hpp"
+#include <algorithm>
 
 RHI_NAMESPACE_USING
 
@@ -38,6 +39,15 @@ bool VulkanShaderSet::AddShader(const boost::filesystem::path &spvFile, vk::Shad
     return true;
 }
 
+std::vector<vk::PipelineShaderStageCreateInfo> VulkanShaderSet::GetShaderCreateInfos()
+{
+    std::vector<vk::PipelineShaderStageCreateInfo> createInfos;
+    for(auto it = m_shaderStageCreateInfos.begin(); it != m_shaderStageCreateInfos.end(); it++)
+    {
+        createInfos.emplace_back(it->second);
+    }
+    return createInfos;
+}
 
 vk::ShaderModule VulkanShaderSet::createShaderModule(const boost::filesystem::path& spvFile)
 {

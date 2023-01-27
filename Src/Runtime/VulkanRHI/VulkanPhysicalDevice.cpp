@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iterator>
 #include <set>
+#include <stdexcept>
 
 RHI_NAMESPACE_USING
 
@@ -178,7 +179,7 @@ void VulkanPhysicalDevice::queryDeviceInfo()
         assert(false);
         return;
     }
-
+    
     m_physicalDeviceInfo.deviceProps = m_vkPhysicalDevice.getProperties();
     auto avaliableExtensions = m_vkPhysicalDevice.enumerateDeviceExtensionProperties();
     for (auto& extension : avaliableExtensions)
@@ -227,4 +228,54 @@ void VulkanPhysicalDevice::queryDeviceInfo()
 
 	// Derived examples can override this to set actual features (based on above readings) to enable for logical device creation
 	// getEnabledFeatures();
+}
+
+vk::Format VulkanPhysicalDevice::querySupportFormat(const std::vector<vk::Format>& candidates, const vk::ImageTiling& imgTiling, const vk::FormatFeatureFlagBits& feature)
+{
+    for(auto& format:candidates)
+    {
+        auto prop = m_vkPhysicalDevice.getFormatProperties(format);
+        switch(imgTiling)
+        {
+        case vk::ImageTiling::eLinear:
+        {
+            if ((prop.linearTilingFeatures & feature) == feature)
+            {
+                return format;
+            }
+            break;
+        }
+        case vk::ImageTiling::eOptimal:
+        {
+            if ((prop.optimalTilingFeatures & feature) == feature)
+            {
+                return format;
+            }
+            break;
+        }
+        default:
+        {
+            break;
+        }
+        }
+    }
+
+    throw std::runtime_error("can not find supported format");
+    return vk::Format::eUndefined;
+}
+
+vk::Format VulkanPhysicalDevice::QuerySupportedDepthFormat()
+{
+    static const std::vector<vk::Format> candidates
+    {
+        vk::Format::eD32Sfloat,
+        vk::Format::eD32SfloatS8Uint,
+        vk::Format::eD24UnormS8Uint,
+    }; 
+
+    static const vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
+
+    static const vk::FormatFeatureFlagBits feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+
+    return querySupportFormat(candidates, imageTiling, feature);
 }

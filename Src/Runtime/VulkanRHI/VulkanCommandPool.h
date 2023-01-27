@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Runtime/VulkanRHI/VulkanRHI.h"
-#include <stdint.h>
 #include <vulkan/vulkan.hpp>
 RHI_NAMESPACE_BEGIN
 
@@ -16,8 +15,7 @@ public:
     explicit VulkanCommandPool(VulkanDevice* device, uint32_t queueFamilyIndex);
     ~VulkanCommandPool();
 
-    vk::CommandBuffer BeginSingleTimeCommand();
-    void EndSingleTimeCommand(vk::CommandBuffer& cmd, vk::Queue& queue);
+    vk::CommandBuffer CreateReUsableCmd();
 };
 
 RHI_NAMESPACE_END

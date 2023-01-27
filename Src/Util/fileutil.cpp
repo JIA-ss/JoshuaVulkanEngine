@@ -6,6 +6,7 @@
 #include <fstream>
 #include <ios>
 #include <sstream>
+#include <streambuf>
 
 
 namespace util {
@@ -219,9 +220,14 @@ bool file::readFile(const boost::filesystem::path& path, std::vector<char> &cont
     if (file.is_open())
     {
         std::filebuf* pbuf = file.rdbuf();
-        std::size_t size = pbuf->pubseekoff(0, file.end, file.in);
+        std::size_t size = pbuf->pubseekoff(0, file.end, openMode);
         content.resize(size);
-        pbuf->sgetn(content.data(), size);
+        std::size_t readedNum = 0;
+        while (readedNum != size)
+        {
+            pbuf->pubseekpos(readedNum);
+            readedNum += pbuf->sgetn(&content.data()[readedNum], size);
+        }
         file.close();
         return true;
     }
