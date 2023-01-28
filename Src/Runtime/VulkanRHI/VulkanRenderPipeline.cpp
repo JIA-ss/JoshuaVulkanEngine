@@ -47,7 +47,6 @@ VulkanRenderPipeline::VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet
     m_pVulkanColorBlendState.reset(new VulkanColorBlendState());
 
     m_pVulkanRenderPass.reset(new VulkanRenderPass(device, device->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, vk::SampleCountFlagBits::e1));
-    m_vulkanDevice->CreateSwapchainFramebuffer(this);
 
     m_pVulkanDescriptorSets.reset(new VulkanDescriptorSets());
     m_pVulkanDescriptorSetLayout.reset(new VulkanDescriptorSetLayout(m_vulkanDevice, m_vulkanShaderSet));

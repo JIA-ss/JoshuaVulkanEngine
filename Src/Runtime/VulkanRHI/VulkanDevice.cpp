@@ -4,6 +4,7 @@
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanSwapchain.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
+#include "Runtime/VulkanRHI/VulkanContext.h"
 #include "Util/fileutil.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
@@ -42,6 +43,8 @@ VulkanDevice::VulkanDevice(VulkanPhysicalDevice* physicalDevice) : m_vulkanPhysi
     m_pVulkanCmdPool.reset(new VulkanCommandPool(this, m_queueFamilyIndices->graphic.value()));
     m_pVulkanPipelineCache.reset(new VulkanPipelineCache(this, m_vulkanPhysicalDevice->GetPhysicalDeviceInfo().deviceProps,
         util::file::getResourcePath() / "PipelineCache\\pipelinecache.bin"));
+
+
     std::cout << "=== === === VulkanDevice Construct End === === ===" << std::endl;
 }
 
@@ -140,4 +143,13 @@ std::vector<vk::PresentModeKHR> VulkanDevice::GetSurfacePresentMode()
 void VulkanDevice::CreateSwapchainFramebuffer(VulkanRenderPipeline *renderPipeline)
 {
     m_pVulkanSwapchain->CreateFrameBuffers(renderPipeline);
+}
+vk::Framebuffer VulkanDevice::GetSwapchainFramebuffer(int index)
+{
+    return m_pVulkanSwapchain->GetFramebuffer(index);
+}
+void VulkanDevice::ReCreateSwapchain(VulkanRenderPipeline* renderPipeline)
+{
+    m_pVulkanSwapchain.reset(new VulkanSwapchain(this));
+    CreateSwapchainFramebuffer(renderPipeline);
 }

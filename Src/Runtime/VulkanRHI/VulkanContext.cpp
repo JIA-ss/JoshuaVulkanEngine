@@ -42,6 +42,8 @@ void VulkanContext::Init(
     m_pShaderSet->AddShader(util::file::getResourcePath() / "Shader\\GLSL\\SPIR-V\\shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
     
     m_pRenderPipeline.reset(new VulkanRenderPipeline(m_pDevice.get(), m_pShaderSet.get(), nullptr));
+    
+    m_pDevice->CreateSwapchainFramebuffer(m_pRenderPipeline.get());
 }
 
 void VulkanContext::Destroy()

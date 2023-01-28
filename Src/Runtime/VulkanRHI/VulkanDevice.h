@@ -5,9 +5,7 @@
 #include "Runtime/VulkanRHI/VulkanPipelineCache.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanSwapchain.h"
-#include "vulkan/vulkan_enums.hpp"
-#include "vulkan/vulkan_handles.hpp"
-#include "vulkan/vulkan_structs.hpp"
+#include "vulkan/vulkan.hpp"
 RHI_NAMESPACE_BEGIN
 
 class VulkanRenderPipeline;
@@ -36,6 +34,8 @@ public:
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities();
 
     void CreateSwapchainFramebuffer(VulkanRenderPipeline* renderPipeline);
+    vk::Framebuffer GetSwapchainFramebuffer(int index);
+    void ReCreateSwapchain(VulkanRenderPipeline* renderPipeline);
 
     inline const VulkanPhysicalDevice::QueueFamilyIndices& GetQueueFamilyIndices() { return *m_queueFamilyIndices; }
     inline vk::SurfaceKHR& GetVkSurface() { return *m_vkSurfaceKHR; }

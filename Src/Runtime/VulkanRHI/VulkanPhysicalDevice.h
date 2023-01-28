@@ -60,6 +60,7 @@ public:
 
     vk::Format QuerySupportedDepthFormat();
 
+    inline platform::PlatformWindow* GetPWindow() { return m_config.window; }
     inline int GetWindowWidth() { return m_config.window ? m_config.window->GetWindowSetting().width : 0; }
     inline int GetWindowHeight() { return m_config.window ? m_config.window->GetWindowSetting().height : 0; }
 private:

@@ -10,8 +10,8 @@ namespace platform {
 
 struct PlatformWindowSetting
 {
-    unsigned int width;
-    unsigned int height;
+    int width;
+    int height;
     const char* name;
 };
 
@@ -33,7 +33,10 @@ public:
     
     virtual std::vector<const char*> GetRequiredExtensions() = 0;
     inline const PlatformWindowSetting& GetWindowSetting() { return m_setting; }
+
+    virtual void AddFrameBufferSizeChangedCallback(std::function<void(int, int)> func) = 0;
+    virtual void WaitIfMinimization() = 0;
 };
 
-std::unique_ptr<PlatformWindow> CreatePlatformWindow(unsigned int width, unsigned int height, const char* title);
+std::unique_ptr<PlatformWindow> CreatePlatformWindow(int width, int height, const char* title);
 }

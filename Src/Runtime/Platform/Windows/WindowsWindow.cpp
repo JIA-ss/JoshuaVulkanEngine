@@ -1,6 +1,6 @@
 #include "WindowsWindow.h"
+#include "Runtime/Platform/Windows/WindowsWindow.h"
 #include <GLFW/glfw3.h>
-
 platform::WindowsWindow::~WindowsWindow()
 {
     assert(!m_glfwWindowPtr);
@@ -11,13 +11,22 @@ void platform::WindowsWindow::Init()
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
+    AddFrameBufferSizeChangedCallback([this](int width, int height)
+    {
+        m_setting.width = width;
+        m_setting.height = height;
+    });
+
     m_glfwWindowPtr = glfwCreateWindow(m_setting.width, m_setting.height, m_setting.name, nullptr, nullptr);
+    glfwSetWindowUserPointer(m_glfwWindowPtr, this);
+    glfwSetFramebufferSizeCallback(m_glfwWindowPtr, platform::WindowsWindow::frameBufferSizeChanged);
 }
 
 void platform::WindowsWindow::Destroy()
 {
     if (m_glfwWindowPtr)
     {
+        glfwSetWindowUserPointer(m_glfwWindowPtr, nullptr);
         glfwDestroyWindow(m_glfwWindowPtr);
         glfwTerminate();
     }
@@ -60,4 +69,31 @@ std::vector<const char*> platform::WindowsWindow::GetRequiredExtensions()
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
     return extensions;
+}
+
+
+void platform::WindowsWindow::frameBufferSizeChanged(GLFWwindow* window, int width, int height)
+{
+    WindowsWindow* platformWindow = (WindowsWindow*)glfwGetWindowUserPointer(window);
+    if (platformWindow == nullptr)
+    {
+        return;
+    }
+    for (auto func : platformWindow->m_frameBufferSizeChangedCallbacks)
+    {
+        func(width, height);
+    }
+}
+
+void platform::WindowsWindow::AddFrameBufferSizeChangedCallback(std::function<void(int, int)> func)
+{
+    m_frameBufferSizeChangedCallbacks.emplace_back(func);
+}
+
+void platform::WindowsWindow::WaitIfMinimization()
+{
+    while (m_setting.height == 0 || m_setting.width == 0)
+    {
+        glfwWaitEvents();
+    }
 }
