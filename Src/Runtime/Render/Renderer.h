@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Runtime/VulkanRHI/Graphic/Vertex.h"
+#include "Runtime/VulkanRHI/VulkanBuffer.h"
 #include <chrono>
 #include <array>
 #include <vulkan/vulkan.hpp>
@@ -20,6 +22,12 @@ private:
     vk::Device* m_pVkDevice;
     RHI::VulkanRenderPipeline* m_pRHIRenderPipeline;
 
+    std::vector<RHI::Vertex> m_vertices;
+    std::unique_ptr<RHI::VulkanVertexBuffer> m_pVulkanVertexBuffer;
+
+    std::vector<uint16_t> m_indices;
+    std::unique_ptr<RHI::VulkanVertexIndexBuffer> m_pVulkanVertexIndexBuffer;
+
     uint32_t m_imageIdx = 0;
     std::array<vk::CommandBuffer, MAX_FRAMES_IN_FLIGHT> m_vkCmds;
     std::array<vk::Fence, MAX_FRAMES_IN_FLIGHT> m_vkFenceInFlights;
@@ -36,6 +44,7 @@ public:
     void Render();
 
 private:
+    void createVertices();
     void createCmdBufs();
     void createSyncObjects();
     void destroySyncObjects();

@@ -3,6 +3,7 @@
 #include "VulkanRHI.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_handles.hpp"
+#include "vulkan/vulkan_structs.hpp"
 #include <stdint.h>
 #include <vulkan/vulkan.hpp>
 #include <vector>
@@ -25,7 +26,7 @@ public:
     {
         vk::PhysicalDeviceProperties deviceProps;
         //vk::PhysicalDeviceFeatures deviceFeatures;
-        //vk::PhysicalDeviceMemoryProperties deviceMemoryProps;
+        vk::PhysicalDeviceMemoryProperties deviceMemoryProps;
         //std::vector<vk::QueueFamilyProperties> deviceQueueFamilyProps;
         //std::vector<vk::ExtensionProperties> deviceExtensionProps;
         std::vector<std::string> supportedExtensions;
@@ -56,6 +57,7 @@ public:
     inline const QueueFamilyIndices* GetPQueueFamilyIndices() { return &m_queueFamilyIndices; }
     inline vk::PhysicalDevice& GetVkPhysicalDevice() { return m_vkPhysicalDevice; }
     inline vk::SurfaceKHR* GetPVkSurface() { return &m_vkSurface; }
+    inline vk::PhysicalDeviceMemoryProperties& GetVkPhysicalDeviceMemoryProps() { return m_physicalDeviceInfo.deviceMemoryProps; }
     bool SupportExtension(const std::string& extension);
 
     vk::Format QuerySupportedDepthFormat();

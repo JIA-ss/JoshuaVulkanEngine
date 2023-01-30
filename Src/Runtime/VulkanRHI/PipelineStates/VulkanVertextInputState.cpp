@@ -1,4 +1,5 @@
 #include "VulkanVertextInputState.h"
+#include "Runtime/VulkanRHI/Graphic/Vertex.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include <vulkan/vulkan.hpp>
 
@@ -17,8 +18,10 @@ VulkanVertextInputState::~VulkanVertextInputState()
 
 vk::PipelineVertexInputStateCreateInfo VulkanVertextInputState::GetVertexInputStateCreateInfo()
 {
-    vk::PipelineVertexInputStateCreateInfo createInfo;
-    createInfo.setVertexBindingDescriptionCount(0)
-                .setVertexAttributeDescriptionCount(0);
-    return createInfo;
+    auto& attributeDescs = Vertex::GetAttributeDescriptions();
+    auto& bindingDesc = Vertex::GetBindingDescription();
+    auto inputInfo = vk::PipelineVertexInputStateCreateInfo()
+                    .setVertexAttributeDescriptions(attributeDescs)
+                    .setVertexBindingDescriptions(bindingDesc); 
+    return inputInfo;
 }

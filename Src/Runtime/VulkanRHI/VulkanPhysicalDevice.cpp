@@ -181,6 +181,7 @@ void VulkanPhysicalDevice::queryDeviceInfo()
     }
     
     m_physicalDeviceInfo.deviceProps = m_vkPhysicalDevice.getProperties();
+    m_physicalDeviceInfo.deviceMemoryProps = m_vkPhysicalDevice.getMemoryProperties();
     auto avaliableExtensions = m_vkPhysicalDevice.enumerateDeviceExtensionProperties();
     for (auto& extension : avaliableExtensions)
     {

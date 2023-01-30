@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include "Runtime/Render/Renderer.h"
+#include "Runtime/VulkanRHI/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanContext.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_handles.hpp"
@@ -18,8 +19,17 @@ Renderer::Renderer()
     m_pRHIDevice = &RHI::VulkanContext::GetInstance().GetVulkanDevice();
     m_pVkDevice = &m_pRHIDevice->GetVkDevice();
     m_pRHIRenderPipeline = &RHI::VulkanContext::GetInstance().GetVulkanRenderPipeline();
+    createVertices();
     createCmdBufs();
     createSyncObjects();
+    
+    m_pVulkanVertexBuffer = RHI::VulkanVertexBuffer::Create(m_pRHIDevice, m_vertices, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal);
+    m_pVulkanVertexBuffer->CopyDataToGPU(m_vkCmds[0], m_pRHIDevice->GetVkGraphicQueue(), m_vertices.size() * sizeof(m_vertices[0]));
+    m_vkCmds[0].reset();
+
+    m_pVulkanVertexIndexBuffer = RHI::VulkanVertexIndexBuffer::Create(m_pRHIDevice, m_indices, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal);
+    m_pVulkanVertexIndexBuffer->CopyDataToGPU(m_vkCmds[0], m_pRHIDevice->GetVkGraphicQueue(), m_indices.size() * sizeof(m_indices[0]));
+    m_vkCmds[0].reset();
 
     // recreate swapchain
     auto platformWindow = m_pRHIDevice->GetVulkanPhysicalDevice()->GetPWindow();
@@ -83,7 +93,10 @@ void Renderer::Render()
     m_vkCmds[s_frameIdxInFlight].begin(beginInfo);
     {
         m_vkCmds[s_frameIdxInFlight].bindPipeline(vk::PipelineBindPoint::eGraphics, m_pRHIRenderPipeline->GetVkPipeline());
+        m_vkCmds[s_frameIdxInFlight].bindVertexBuffers(0, *m_pVulkanVertexBuffer->GetPVkBuf(), {0});
+        m_vkCmds[s_frameIdxInFlight].bindIndexBuffer(*m_pVulkanVertexIndexBuffer->GetPVkBuf(), 0, vk::IndexType::eUint16);
         m_pRHIRenderPipeline->GetPVulkanDynamicState()->SetUpCmdBuf(m_vkCmds[s_frameIdxInFlight]);
+        
         vk::ClearValue clear{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
         auto renderpassBeginInfo = vk::RenderPassBeginInfo()
                                 .setRenderPass(m_pRHIRenderPipeline->GetVkRenderPass())
@@ -92,7 +105,8 @@ void Renderer::Render()
                                 .setFramebuffer(m_pRHIDevice->GetSwapchainFramebuffer(m_imageIdx)); 
         m_vkCmds[s_frameIdxInFlight].beginRenderPass(renderpassBeginInfo , {});
         {
-            m_vkCmds[s_frameIdxInFlight].draw(3, 1, 0, 0);
+            // m_vkCmds[s_frameIdxInFlight].draw(m_vertices.size(), 1, 0, 0);
+            m_vkCmds[s_frameIdxInFlight].drawIndexed(m_indices.size(), 1, 0,0,0);
         }
         m_vkCmds[s_frameIdxInFlight].endRenderPass();
     }
@@ -145,6 +159,22 @@ void Renderer::frameRateUpdate()
         m_frameNum = 0;
     }
 }
+void Renderer::createVertices()
+{
+    m_vertices = 
+    {
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+    };
+    m_indices =
+    {
+        0,1,2,
+        2,3,0
+    };
+}
+
 void Renderer::createCmdBufs()
 {
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
@@ -152,6 +182,7 @@ void Renderer::createCmdBufs()
         m_vkCmds[i] = m_pRHIDevice->GetPVulkanCmdPool()->CreateReUsableCmd();
     }
 }
+
 
 void Renderer::createSyncObjects()
 {
