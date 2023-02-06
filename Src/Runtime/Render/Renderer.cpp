@@ -1,7 +1,13 @@
 #include "Renderer.h"
 #include "Runtime/Render/Renderer.h"
+#include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanContext.h"
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_handles.hpp"
 #include "vulkan/vulkan_structs.hpp"
@@ -19,17 +25,12 @@ Renderer::Renderer()
     m_pRHIDevice = &RHI::VulkanContext::GetInstance().GetVulkanDevice();
     m_pVkDevice = &m_pRHIDevice->GetVkDevice();
     m_pRHIRenderPipeline = &RHI::VulkanContext::GetInstance().GetVulkanRenderPipeline();
+    m_pRHIDescSets = &RHI::VulkanContext::GetInstance().GetVulkanDescriptorSets();
     createVertices();
     createCmdBufs();
     createSyncObjects();
-    
-    m_pVulkanVertexBuffer = RHI::VulkanVertexBuffer::Create(m_pRHIDevice, m_vertices, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal);
-    m_pVulkanVertexBuffer->CopyDataToGPU(m_vkCmds[0], m_pRHIDevice->GetVkGraphicQueue(), m_vertices.size() * sizeof(m_vertices[0]));
-    m_vkCmds[0].reset();
-
-    m_pVulkanVertexIndexBuffer = RHI::VulkanVertexIndexBuffer::Create(m_pRHIDevice, m_indices, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal);
-    m_pVulkanVertexIndexBuffer->CopyDataToGPU(m_vkCmds[0], m_pRHIDevice->GetVkGraphicQueue(), m_indices.size() * sizeof(m_indices[0]));
-    m_vkCmds[0].reset();
+    createVertexBuf();
+    createIndiciesBuf();
 
     // recreate swapchain
     auto platformWindow = m_pRHIDevice->GetVulkanPhysicalDevice()->GetPWindow();
@@ -59,7 +60,6 @@ void Renderer::Render()
     */
 
     static int s_frameIdxInFlight = 0;
-
     // wait for fence
     if (
         m_pVkDevice->waitForFences(m_vkFenceInFlights[s_frameIdxInFlight], true, std::numeric_limits<uint64_t>::max())
@@ -83,6 +83,7 @@ void Renderer::Render()
     }
     m_imageIdx = res.value;
 
+    updateUniformBuf(m_imageIdx);
     // reset fence after acquiring the image
     m_pVkDevice->resetFences(m_vkFenceInFlights[s_frameIdxInFlight]);
 
@@ -93,10 +94,13 @@ void Renderer::Render()
     m_vkCmds[s_frameIdxInFlight].begin(beginInfo);
     {
         m_vkCmds[s_frameIdxInFlight].bindPipeline(vk::PipelineBindPoint::eGraphics, m_pRHIRenderPipeline->GetVkPipeline());
+
+        m_pRHIRenderPipeline->GetPVulkanDynamicState()->SetUpCmdBuf(m_vkCmds[s_frameIdxInFlight]);
+
         m_vkCmds[s_frameIdxInFlight].bindVertexBuffers(0, *m_pVulkanVertexBuffer->GetPVkBuf(), {0});
         m_vkCmds[s_frameIdxInFlight].bindIndexBuffer(*m_pVulkanVertexIndexBuffer->GetPVkBuf(), 0, vk::IndexType::eUint16);
-        m_pRHIRenderPipeline->GetPVulkanDynamicState()->SetUpCmdBuf(m_vkCmds[s_frameIdxInFlight]);
-        
+        m_vkCmds[s_frameIdxInFlight].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pRHIRenderPipeline->GetVkPipelineLayout(), 0, m_pRHIDescSets->GetVkDescriptorSet(s_frameIdxInFlight), {});
+
         vk::ClearValue clear{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
         auto renderpassBeginInfo = vk::RenderPassBeginInfo()
                                 .setRenderPass(m_pRHIRenderPipeline->GetVkRenderPass())
@@ -180,6 +184,33 @@ void Renderer::createVertices()
         0,1,2,
         2,3,0
     };
+}
+
+void Renderer::updateUniformBuf(uint32_t currentFrameIdx)
+{
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    auto extent = m_pRHIDevice->GetSwapchainExtent();
+    RHI::UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));    ubo.proj = glm::perspective(glm::radians(45.0f), extent.width / (float) extent.height, 0.1f, 10.0f);
+    ubo.proj[1][1] *= -1;
+    m_pRHIDescSets->GetPWriteUniformBuffer(currentFrameIdx)->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
+}
+
+void Renderer::createVertexBuf()
+{
+    m_pVulkanVertexBuffer = RHI::VulkanVertexBuffer::Create(m_pRHIDevice, m_vertices, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal);
+    m_pVulkanVertexBuffer->CopyDataToGPU(m_vkCmds[0], m_pRHIDevice->GetVkGraphicQueue(), m_vertices.size() * sizeof(m_vertices[0]));
+    m_vkCmds[0].reset();
+}
+void Renderer::createIndiciesBuf()
+{
+    m_pVulkanVertexIndexBuffer = RHI::VulkanVertexIndexBuffer::Create(m_pRHIDevice, m_indices, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal);
+    m_pVulkanVertexIndexBuffer->CopyDataToGPU(m_vkCmds[0], m_pRHIDevice->GetVkGraphicQueue(), m_indices.size() * sizeof(m_indices[0]));
+    m_vkCmds[0].reset();
 }
 
 void Renderer::createCmdBufs()

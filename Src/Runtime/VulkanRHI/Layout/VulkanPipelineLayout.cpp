@@ -1,7 +1,7 @@
 #include "VulkanPipelineLayout.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
-#include "Runtime/VulkanRHI/VulkanDescriptorSetLayout.h"
+#include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "vulkan/vulkan_structs.hpp"
 #include <vulkan/vulkan.hpp>
 
@@ -13,7 +13,7 @@ VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice* device, VulkanDescripto
 {
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     pipelineLayoutCreateInfo.setSetLayouts(m_vulkanDescSetLayout->GetVkDescriptorSetLayout())
-                            .setPushConstantRanges(m_vkPushConstRanges);
+                            ; //.setPushConstantRanges(m_vkPushConstRanges);
 
     m_vkPipelineLayout = m_vulkanDevice->GetVkDevice().createPipelineLayout(pipelineLayoutCreateInfo);
 

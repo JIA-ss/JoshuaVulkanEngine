@@ -1,4 +1,7 @@
 #pragma once
+#include "Runtime/VulkanRHI/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/VulkanDevice.h"
+#include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include <vulkan/vulkan.hpp>
 
@@ -8,8 +11,19 @@ class VulkanDescriptorSets
 {
 public:
 private:
+    vk::DescriptorPool m_vkDescPool;
+    VulkanDevice* m_vulkanDevice = nullptr;
+    VulkanDescriptorSetLayout* m_vulkanDescLayout = nullptr;
+    vk::DescriptorPoolSize m_size;
+
+    std::vector<vk::DescriptorSet> m_vkDescSets;
+    std::vector<std::unique_ptr<VulkanBuffer>> m_vulkanUniformWriteBuffers;
 public:
-    VulkanDescriptorSets();
+    VulkanDescriptorSets(VulkanDevice* device, VulkanDescriptorSetLayout* layout, vk::DescriptorPoolSize size);
     ~VulkanDescriptorSets();
+    inline std::vector<vk::DescriptorSet>& GetVkDescriptorSets() { return m_vkDescSets; }
+    inline vk::DescriptorSet& GetVkDescriptorSet(int idx) { return m_vkDescSets[idx]; }
+    inline VulkanBuffer* GetPWriteUniformBuffer(int idx) { return m_vulkanUniformWriteBuffers[idx].get(); }
+    inline std::vector<std::unique_ptr<VulkanBuffer>>& GetUniformBuffers() { return m_vulkanUniformWriteBuffers; }
 };
 RHI_NAMESPACE_END

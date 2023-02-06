@@ -5,11 +5,11 @@
 #include "Runtime/VulkanRHI/PipelineStates/VulkanRasterizationState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanVertextInputState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanViewportState.h"
-#include "Runtime/VulkanRHI/VulkanDescriptorSetLayout.h"
+#include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorSets.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanDynamicState.h"
-#include "Runtime/VulkanRHI/VulkanPipelineLayout.h"
+#include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
@@ -19,8 +19,9 @@
 
 RHI_NAMESPACE_USING
 
-VulkanRenderPipeline::VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet* shaderset, VulkanRenderPipeline* input)
+VulkanRenderPipeline::VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet* shaderset,VulkanDescriptorSetLayout* layout, VulkanRenderPipeline* input)
     : m_vulkanShaderSet(shaderset)
+    , m_vulkanDescSetLayout(layout)
     , m_vulkanDevice(device)
     , m_parent(input)
 {
@@ -48,9 +49,7 @@ VulkanRenderPipeline::VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet
 
     m_pVulkanRenderPass.reset(new VulkanRenderPass(device, device->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, vk::SampleCountFlagBits::e1));
 
-    m_pVulkanDescriptorSets.reset(new VulkanDescriptorSets());
-    m_pVulkanDescriptorSetLayout.reset(new VulkanDescriptorSetLayout(m_vulkanDevice, m_vulkanShaderSet));
-    m_pVulkanPipelineLayout.reset(new VulkanPipelineLayout(m_vulkanDevice, m_pVulkanDescriptorSetLayout.get()));
+    m_pVulkanPipelineLayout.reset(new VulkanPipelineLayout(m_vulkanDevice, m_vulkanDescSetLayout));
 
 
     vk::GraphicsPipelineCreateInfo createInfo;
@@ -93,9 +92,6 @@ VulkanRenderPipeline::VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet
 VulkanRenderPipeline::~VulkanRenderPipeline()
 {
     m_pVulkanPipelineLayout.reset();
-    m_pVulkanDescriptorSetLayout.reset();
-    m_pVulkanDescriptorSets.reset();
-
     m_pVulkanDynamicState.reset();
     m_pVulkanInputAssemblyState.reset();
     m_pVulkanVertexInputState.reset();

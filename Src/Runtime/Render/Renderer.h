@@ -2,6 +2,7 @@
 
 #include "Runtime/VulkanRHI/Graphic/Vertex.h"
 #include "Runtime/VulkanRHI/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/VulkanDescriptorSets.h"
 #include <chrono>
 #include <array>
 #include <vulkan/vulkan.hpp>
@@ -21,6 +22,7 @@ private:
     RHI::VulkanDevice* m_pRHIDevice;
     vk::Device* m_pVkDevice;
     RHI::VulkanRenderPipeline* m_pRHIRenderPipeline;
+    RHI::VulkanDescriptorSets* m_pRHIDescSets;
 
     std::vector<RHI::Vertex> m_vertices;
     std::unique_ptr<RHI::VulkanVertexBuffer> m_pVulkanVertexBuffer;
@@ -45,10 +47,14 @@ public:
 
 private:
     void createVertices();
+    void createVertexBuf();
+    void createIndiciesBuf();
+
     void createCmdBufs();
     void createSyncObjects();
     void destroySyncObjects();
     void frameRateUpdate();
+    void updateUniformBuf(uint32_t currentFrameIdx);
     void recreateSwapchain();
 };
 

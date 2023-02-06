@@ -43,6 +43,7 @@ VulkanBuffer::~VulkanBuffer()
 
 void VulkanBuffer::destroy()
 {
+    Unmapping();
     if (m_vkBuf)
     {
         m_vulkanDevice->GetVkDevice().destroyBuffer(m_vkBuf);
@@ -74,7 +75,7 @@ uint32_t VulkanBuffer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFla
 }
 
 
-void VulkanBuffer::FillingBuffer(void* data, std::size_t offset, std::size_t size)
+void VulkanBuffer::FillingBufferOneTime(void* data, std::size_t offset, std::size_t size)
 {
     assert(offset + size <= m_vkSize);
     assert(m_vkMemProps & vk::MemoryPropertyFlagBits::eHostVisible);
@@ -84,6 +85,28 @@ void VulkanBuffer::FillingBuffer(void* data, std::size_t offset, std::size_t siz
     memcpy(dstData, data, size);
     //m_vulkanDevice->GetVkDevice().flushMappedMemoryRanges(...);
     m_vulkanDevice->GetVkDevice().unmapMemory(m_vkDeviceMemory);
+}
+
+void VulkanBuffer::FillingMappingBuffer(void* data, std::size_t offset, std::size_t size)
+{
+    assert(offset + size <= m_vkSize);
+    assert(m_vkMemProps & vk::MemoryPropertyFlagBits::eHostVisible);
+    assert(m_vkMemProps & vk::MemoryPropertyFlagBits::eHostCoherent);
+
+    if (m_mappedPointer == nullptr)
+    {
+        m_mappedPointer = m_vulkanDevice->GetVkDevice().mapMemory(m_vkDeviceMemory, offset, size);
+    }
+    memcpy(m_mappedPointer, data, size);
+}
+
+void VulkanBuffer::Unmapping()
+{
+    if (m_mappedPointer)
+    {
+        m_vulkanDevice->GetVkDevice().unmapMemory(m_vkDeviceMemory);
+    }
+    m_mappedPointer = nullptr;
 }
 
 
@@ -100,9 +123,9 @@ VulkanGPUBuffer::~VulkanGPUBuffer()
 
 
 
-void VulkanGPUBuffer::FillingBuffer(void* data, std::size_t size, std::size_t offset)
+void VulkanGPUBuffer::FillingBufferOneTime(void* data, std::size_t size, std::size_t offset)
 {
-    m_pVulkanCPUBuffer->FillingBuffer(data, offset, size);
+    m_pVulkanCPUBuffer->FillingBufferOneTime(data, offset, size);
 }
 
 void VulkanGPUBuffer::CopyDataToGPU(vk::CommandBuffer cmd, vk::Queue queue, std::size_t size, std::size_t dstOffset, std::size_t srcOffset)

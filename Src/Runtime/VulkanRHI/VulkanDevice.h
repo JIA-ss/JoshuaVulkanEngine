@@ -6,6 +6,7 @@
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanSwapchain.h"
 #include "vulkan/vulkan.hpp"
+#include "vulkan/vulkan_structs.hpp"
 RHI_NAMESPACE_BEGIN
 
 class VulkanRenderPipeline;
@@ -37,6 +38,7 @@ public:
     vk::Framebuffer GetSwapchainFramebuffer(int index);
     void ReCreateSwapchain(VulkanRenderPipeline* renderPipeline);
 
+    inline vk::Extent2D GetSwapchainExtent() { return m_pVulkanSwapchain->GetSwapchainInfo().imageExtent; }
     inline const VulkanPhysicalDevice::QueueFamilyIndices& GetQueueFamilyIndices() { return *m_queueFamilyIndices; }
     inline vk::SurfaceKHR& GetVkSurface() { return *m_vkSurfaceKHR; }
     inline vk::Device& GetVkDevice() { return m_vkDevice; }

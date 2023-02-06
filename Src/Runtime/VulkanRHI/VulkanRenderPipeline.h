@@ -5,12 +5,13 @@
 #include "Runtime/VulkanRHI/PipelineStates/VulkanRasterizationState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanVertextInputState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanViewportState.h"
-#include "Runtime/VulkanRHI/VulkanDescriptorSetLayout.h"
+#include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorSets.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanDynamicState.h"
-#include "Runtime/VulkanRHI/VulkanPipelineLayout.h"
+#include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
+#include "vulkan/vulkan_handles.hpp"
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
@@ -23,6 +24,7 @@ class VulkanRenderPipeline
 public:
 private:
     VulkanShaderSet* m_vulkanShaderSet = nullptr;
+    VulkanDescriptorSetLayout* m_vulkanDescSetLayout = nullptr;
     VulkanDevice* m_vulkanDevice = nullptr;
     VulkanRenderPipeline* m_parent = nullptr;
 
@@ -36,18 +38,17 @@ private:
 
     std::unique_ptr<VulkanRenderPass> m_pVulkanRenderPass;
 
-    std::unique_ptr<VulkanDescriptorSets> m_pVulkanDescriptorSets;
-    std::unique_ptr<VulkanDescriptorSetLayout> m_pVulkanDescriptorSetLayout;
     std::unique_ptr<VulkanPipelineLayout> m_pVulkanPipelineLayout;
 
     vk::Pipeline m_vkPipeline;
 public:
-    explicit VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet* shaderset, VulkanRenderPipeline* input);
+    explicit VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet* shaderset, VulkanDescriptorSetLayout* layout, VulkanRenderPipeline* input);
     ~VulkanRenderPipeline();
 
     inline VulkanDynamicState* GetPVulkanDynamicState() { return m_pVulkanDynamicState.get(); }
     inline VulkanDevice* GetPVulkanDevice() { return m_vulkanDevice; }
     inline vk::Pipeline& GetVkPipeline() { return m_vkPipeline; }
     inline vk::RenderPass& GetVkRenderPass() { return m_pVulkanRenderPass->GetVkRenderPass(); }
+    inline vk::PipelineLayout& GetVkPipelineLayout() { return m_pVulkanPipelineLayout->GetVkPieplineLayout(); }
 };
 RHI_NAMESPACE_END

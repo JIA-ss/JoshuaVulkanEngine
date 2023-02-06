@@ -20,13 +20,16 @@ protected:
     vk::BufferUsageFlags m_vkBufUsage;
     vk::MemoryPropertyFlags m_vkMemProps;
     vk::SharingMode m_vkSharingMode;
+    void* m_mappedPointer = nullptr;
 public:
     explicit VulkanBuffer(VulkanDevice*device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::SharingMode sharingMode);
     VulkanBuffer() = delete;
     virtual ~VulkanBuffer();
 
     inline vk::Buffer* GetPVkBuf() { return &m_vkBuf; }
-    void FillingBuffer(void* data, std::size_t offset, std::size_t size);
+    void FillingBufferOneTime(void* data, std::size_t offset, std::size_t size);
+    void FillingMappingBuffer(void* data, std::size_t offset, std::size_t size);
+    void Unmapping();
 protected:
     void destroy();
 private:
@@ -41,7 +44,7 @@ protected:
 public:
     explicit VulkanGPUBuffer(VulkanDevice*device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags props, vk::SharingMode sharingMode); 
     ~VulkanGPUBuffer() override;
-    void FillingBuffer(void* data, std::size_t size, std::size_t offset = 0);
+    void FillingBufferOneTime(void* data, std::size_t size, std::size_t offset = 0);
     void CopyDataToGPU(vk::CommandBuffer cmd, vk::Queue queue, std::size_t size, std::size_t dstOffset = 0, std::size_t srcOffset = 0);
 };
 
@@ -58,9 +61,9 @@ public:
     {
     }
 
-    void FillingBuffer(const std::vector<T>& data, std::size_t offset = 0)
+    void FillingBufferOneTime(const std::vector<T>& data, std::size_t offset = 0)
     {
-        m_pVulkanCPUBuffer->FillingBuffer((void*)data.data(), offset, data.size() * sizeof(T));
+        m_pVulkanCPUBuffer->FillingBufferOneTime((void*)data.data(), offset, data.size() * sizeof(T));
     }
 
     static std::unique_ptr<tVulkanGPUBuffer<T>> Create(VulkanDevice* device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags props, vk::SharingMode sharingMode = vk::SharingMode::eExclusive)
@@ -82,7 +85,7 @@ public:
     static std::unique_ptr<tVulkanGPUBuffer<T>> Create(VulkanDevice* device, const std::vector<T>& data, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags props, vk::SharingMode sharingMode = vk::SharingMode::eExclusive)
     {
         std::unique_ptr<tVulkanGPUBuffer<T>> buf = tVulkanGPUBuffer<T>::Create(device, data.size() * sizeof(T), usage, props, sharingMode);
-        buf->FillingBuffer(data);
+        buf->FillingBufferOneTime(data);
         return buf;
     }
 };

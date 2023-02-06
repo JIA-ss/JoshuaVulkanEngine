@@ -2,10 +2,9 @@
 
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "vulkan/vulkan.hpp"
-#include "vulkan/vulkan_enums.hpp"
-#include "vulkan/vulkan_structs.hpp"
 #include <boost/filesystem/path.hpp>
 #include <map>
+#include <stdint.h>
 RHI_NAMESPACE_BEGIN
 
 class VulkanDevice;
@@ -14,11 +13,11 @@ class VulkanShaderSet
 public:
 private:
     VulkanDevice* m_vulkanDevice = nullptr;
-
     std::map<vk::ShaderStageFlagBits, vk::PipelineShaderStageCreateInfo> m_shaderStageCreateInfos;
-    std::vector<vk::DescriptorSetLayoutBinding> m_descriptorSetLayoutBindings;
+
 public:
-    explicit VulkanShaderSet(VulkanDevice* device) : m_vulkanDevice(device)
+    explicit VulkanShaderSet(VulkanDevice* device)
+        : m_vulkanDevice(device)
     {
     }
     ~VulkanShaderSet();
@@ -27,7 +26,6 @@ public:
     void AppendVertexAttributeDescription();
 
     std::vector<vk::PipelineShaderStageCreateInfo> GetShaderCreateInfos();
-    const std::vector<vk::DescriptorSetLayoutBinding>& GetDescriptorSetLayoutBindings() { return m_descriptorSetLayoutBindings; }
 private:
     vk::ShaderModule createShaderModule(const boost::filesystem::path& spvFile);
 };
