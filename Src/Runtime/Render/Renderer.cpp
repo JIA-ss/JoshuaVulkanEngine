@@ -126,7 +126,16 @@ void Renderer::Render()
                     .setImageIndices(m_imageIdx)
                     .setSwapchains(m_pRHIDevice->GetPVulkanSwapchain()->GetSwapchain())
                     .setWaitSemaphores(m_vkSemaphoreRenderFinisheds[s_frameIdxInFlight]);
-    auto presentRes = m_pRHIDevice->GetVkPresentQueue().presentKHR(presentInfo);
+    vk::Result presentRes;
+    try
+    {
+        presentRes = m_pRHIDevice->GetVkPresentQueue().presentKHR(presentInfo);
+    }
+    catch(vk::OutOfDateKHRError)
+    {
+        m_frameBufferSizeChanged = true;
+    }
+
     if (presentRes == vk::Result::eErrorOutOfDateKHR || presentRes == vk::Result::eSuboptimalKHR || m_frameBufferSizeChanged)
     {
         m_frameBufferSizeChanged = false;
@@ -136,8 +145,6 @@ void Renderer::Render()
     {
         throw std::runtime_error("present image failed");
     }
-
-
 
     frameRateUpdate();
     s_frameIdxInFlight = (s_frameIdxInFlight + 1) % MAX_FRAMES_IN_FLIGHT;

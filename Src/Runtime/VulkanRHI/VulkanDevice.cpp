@@ -150,6 +150,7 @@ vk::Framebuffer VulkanDevice::GetSwapchainFramebuffer(int index)
 }
 void VulkanDevice::ReCreateSwapchain(VulkanRenderPipeline* renderPipeline)
 {
+    m_pVulkanSwapchain.reset();
     m_pVulkanSwapchain.reset(new VulkanSwapchain(this));
     CreateSwapchainFramebuffer(renderPipeline);
 }
