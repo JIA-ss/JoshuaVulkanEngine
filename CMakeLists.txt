@@ -45,7 +45,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
-
+find_path(STB_INCLUDE_DIRS "stb_c_lexer.h")
 
 add_executable(VulkanRHI ${MAIN_SRC_FILES})
 
@@ -65,6 +65,7 @@ target_include_directories(VulkanRHI
     PUBLIC ${IMGUI_DIR}
     PUBLIC ${VulkanInclude}
     PUBLIC ${Boost_INCLUDE_DIR}
+    PUBLIC ${STB_INCLUDE_DIRS}
 )
 
 

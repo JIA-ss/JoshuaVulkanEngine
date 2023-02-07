@@ -6,6 +6,7 @@
     "vulkan-memory-allocator",
     "doctest",
     "boost-filesystem",
-    "boost-system"
+    "boost-system",
+    "stb"
   ]
 }
