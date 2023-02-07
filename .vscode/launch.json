@@ -13,7 +13,8 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "${workspaceFolder}/Resources"
-            ]
+            ],
+            "preLaunchTask": "compile glsl shaders"
         },
         {
             "type": "lldb",

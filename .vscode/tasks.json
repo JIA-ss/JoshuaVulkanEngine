@@ -1,0 +1,12 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "compile glsl shaders",
+            "type": "shell",
+            "command": "${workspaceFolder}/.vscode/compile_glsl_shader.bat ${workspaceFolder}/Resources/Shader/GLSL ${workspaceFolder}/Resources/Shader/GLSL/SPIR-V"
+        }
+    ]
+}
