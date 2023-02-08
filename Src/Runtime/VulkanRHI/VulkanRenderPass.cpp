@@ -18,15 +18,15 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, vk::Format colorFormat,
                 .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
                 .setInitialLayout(vk::ImageLayout::eUndefined)
                 .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-                
-    // depthAttach.setFormat(depthFormat)
-    //             .setSamples(sample)
-    //             .setLoadOp(vk::AttachmentLoadOp::eClear)
-    //             .setStoreOp(vk::AttachmentStoreOp::eDontCare)
-    //             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-    //             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-    //             .setInitialLayout(vk::ImageLayout::eUndefined)
-    //             .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+    depthAttach.setFormat(depthFormat)
+                .setSamples(sample)
+                .setLoadOp(vk::AttachmentLoadOp::eClear)
+                .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+                .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+                .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                .setInitialLayout(vk::ImageLayout::eUndefined)
+                .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
     // colorAttachResolve.setFormat(colorFormat)
     //             .setSamples(sample)
     //             .setLoadOp(vk::AttachmentLoadOp::eDontCare)
@@ -39,15 +39,15 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, vk::Format colorFormat,
     vk::AttachmentReference colorAttachRef, depthAttachRef, colorAttachResolveRef;
     colorAttachRef.setAttachment(0)
                 .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
-    // depthAttachRef.setAttachment(1)
-    //             .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    depthAttachRef.setAttachment(1)
+                .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
     // colorAttachResolveRef.setAttachment(2)
     //             .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
     vk::SubpassDescription subpass;
     subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
                 .setColorAttachments(colorAttachRef)
-                ;//.setPDepthStencilAttachment(&depthAttachRef)
+                .setPDepthStencilAttachment(&depthAttachRef)
                 ;//.setResolveAttachments(colorAttachResolveRef);
 
     vk::SubpassDependency dependency;
@@ -59,8 +59,8 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, vk::Format colorFormat,
                 .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite);
 
     // std::array<vk::AttachmentDescription, 3> attachments {colorAttach, depthAttach, colorAttachResolve};
-    // std::array<vk::AttachmentDescription, 2> attachments {colorAttach, depthAttach};// colorAttachResolve};
-    std::array<vk::AttachmentDescription, 1> attachments {colorAttach};
+    std::array<vk::AttachmentDescription, 2> attachments {colorAttach, depthAttach};// colorAttachResolve};
+    // std::array<vk::AttachmentDescription, 1> attachments {colorAttach};
 
     vk::RenderPassCreateInfo renderPassCreateInfo;
     renderPassCreateInfo.setAttachments(attachments)

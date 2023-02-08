@@ -104,10 +104,13 @@ void Renderer::Render()
         m_vkCmds[s_frameIdxInFlight].bindIndexBuffer(*m_pVulkanVertexIndexBuffer->GetPVkBuf(), 0, vk::IndexType::eUint16);
         m_vkCmds[s_frameIdxInFlight].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pRHIRenderPipeline->GetVkPipelineLayout(), 0, m_pRHIDescSets->GetVkDescriptorSet(s_frameIdxInFlight), {});
 
-        vk::ClearValue clear{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
+        std::vector<vk::ClearValue> clears(2);
+
+        clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
+        clears[1] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
         auto renderpassBeginInfo = vk::RenderPassBeginInfo()
                                 .setRenderPass(m_pRHIRenderPipeline->GetVkRenderPass())
-                                .setClearValues(clear)
+                                .setClearValues(clears)
                                 .setRenderArea(vk::Rect2D{vk::Offset2D{0,0}, m_pRHIDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent})
                                 .setFramebuffer(m_pRHIDevice->GetSwapchainFramebuffer(m_imageIdx)); 
         m_vkCmds[s_frameIdxInFlight].beginRenderPass(renderpassBeginInfo , {});

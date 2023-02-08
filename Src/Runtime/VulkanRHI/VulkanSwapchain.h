@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanInstance.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
@@ -23,6 +24,7 @@ public:
 private:
     std::vector<vk::Image> m_vkImages;
     std::vector<vk::ImageView> m_vkImageViews;
+    std::unique_ptr<VulkanImageResource> m_pVulkanDepthImage;
     std::vector<vk::Framebuffer> m_vkFramebuffers;
 
     //VulkanInstance* m_pVulkanInstance;
@@ -44,6 +46,7 @@ private:
     void queryInfo();
     void getImages();
     void createImageViews();
+    void createDepthImage();
 
 };
 

@@ -264,18 +264,19 @@ vk::Format VulkanPhysicalDevice::querySupportFormat(const std::vector<vk::Format
     return vk::Format::eUndefined;
 }
 
-vk::Format VulkanPhysicalDevice::QuerySupportedDepthFormat()
+vk::Format VulkanPhysicalDevice::QuerySupportedDepthFormat(vk::ImageTiling tiling, vk::FormatFeatureFlagBits feature)
 {
     static const std::vector<vk::Format> candidates
     {
         vk::Format::eD32Sfloat,
         vk::Format::eD32SfloatS8Uint,
         vk::Format::eD24UnormS8Uint,
-    }; 
+    };
 
-    static const vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
+    return querySupportFormat(candidates, tiling, feature);
+}
 
-    static const vk::FormatFeatureFlagBits feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
-
-    return querySupportFormat(candidates, imageTiling, feature);
+bool VulkanPhysicalDevice::HasStencilComponent(vk::Format format)
+{
+    return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
 }

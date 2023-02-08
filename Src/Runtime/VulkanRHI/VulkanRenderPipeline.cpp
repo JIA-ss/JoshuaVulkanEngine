@@ -1,5 +1,6 @@
 #include "VulkanRenderPipeline.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanColorBlendState.h"
+#include "Runtime/VulkanRHI/PipelineStates/VulkanDepthStencilState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanInputAssemblyState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanMultisampleState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanRasterizationState.h"
@@ -45,6 +46,7 @@ VulkanRenderPipeline::VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet
     m_pVulkanViewPortState.reset(new VulkanViewportState({viewport}, {scissor}));
     m_pVulkanRasterizationState.reset(new VulkanRasterizationState());
     m_pVulkanMultisampleState.reset(new VulkanMultisampleState());
+    m_pVulkanDepthStencilState.reset(new VulkanDepthStencilState());
     m_pVulkanColorBlendState.reset(new VulkanColorBlendState());
 
     m_pVulkanRenderPass.reset(new VulkanRenderPass(device, device->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, vk::SampleCountFlagBits::e1));
@@ -59,6 +61,7 @@ VulkanRenderPipeline::VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet
     auto viewportInfo = m_pVulkanViewPortState->GetViewportStateCreateInfo();
     auto rasterizationInfo = m_pVulkanRasterizationState->GetRasterizationStateCreateInfo();
     auto multisampleInfo = m_pVulkanMultisampleState->GetMultisampleStateCreateInfo();
+    auto depthStencilInfo = m_pVulkanDepthStencilState->GetDepthStencilStateCreateInfo();
     auto colorBlendingInfo = m_pVulkanColorBlendState->GetColorBlendStateCreateInfo();
     auto shaderStages = m_vulkanShaderSet->GetShaderCreateInfos();
     createInfo.setPDynamicState(&dynamicInfo)
@@ -74,6 +77,8 @@ VulkanRenderPipeline::VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet
                 .setPRasterizationState(&rasterizationInfo)
                 // multisample
                 .setPMultisampleState(&multisampleInfo)
+                // depth test
+                .setPDepthStencilState(&depthStencilInfo)
                 // color blending
                 .setPColorBlendState(&colorBlendingInfo)
                 // layout

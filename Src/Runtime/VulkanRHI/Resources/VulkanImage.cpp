@@ -1,4 +1,5 @@
 #include "VulkanImage.h"
+#include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanCommandPool.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
@@ -65,6 +66,14 @@ void VulkanImageResource::TransitionImageLayout(vk::ImageLayout oldLayout, vk::I
                     .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
             srcStage = vk::PipelineStageFlagBits::eTransfer;
             dstStage = vk::PipelineStageFlagBits::eFragmentShader;
+        }
+        else if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+        {
+            barrier.setSrcAccessMask(vk::AccessFlagBits(0))
+                    .setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+                    ;
+            srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
+            dstStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
         }
         else
         {

@@ -45,6 +45,7 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice* device)
 
     getImages();
     createImageViews();
+    createDepthImage();
 
     std::cout << "=== === === VulkanSwapchain Construct End === === ===" << std::endl;
 }
@@ -124,6 +125,26 @@ void VulkanSwapchain::createImageViews()
     }
 }
 
+void VulkanSwapchain::createDepthImage()
+{
+    VulkanImageResource::Config config;
+    config.format = m_pVulkanDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
+    config.extent = vk::Extent3D{ m_swapchainInfo.imageExtent, 1};
+    config.imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+    if (m_pVulkanDevice->GetVulkanPhysicalDevice()->HasStencilComponent(config.format))
+    {
+        config.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+        // config.subresourceLayers.setAspectMask(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+    }
+    else
+    {
+        config.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+        // config.subresourceLayers.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+    }
+    m_pVulkanDepthImage.reset(new VulkanImageResource(m_pVulkanDevice, vk::MemoryPropertyFlagBits::eDeviceLocal, config));
+    m_pVulkanDepthImage->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+}
+
 void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPipeline* pipeline)
 {
     int windowWidth = m_pVulkanDevice->GetVulkanPhysicalDevice()->GetWindowWidth();
@@ -134,12 +155,17 @@ void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPipeline* pipeline)
     for (int i = 0; i < m_vkImageViews.size(); i++)
     {
         vk::FramebufferCreateInfo createInfo;
-        createInfo.setAttachments(m_vkImageViews[i])
+        std::vector<vk::ImageView> attachments
+        {
+            m_vkImageViews[i],
+            m_pVulkanDepthImage->GetVkImageView()
+        };
+        createInfo.setAttachments(attachments)
                     .setWidth(windowWidth)
                     .setHeight(windowHeight)
                     .setRenderPass(pipeline->GetVkRenderPass())
                     .setLayers(1)
-                    .setAttachmentCount(1);
+                    ;
         m_vkFramebuffers[i] = m_pVulkanDevice->GetVkDevice().createFramebuffer(createInfo);
     }
     //m_vkFramebuffers = m_pVulkanDevice->GetVkDevice().createFramebuffer(createInfos);

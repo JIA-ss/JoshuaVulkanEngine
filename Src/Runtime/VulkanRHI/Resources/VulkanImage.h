@@ -1,6 +1,5 @@
 #pragma once
 #include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
-#include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Util/textureutil.h"
 #include "vulkan/vulkan_enums.hpp"
@@ -10,13 +9,14 @@
 
 RHI_NAMESPACE_BEGIN
 
+class VulkanDevice;
 class VulkanImageResource
 {
 public:
     struct Config
     {
         vk::Extent3D                extent;
-        vk::ImageSubresourceLayers  subresourceLayers = vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1};;
+        // vk::ImageSubresourceLayers  subresourceLayers = vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1};;
         vk::ImageSubresourceRange   subresourceRange = vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
         vk::ImageUsageFlags         imageUsage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
         vk::ImageType               imageType = vk::ImageType::e2D;
@@ -99,15 +99,25 @@ public:
 
     inline vk::Image* GetPVkImage() { return &m_pVulkanImageResource->GetVkImage(); }
     inline vk::ImageView* GetPVkImageView() { return &m_pVulkanImageResource->GetVkImageView(); }
-    inline vk::Sampler* GetPVkSampler() { return &m_vkSampler; }
+    inline vk::Sampler* GetPVkSampler() { return m_vkSampler ? &m_vkSampler : nullptr; }
 
     void UploadImageToGPU();
 private:
-    void createImage();
-    void allocDeviceMemory(vk::MemoryPropertyFlags memProps);
+
     void createStagingBuffer();
-    void createImageView();
     void createSampler();
     void copyBufferToImage();
+};
+
+
+class VulkanDepthImage
+{
+private:
+    VulkanDevice* m_vulkanDevice;
+
+    std::unique_ptr<VulkanImageResource> m_pVulkanImageResource;
+public:
+    explicit VulkanDepthImage(VulkanDevice* device);
+    ~VulkanDepthImage();
 };
 RHI_NAMESPACE_END

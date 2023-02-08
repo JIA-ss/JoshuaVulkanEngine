@@ -1,5 +1,6 @@
 #pragma once
 #include "Runtime/VulkanRHI/PipelineStates/VulkanColorBlendState.h"
+#include "Runtime/VulkanRHI/PipelineStates/VulkanDepthStencilState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanInputAssemblyState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanMultisampleState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanRasterizationState.h"
@@ -34,6 +35,7 @@ private:
     std::unique_ptr<VulkanViewportState> m_pVulkanViewPortState;
     std::unique_ptr<VulkanRasterizationState> m_pVulkanRasterizationState;
     std::unique_ptr<VulkanMultisampleState> m_pVulkanMultisampleState;
+    std::unique_ptr<VulkanDepthStencilState> m_pVulkanDepthStencilState;
     std::unique_ptr<VulkanColorBlendState> m_pVulkanColorBlendState;
 
     std::unique_ptr<VulkanRenderPass> m_pVulkanRenderPass;

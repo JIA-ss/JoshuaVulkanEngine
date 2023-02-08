@@ -1,4 +1,5 @@
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
+#include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorSets.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/VulkanInstance.h"

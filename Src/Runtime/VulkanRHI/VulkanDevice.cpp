@@ -39,8 +39,8 @@ VulkanDevice::VulkanDevice(VulkanPhysicalDevice* physicalDevice) : m_vulkanPhysi
     m_vkGraphicQueue = m_vkDevice.getQueue(m_queueFamilyIndices->graphic.value(), 0);
     m_vkPresentQueue = m_vkDevice.getQueue(m_queueFamilyIndices->present.value(), 0);
 
-    m_pVulkanSwapchain.reset(new VulkanSwapchain(this));
     m_pVulkanCmdPool.reset(new VulkanCommandPool(this, m_queueFamilyIndices->graphic.value()));
+    m_pVulkanSwapchain.reset(new VulkanSwapchain(this));
     m_pVulkanPipelineCache.reset(new VulkanPipelineCache(this, m_vulkanPhysicalDevice->GetPhysicalDeviceInfo().deviceProps,
         util::file::getResourcePath() / "PipelineCache\\pipelinecache.bin"));
 
@@ -52,8 +52,8 @@ VulkanDevice::~VulkanDevice()
 {
     m_vkDevice.waitIdle();
     m_pVulkanPipelineCache.reset();
-    m_pVulkanCmdPool.reset();
     m_pVulkanSwapchain.reset();
+    m_pVulkanCmdPool.reset();
     m_vkDevice.destroy();
 }
 

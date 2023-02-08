@@ -60,8 +60,8 @@ public:
     inline vk::PhysicalDeviceMemoryProperties& GetVkPhysicalDeviceMemoryProps() { return m_physicalDeviceInfo.deviceMemoryProps; }
     bool SupportExtension(const std::string& extension);
 
-    vk::Format QuerySupportedDepthFormat();
-
+    vk::Format QuerySupportedDepthFormat(vk::ImageTiling tiling = vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+    bool HasStencilComponent(vk::Format format);
     inline platform::PlatformWindow* GetPWindow() { return m_config.window; }
     inline int GetWindowWidth() { return m_config.window ? m_config.window->GetWindowSetting().width : 0; }
     inline int GetWindowHeight() { return m_config.window ? m_config.window->GetWindowSetting().height : 0; }
