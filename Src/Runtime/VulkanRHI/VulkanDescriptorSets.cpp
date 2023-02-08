@@ -1,8 +1,8 @@
 #include "VulkanDescriptorSets.h"
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
-#include "Runtime/VulkanRHI/VulkanBuffer.h"
-#include "Runtime/VulkanRHI/VulkanImage.h"
+#include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_handles.hpp"
@@ -15,7 +15,7 @@ VulkanDescriptorSets::VulkanDescriptorSets(
     VulkanDevice* device,
     VulkanDescriptorSetLayout* layout,
     std::vector<std::unique_ptr<VulkanBuffer>>&& uniformbuffers,
-    std::vector<std::unique_ptr<VulkanImage>>&& vulkanImages)
+    std::vector<std::unique_ptr<VulkanImageSampler>>&& vulkanImages)
     : m_vulkanDevice(device)
     , m_vulkanDescLayout(layout)
     , m_vulkanUniformWriteBuffers(std::move(uniformbuffers))

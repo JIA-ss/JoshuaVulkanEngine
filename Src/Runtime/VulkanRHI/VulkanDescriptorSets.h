@@ -1,5 +1,5 @@
 #pragma once
-#include "Runtime/VulkanRHI/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
@@ -7,7 +7,7 @@
 
 RHI_NAMESPACE_BEGIN
 
-class VulkanImage;
+class VulkanImageSampler;
 class VulkanDescriptorSets
 {
 public:
@@ -18,13 +18,13 @@ private:
 
     std::vector<vk::DescriptorSet> m_vkDescSets;
     std::vector<std::unique_ptr<VulkanBuffer>> m_vulkanUniformWriteBuffers;
-    std::vector<std::unique_ptr<VulkanImage>> m_vulkanImages;
+    std::vector<std::unique_ptr<VulkanImageSampler>> m_vulkanImages;
 public:
     explicit VulkanDescriptorSets(
         VulkanDevice* device,
         VulkanDescriptorSetLayout* layout,
         std::vector<std::unique_ptr<VulkanBuffer>>&& uniformbuffers,
-        std::vector<std::unique_ptr<VulkanImage>>&& vulkanImages);
+        std::vector<std::unique_ptr<VulkanImageSampler>>&& vulkanImages);
     ~VulkanDescriptorSets();
     inline std::vector<vk::DescriptorSet>& GetVkDescriptorSets() { return m_vkDescSets; }
     inline vk::DescriptorSet& GetVkDescriptorSet(int idx) { return m_vkDescSets[idx]; }

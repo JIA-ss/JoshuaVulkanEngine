@@ -1,8 +1,7 @@
 #include "VulkanBuffer.h"
-#include "Runtime/VulkanRHI/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
-#include "Runtime/VulkanRHI/VulkanImage.h"
+#include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include <memory>
 #include <stdexcept>
 #include <stdint.h>
@@ -49,9 +48,9 @@ void VulkanDeviceMemory::Bind(VulkanBuffer* buf)
     m_vulkanDevice->GetVkDevice().bindBufferMemory(*buf->GetPVkBuf(), m_vkDeviceMemory, 0);
 }
 
-void VulkanDeviceMemory::Bind(VulkanImage* img)
+void VulkanDeviceMemory::Bind(VulkanImageResource* img)
 {
-    m_vulkanDevice->GetVkDevice().bindImageMemory(*img->GetPVkImage(), m_vkDeviceMemory, 0);
+    m_vulkanDevice->GetVkDevice().bindImageMemory(img->GetVkImage(), m_vkDeviceMemory, 0);
 }
 
 uint32_t VulkanDeviceMemory::findMemoryType()

@@ -2,13 +2,13 @@
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanDynamicState.h"
-#include "Runtime/VulkanRHI/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/VulkanInstance.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
-#include "Runtime/VulkanRHI/VulkanImage.h"
+#include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Util/fileutil.h"
 #include "Util/textureutil.h"
 #include "vulkan/vulkan_enums.hpp"
@@ -80,7 +80,7 @@ void VulkanContext::createVulkanDescriptorSetLayout()
 void VulkanContext::createVulkanDescriptorSet()
 {
     std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers(MAX_FRAMES_IN_FLIGHT);
-    std::vector<std::unique_ptr<VulkanImage>> images(MAX_FRAMES_IN_FLIGHT);
+    std::vector<std::unique_ptr<VulkanImageSampler>> images(MAX_FRAMES_IN_FLIGHT);
     auto imageRawData = util::texture::RawData::Load(util::file::getResourcePath() / "Texture/texture.jpg", util::texture::RawData::Format::eRgbAlpha);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
@@ -92,16 +92,16 @@ void VulkanContext::createVulkanDescriptorSet()
                 vk::SharingMode::eExclusive
                 )
         );
-
+        VulkanImageSampler::Config imageSamplerConfig;
+        VulkanImageResource::Config imageResourceConfig;
+        imageResourceConfig.extent = vk::Extent3D{(uint32_t)imageRawData->GetWidth(), (uint32_t)imageRawData->GetHeight(), 1};
         images[i].reset(
-            new VulkanImage(
+            new VulkanImageSampler(
                 m_pDevice.get(),
                 imageRawData,
-                vk::Format::eR8G8B8A8Srgb,
-                vk::ImageTiling::eOptimal,
-                vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
                 vk::MemoryPropertyFlagBits::eDeviceLocal,
-                vk::ImageLayout::eShaderReadOnlyOptimal
+                imageSamplerConfig,
+                imageResourceConfig
                 )
         );
     }

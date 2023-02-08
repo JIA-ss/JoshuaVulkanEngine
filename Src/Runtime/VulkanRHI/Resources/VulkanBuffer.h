@@ -10,7 +10,7 @@ RHI_NAMESPACE_BEGIN
 
 class VulkanDevice;
 class VulkanBuffer;
-class VulkanImage;
+class VulkanImageResource;
 class VulkanDeviceMemory
 {
 private:
@@ -24,7 +24,7 @@ public:
     void* MapMemory(std::size_t offset, std::size_t size);
     void UnMapMemory();
     void Bind(VulkanBuffer* buf);
-    void Bind(VulkanImage* img);
+    void Bind(VulkanImageResource* img);
 private:
     uint32_t findMemoryType();
 };

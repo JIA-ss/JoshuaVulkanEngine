@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Runtime/VulkanRHI/Graphic/Vertex.h"
-#include "Runtime/VulkanRHI/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorSets.h"
 #include <chrono>
 #include <array>
