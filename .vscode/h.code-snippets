@@ -4,8 +4,9 @@
         "prefix": "RHIH",
         "body": [
             "#pragma once",
-            "#include \"Runtime/VulkanRHI/VulkanRHI.h\"",
             "#include <vulkan/vulkan.hpp>",
+            "",
+            "#include \"Runtime/VulkanRHI/VulkanRHI.h\"",
             "",
             "RHI_NAMESPACE_BEGIN",
             "",
