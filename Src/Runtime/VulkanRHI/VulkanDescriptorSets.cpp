@@ -2,6 +2,7 @@
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_handles.hpp"
@@ -10,50 +11,90 @@
 
 RHI_NAMESPACE_USING
 
-VulkanDescriptorSets::VulkanDescriptorSets(VulkanDevice* device, VulkanDescriptorSetLayout* layout, vk::DescriptorPoolSize size)
+VulkanDescriptorSets::VulkanDescriptorSets(
+    VulkanDevice* device,
+    VulkanDescriptorSetLayout* layout,
+    std::vector<std::unique_ptr<VulkanBuffer>>&& uniformbuffers,
+    std::vector<std::unique_ptr<VulkanImage>>&& vulkanImages)
     : m_vulkanDevice(device)
     , m_vulkanDescLayout(layout)
-    , m_size(size)
+    , m_vulkanUniformWriteBuffers(std::move(uniformbuffers))
+    , m_vulkanImages(std::move(vulkanImages))
 {
+
+    std::vector<vk::DescriptorPoolSize> sizes;
+    if (!m_vulkanUniformWriteBuffers.empty())
+    {
+        sizes.emplace_back(vk::DescriptorPoolSize
+        {
+            vk::DescriptorType::eUniformBuffer,
+            MAX_FRAMES_IN_FLIGHT
+        });
+    }
+    if (!m_vulkanImages.empty())
+    {
+        sizes.emplace_back(vk::DescriptorPoolSize
+        {
+            vk::DescriptorType::eCombinedImageSampler,
+            MAX_FRAMES_IN_FLIGHT
+        });
+    }
+
     vk::DescriptorPoolCreateInfo info;
-    info.setPoolSizes(m_size)
-        .setPoolSizeCount(1)
-        .setMaxSets(m_size.descriptorCount);
+    info.setPoolSizes(sizes)
+        .setMaxSets(MAX_FRAMES_IN_FLIGHT);
 
     m_vkDescPool = m_vulkanDevice->GetVkDevice().createDescriptorPool(info);
-    std::vector<vk::DescriptorSetLayout> layouts(m_size.descriptorCount, layout->GetVkDescriptorSetLayout());
+    std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, layout->GetVkDescriptorSetLayout());
     auto allocInfo = vk::DescriptorSetAllocateInfo()
                 .setDescriptorPool(m_vkDescPool)
-                .setDescriptorSetCount(m_size.descriptorCount)
+                .setDescriptorSetCount(MAX_FRAMES_IN_FLIGHT)
                 .setSetLayouts(layouts);
     m_vkDescSets = m_vulkanDevice->GetVkDevice().allocateDescriptorSets(allocInfo);
-    m_vulkanUniformWriteBuffers.resize(m_vkDescSets.size());
+    assert(m_vulkanUniformWriteBuffers.size() == m_vkDescSets.size());
 
     for (int i = 0; i < m_vkDescSets.size(); i++)
     {
-        m_vulkanUniformWriteBuffers[i].reset(
-            new VulkanBuffer(
-                    device, sizeof(UniformBufferObject),
-                    vk::BufferUsageFlagBits::eUniformBuffer,
-                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-                vk::SharingMode::eExclusive
-                )
-        );
+        std::vector<vk::WriteDescriptorSet> writeDescs;
+        uint32_t dstBinding = 0;
+        if (!m_vulkanUniformWriteBuffers.empty())
+        {
+            auto descBufInfo = vk::DescriptorBufferInfo()
+                        .setBuffer(*m_vulkanUniformWriteBuffers[i]->GetPVkBuf())
+                        .setOffset(0)
+                        .setRange(sizeof(UniformBufferObject))
+                        ;
+            auto writeDesc = vk::WriteDescriptorSet()
+                        .setDstSet(m_vkDescSets[i])
+                        .setDstBinding(dstBinding++)
+                        .setDstArrayElement(0)
+                        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                        .setDescriptorCount(1)
+                        .setBufferInfo(descBufInfo)
+                        ;
+            writeDescs.emplace_back(writeDesc);
+        }
 
-        auto descBufInfo = vk::DescriptorBufferInfo()
-                    .setBuffer(*m_vulkanUniformWriteBuffers[i]->GetPVkBuf())
-                    .setOffset(0)
-                    .setRange(sizeof(UniformBufferObject));
-        auto descWrite = vk::WriteDescriptorSet()
-                    .setDstSet(m_vkDescSets[i])
-                    .setDstBinding(0)
-                    .setDstArrayElement(0)
-                    .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-                    .setDescriptorCount(1)
-                    .setBufferInfo(descBufInfo)
-                    ;
+        if (!m_vulkanImages.empty())
+        {
 
-        m_vulkanDevice->GetVkDevice().updateDescriptorSets(1, &descWrite, 0, nullptr);
+            auto descImgInfo = vk::DescriptorImageInfo()
+                        .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                        .setImageView(*m_vulkanImages[i]->GetPVkImageView())
+                        .setSampler(*m_vulkanImages[i]->GetPVkSampler())
+                        ;
+            auto writeDesc = vk::WriteDescriptorSet()
+                        .setDstSet(m_vkDescSets[i])
+                        .setDstBinding(dstBinding++)
+                        .setDstArrayElement(0)
+                        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                        .setDescriptorCount(1)
+                        .setImageInfo(descImgInfo)
+                        ;
+            writeDescs.emplace_back(writeDesc);
+        }
+
+        m_vulkanDevice->GetVkDevice().updateDescriptorSets((uint32_t)writeDescs.size(), writeDescs.data(), 0, nullptr);
     }
 }
 

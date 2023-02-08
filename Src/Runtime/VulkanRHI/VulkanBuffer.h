@@ -9,16 +9,35 @@
 RHI_NAMESPACE_BEGIN
 
 class VulkanDevice;
+class VulkanBuffer;
+class VulkanImage;
+class VulkanDeviceMemory
+{
+private:
+    VulkanDevice* m_vulkanDevice;
+    vk::DeviceMemory m_vkDeviceMemory;
+    vk::MemoryRequirements m_vkMemRequirements;
+    vk::MemoryPropertyFlags m_vkMemProps;
+public:
+    explicit VulkanDeviceMemory(VulkanDevice* device, vk::MemoryRequirements requirements, vk::MemoryPropertyFlags props);
+    ~VulkanDeviceMemory();
+    void* MapMemory(std::size_t offset, std::size_t size);
+    void UnMapMemory();
+    void Bind(VulkanBuffer* buf);
+    void Bind(VulkanImage* img);
+private:
+    uint32_t findMemoryType();
+};
+
 class VulkanBuffer
 {
 public:
 protected:
     vk::Buffer m_vkBuf;
-    vk::DeviceMemory m_vkDeviceMemory;
+    std::unique_ptr<VulkanDeviceMemory> m_pVulkanDeviceMemory;
     VulkanDevice* m_vulkanDevice;
     vk::DeviceSize m_vkSize;
     vk::BufferUsageFlags m_vkBufUsage;
-    vk::MemoryPropertyFlags m_vkMemProps;
     vk::SharingMode m_vkSharingMode;
     void* m_mappedPointer = nullptr;
 public:

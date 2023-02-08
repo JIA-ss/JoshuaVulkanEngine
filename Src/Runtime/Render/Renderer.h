@@ -16,8 +16,6 @@ namespace Render
 
 class Renderer
 {
-public:
-    static const int MAX_FRAMES_IN_FLIGHT = 2;
 private:
     RHI::VulkanDevice* m_pRHIDevice;
     vk::Device* m_pVkDevice;
@@ -29,6 +27,7 @@ private:
 
     std::vector<uint16_t> m_indices;
     std::unique_ptr<RHI::VulkanVertexIndexBuffer> m_pVulkanVertexIndexBuffer;
+
 
     uint32_t m_imageIdx = 0;
     std::array<vk::CommandBuffer, MAX_FRAMES_IN_FLIGHT> m_vkCmds;
@@ -49,6 +48,8 @@ private:
     void createVertices();
     void createVertexBuf();
     void createIndiciesBuf();
+
+    void createTextureImage();
 
     void createCmdBufs();
     void createSyncObjects();

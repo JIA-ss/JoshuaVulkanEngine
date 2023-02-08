@@ -3,6 +3,8 @@
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanContext.h"
+#include "Util/fileutil.h"
+#include "Util/textureutil.h"
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -174,10 +176,10 @@ void Renderer::createVertices()
 {
     m_vertices = 
     {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
     };
     m_indices =
     {
@@ -211,6 +213,11 @@ void Renderer::createIndiciesBuf()
     m_pVulkanVertexIndexBuffer = RHI::VulkanVertexIndexBuffer::Create(m_pRHIDevice, m_indices, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal);
     m_pVulkanVertexIndexBuffer->CopyDataToGPU(m_vkCmds[0], m_pRHIDevice->GetVkGraphicQueue(), m_indices.size() * sizeof(m_indices[0]));
     m_vkCmds[0].reset();
+}
+
+void Renderer::createTextureImage()
+{
+
 }
 
 void Renderer::createCmdBufs()

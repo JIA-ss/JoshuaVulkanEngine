@@ -16,6 +16,9 @@ public:
     ~VulkanCommandPool();
 
     vk::CommandBuffer CreateReUsableCmd();
+
+    vk::CommandBuffer BeginSingleTimeCommand();
+    void EndSingleTimeCommand(vk::CommandBuffer cmd, vk::Queue queue);
 };
 
 RHI_NAMESPACE_END

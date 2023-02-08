@@ -9,8 +9,9 @@ struct Vertex
 {
     glm::vec2 position;
     glm::vec3 color;
+    glm::vec2 texCoord;
 
     static const vk::VertexInputBindingDescription& GetBindingDescription();
-    static const std::array<vk::VertexInputAttributeDescription,2>& GetAttributeDescriptions();
+    static const std::array<vk::VertexInputAttributeDescription, 3>& GetAttributeDescriptions();
 };
 RHI_NAMESPACE_END

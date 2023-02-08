@@ -137,7 +137,6 @@ bool VulkanPhysicalDevice::checkSupportFeatures(const vk::PhysicalDevice& device
     }
     vk::PhysicalDeviceFeatures avaliableFeatures = device.getFeatures();
 
-    assert(false); // need to check device support the feature;
     return avaliableFeatures.samplerAnisotropy == m_config.requiredFeatures->samplerAnisotropy;
 }
 

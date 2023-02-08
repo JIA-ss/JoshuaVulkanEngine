@@ -38,6 +38,9 @@ public:
     void Init(const VulkanInstance::Config& instanceConfig,
                 const VulkanPhysicalDevice::Config& physicalConfig);
     void Destroy();
+private:
+    void createVulkanDescriptorSetLayout();
+    void createVulkanDescriptorSet();
 };
 
 RHI_NAMESPACE_END

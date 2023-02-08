@@ -7,6 +7,7 @@
 
 RHI_NAMESPACE_BEGIN
 
+class VulkanImage;
 class VulkanDescriptorSets
 {
 public:
@@ -14,12 +15,16 @@ private:
     vk::DescriptorPool m_vkDescPool;
     VulkanDevice* m_vulkanDevice = nullptr;
     VulkanDescriptorSetLayout* m_vulkanDescLayout = nullptr;
-    vk::DescriptorPoolSize m_size;
 
     std::vector<vk::DescriptorSet> m_vkDescSets;
     std::vector<std::unique_ptr<VulkanBuffer>> m_vulkanUniformWriteBuffers;
+    std::vector<std::unique_ptr<VulkanImage>> m_vulkanImages;
 public:
-    VulkanDescriptorSets(VulkanDevice* device, VulkanDescriptorSetLayout* layout, vk::DescriptorPoolSize size);
+    explicit VulkanDescriptorSets(
+        VulkanDevice* device,
+        VulkanDescriptorSetLayout* layout,
+        std::vector<std::unique_ptr<VulkanBuffer>>&& uniformbuffers,
+        std::vector<std::unique_ptr<VulkanImage>>&& vulkanImages);
     ~VulkanDescriptorSets();
     inline std::vector<vk::DescriptorSet>& GetVkDescriptorSets() { return m_vkDescSets; }
     inline vk::DescriptorSet& GetVkDescriptorSet(int idx) { return m_vkDescSets[idx]; }

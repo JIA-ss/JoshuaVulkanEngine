@@ -25,10 +25,13 @@ void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::pa
     window->Init();
     auto extensions = window->GetRequiredExtensions();
     std::vector<const char*> enabledInstanceExtensions;
+
+    vk::PhysicalDeviceFeatures feature;
+    feature.setSamplerAnisotropy(VK_TRUE);
     auto& ctx = RHI::VulkanContext::CreateInstance();
     ctx.Init(
         RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
-        RHI::VulkanPhysicalDevice::Config { window.get() }
+        RHI::VulkanPhysicalDevice::Config { window.get(), feature }
         );
 
 }
