@@ -83,7 +83,7 @@ void VulkanContext::createVulkanDescriptorSet()
 {
     std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers(MAX_FRAMES_IN_FLIGHT);
     std::vector<std::unique_ptr<VulkanImageSampler>> images(MAX_FRAMES_IN_FLIGHT);
-    auto imageRawData = Util::Texture::RawData::Load(Util::File::getResourcePath() / "Texture/Texture.jpg", Util::Texture::RawData::Format::eRgbAlpha);
+    auto imageRawData = Util::Texture::RawData::Load(Util::File::getResourcePath() / "Texture/viking_room.png", Util::Texture::RawData::Format::eRgbAlpha);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         uniformBuffers[i].reset(

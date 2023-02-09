@@ -110,6 +110,6 @@ public:
 };
 
 using VulkanVertexBuffer = tVulkanGPUBuffer<Vertex>;
-using VulkanVertexIndexBuffer = tVulkanGPUBuffer<uint16_t>;
+using VulkanVertexIndexBuffer = tVulkanGPUBuffer<uint32_t>;
 
 RHI_NAMESPACE_END

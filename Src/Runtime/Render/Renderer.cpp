@@ -5,6 +5,7 @@
 #include "Runtime/VulkanRHI/VulkanContext.h"
 #include "Util/Fileutil.h"
 #include "Util/Textureutil.h"
+#include "Util/Modelutil.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -101,7 +102,7 @@ void Renderer::Render()
         m_pRHIRenderPipeline->GetPVulkanDynamicState()->SetUpCmdBuf(m_vkCmds[s_frameIdxInFlight]);
 
         m_vkCmds[s_frameIdxInFlight].bindVertexBuffers(0, *m_pVulkanVertexBuffer->GetPVkBuf(), {0});
-        m_vkCmds[s_frameIdxInFlight].bindIndexBuffer(*m_pVulkanVertexIndexBuffer->GetPVkBuf(), 0, vk::IndexType::eUint16);
+        m_vkCmds[s_frameIdxInFlight].bindIndexBuffer(*m_pVulkanVertexIndexBuffer->GetPVkBuf(), 0, vk::IndexType::eUint32);
         m_vkCmds[s_frameIdxInFlight].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pRHIRenderPipeline->GetVkPipelineLayout(), 0, m_pRHIDescSets->GetVkDescriptorSet(s_frameIdxInFlight), {});
 
         std::vector<vk::ClearValue> clears(2);
@@ -178,23 +179,9 @@ void Renderer::frameRateUpdate()
 }
 void Renderer::createVertices()
 {
-    m_vertices = 
-    {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-    };
-    m_indices =
-    {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4
-    };
+    auto model = Util::Model::TinyObj(Util::File::getResourcePath() / "Model/viking_room.obj");
+    m_vertices = *model.GetPVertices();
+    m_indices = *model.GetPIndices();
 }
 
 void Renderer::updateUniformBuf(uint32_t currentFrameIdx)
