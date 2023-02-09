@@ -46,6 +46,7 @@ find_package(glm CONFIG REQUIRED)
 find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_path(STB_INCLUDE_DIRS "stb_c_lexer.h")
+find_package(tinyobjloader CONFIG REQUIRED)
 
 add_executable(VulkanRHI ${MAIN_SRC_FILES})
 
@@ -57,6 +58,7 @@ target_link_libraries(VulkanRHI
     ${VULKAN_LIBRARY}
     unofficial::vulkan-memory-allocator::vulkan-memory-allocator
     ${Boost_LIBRARIES}
+    tinyobjloader::tinyobjloader
 )
 
 

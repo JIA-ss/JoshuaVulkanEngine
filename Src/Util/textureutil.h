@@ -2,7 +2,7 @@
 #include <boost/filesystem/path.hpp>
 #include <memory>
 
-namespace util { namespace texture {
+namespace Util { namespace Texture {
 
 
 class RawData final

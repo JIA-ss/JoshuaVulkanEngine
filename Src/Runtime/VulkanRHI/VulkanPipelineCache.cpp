@@ -1,7 +1,7 @@
 #include "VulkanPipelineCache.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
-#include "Util/fileutil.h"
+#include "Util/Fileutil.h"
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_structs.hpp"
 #include <iomanip>
@@ -34,11 +34,11 @@ VulkanPipelineCache::~VulkanPipelineCache()
     m_vkPipelineCache = nullptr;
 }
 
-bool VulkanPipelineCache::LoadGraphicsPipelineCache(const boost::filesystem::path& file)
+bool VulkanPipelineCache::LoadGraphicsPipelineCache(const boost::filesystem::path& File)
 {
     std::vector<char> buf;
     bool cacheFileValid = true;
-    if (!util::file::readFile(file, buf))
+    if (!Util::File::readFile(File, buf))
     {
         cacheFileValid = false;
     }
@@ -55,9 +55,9 @@ bool VulkanPipelineCache::LoadGraphicsPipelineCache(const boost::filesystem::pat
     return cacheFileValid;
 }
 
-bool VulkanPipelineCache::SaveGraphicsPipelineCache(const boost::filesystem::path& file)
+bool VulkanPipelineCache::SaveGraphicsPipelineCache(const boost::filesystem::path& File)
 {
-    if (file.empty())
+    if (File.empty())
     {
         return false;
     }
@@ -66,14 +66,14 @@ bool VulkanPipelineCache::SaveGraphicsPipelineCache(const boost::filesystem::pat
     {
         return false;
     }
-    return util::file::writeFile(file, res.data(), res.size());
+    return Util::File::writeFile(File, res.data(), res.size());
 }
 
-bool VulkanPipelineCache::isCacheValid(const boost::filesystem::path& file)
+bool VulkanPipelineCache::isCacheValid(const boost::filesystem::path& File)
 {
 
     std::vector<char> buffer;
-    if (!util::file::readFile(file, buffer))
+    if (!Util::File::readFile(File, buffer))
     {
         return false;
     }

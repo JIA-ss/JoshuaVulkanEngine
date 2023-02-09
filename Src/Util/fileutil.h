@@ -6,7 +6,7 @@
 #include <vector>
 #include <boost/filesystem.hpp>
 
-namespace util { namespace file {
+namespace Util { namespace File {
 
 enum class eFileOpenMode
 {

@@ -9,7 +9,7 @@
 #include "Runtime/Platform/PlatformWindow.h"
 #include "Runtime/Render/Renderer.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
-#include "Util/fileutil.h"
+#include "Util/Fileutil.h"
 #include <GLFW/glfw3.h>
 #include <boost/filesystem/path.hpp>
 
@@ -65,8 +65,8 @@ int main(int argc, char* argv[])
 
     boost::filesystem::path exePath = argv[0];
     boost::filesystem::path resourcesPath = argv[1];
-    util::file::setExePath(exePath);
-    util::file::setResourcePath(resourcesPath);
+    Util::File::setExePath(exePath);
+    Util::File::setResourcePath(resourcesPath);
 #ifndef NDEBUG
     std::cout << "exePath: " << exePath << std::endl;
     std::cout << "resourcesPath: " << resourcesPath << std::endl;
@@ -77,8 +77,8 @@ int main(int argc, char* argv[])
     // return cpp_demo::contextDemo();
     //return cpp_demo::shaderDemo(resourcesPath);
     std::string vertexSource, fragSource;
-    util::file::readFile(resourcesPath/"Shader\\GLSL\\SPRI-V\\shader.vert.spv", vertexSource, util::file::eFileOpenMode::kBinary);
-    util::file::readFile(resourcesPath/"Shader\\GLSL\\SPRI-V\\shader.frag.spv", fragSource, util::file::eFileOpenMode::kBinary);
+    Util::File::readFile(resourcesPath/"Shader\\GLSL\\SPRI-V\\shader.vert.spv", vertexSource, Util::File::eFileOpenMode::kBinary);
+    Util::File::readFile(resourcesPath/"Shader\\GLSL\\SPRI-V\\shader.frag.spv", fragSource, Util::File::eFileOpenMode::kBinary);
     //return cpp_demo::renderProcessDemo(vertexSource, fragSource);
     //return cpp_demo::rendererDemo(vertexSource, fragSource);
 

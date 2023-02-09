@@ -1,6 +1,6 @@
 #include "shader.h"
 #include "Demo/01_createwindow/createwindow.h"
-#include "Util/fileutil.h"
+#include "Util/Fileutil.h"
 #include "vulkan/vulkan_structs.hpp"
 #include <GLFW/glfw3.h>
 #include <stdint.h>
@@ -73,8 +73,8 @@ int shaderDemo(boost::filesystem::path& resourcesPath)
     auto fragShader = shaderPath / "shader.frag";
 
     std::string vertShaderSource, fragShaderSource;
-    util::file::readFile(vertexShader, vertShaderSource);
-    util::file::readFile(fragShader, fragShaderSource);
+    Util::File::readFile(vertexShader, vertShaderSource);
+    Util::File::readFile(fragShader, fragShaderSource);
     Shader::Init(vertShaderSource, fragShaderSource);
 
     while(!window.shouldClose())

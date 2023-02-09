@@ -1,17 +1,17 @@
-#include "textureutil.h"
+#include "Textureutil.h"
 #include <memory>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-namespace util {
+namespace Util {
 
-texture::RawData::~RawData()
+Texture::RawData::~RawData()
 {
     FreeData();
 }
 
-void texture::RawData::FreeData()
+void Texture::RawData::FreeData()
 {
     if (data)
     {
@@ -20,7 +20,7 @@ void texture::RawData::FreeData()
     }
 }
 
-int texture::RawData::GetDataSize()
+int Texture::RawData::GetDataSize()
 {
     switch (format)
     {
@@ -42,9 +42,9 @@ int texture::RawData::GetDataSize()
     }
 }
 
-std::shared_ptr<util::texture::RawData> util::texture::RawData::Load(const boost::filesystem::path& texturePath, texture::RawData::Format format)
+std::shared_ptr<Util::Texture::RawData> Util::Texture::RawData::Load(const boost::filesystem::path& texturePath, Texture::RawData::Format format)
 {
-    std::shared_ptr<util::texture::RawData> rawData = std::make_shared<util::texture::RawData>(format);
+    std::shared_ptr<Util::Texture::RawData> rawData = std::make_shared<Util::Texture::RawData>(format);
     rawData->data = stbi_load(texturePath.string().c_str(), &rawData->width, &rawData->height, &rawData->channel, (int)format);
     return rawData->GetDataSize() != 0 ? rawData : nullptr;
 }

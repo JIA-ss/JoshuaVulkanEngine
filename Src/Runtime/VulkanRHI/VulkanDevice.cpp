@@ -5,7 +5,7 @@
 #include "Runtime/VulkanRHI/VulkanSwapchain.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Runtime/VulkanRHI/VulkanContext.h"
-#include "Util/fileutil.h"
+#include "Util/Fileutil.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
 #include <GLFW/glfw3.h>
@@ -42,7 +42,7 @@ VulkanDevice::VulkanDevice(VulkanPhysicalDevice* physicalDevice) : m_vulkanPhysi
     m_pVulkanCmdPool.reset(new VulkanCommandPool(this, m_queueFamilyIndices->graphic.value()));
     m_pVulkanSwapchain.reset(new VulkanSwapchain(this));
     m_pVulkanPipelineCache.reset(new VulkanPipelineCache(this, m_vulkanPhysicalDevice->GetPhysicalDeviceInfo().deviceProps,
-        util::file::getResourcePath() / "PipelineCache\\pipelinecache.bin"));
+        Util::File::getResourcePath() / "PipelineCache\\pipelinecache.bin"));
 
 
     std::cout << "=== === === VulkanDevice Construct End === === ===" << std::endl;

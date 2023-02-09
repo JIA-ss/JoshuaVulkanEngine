@@ -7,6 +7,7 @@
     "doctest",
     "boost-filesystem",
     "boost-system",
-    "stb"
+    "stb",
+    "tinyobjloader"
   ]
 }

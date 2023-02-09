@@ -20,10 +20,10 @@ public:
     explicit VulkanPipelineCache(VulkanDevice* device, vk::PhysicalDeviceProperties props, const boost::filesystem::path& path);
     ~VulkanPipelineCache();
 
-    bool LoadGraphicsPipelineCache(const boost::filesystem::path& file);
-    bool SaveGraphicsPipelineCache(const boost::filesystem::path& file);
+    bool LoadGraphicsPipelineCache(const boost::filesystem::path& File);
+    bool SaveGraphicsPipelineCache(const boost::filesystem::path& File);
 private:
-    bool isCacheValid(const boost::filesystem::path& file);
+    bool isCacheValid(const boost::filesystem::path& File);
     bool isCacheValid(const std::vector<char>& buffer);
 };
 

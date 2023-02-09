@@ -9,8 +9,8 @@
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "Runtime/VulkanRHI/Resources/VulkanImage.h"
-#include "Util/fileutil.h"
-#include "Util/textureutil.h"
+#include "Util/Fileutil.h"
+#include "Util/Textureutil.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
 #include <assert.h>
@@ -49,8 +49,8 @@ void VulkanContext::Init(
     createVulkanDescriptorSetLayout();
     createVulkanDescriptorSet();
 
-    m_pShaderSet->AddShader(util::file::getResourcePath() / "Shader\\GLSL\\SPIR-V\\shader.vert.spv", vk::ShaderStageFlagBits::eVertex);
-    m_pShaderSet->AddShader(util::file::getResourcePath() / "Shader\\GLSL\\SPIR-V\\shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
+    m_pShaderSet->AddShader(Util::File::getResourcePath() / "Shader\\GLSL\\SPIR-V\\shader.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    m_pShaderSet->AddShader(Util::File::getResourcePath() / "Shader\\GLSL\\SPIR-V\\shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
     
     m_pRenderPipeline.reset(new VulkanRenderPipeline(m_pDevice.get(), m_pShaderSet.get(), m_pDescSetLayout.get(), nullptr));
     
@@ -83,7 +83,7 @@ void VulkanContext::createVulkanDescriptorSet()
 {
     std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers(MAX_FRAMES_IN_FLIGHT);
     std::vector<std::unique_ptr<VulkanImageSampler>> images(MAX_FRAMES_IN_FLIGHT);
-    auto imageRawData = util::texture::RawData::Load(util::file::getResourcePath() / "Texture/texture.jpg", util::texture::RawData::Format::eRgbAlpha);
+    auto imageRawData = Util::Texture::RawData::Load(Util::File::getResourcePath() / "Texture/Texture.jpg", Util::Texture::RawData::Format::eRgbAlpha);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         uniformBuffers[i].reset(

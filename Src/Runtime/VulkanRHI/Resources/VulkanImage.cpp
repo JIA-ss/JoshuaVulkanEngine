@@ -114,7 +114,7 @@ void VulkanImageResource::createImageView()
 
 VulkanImageSampler::VulkanImageSampler(
         VulkanDevice* device,
-        std::shared_ptr<util::texture::RawData> rawData,
+        std::shared_ptr<Util::Texture::RawData> rawData,
         vk::MemoryPropertyFlags memProps,
         Config config,
         VulkanImageResource::Config resourceConfig

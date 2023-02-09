@@ -3,8 +3,8 @@
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanContext.h"
-#include "Util/fileutil.h"
-#include "Util/textureutil.h"
+#include "Util/Fileutil.h"
+#include "Util/Textureutil.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

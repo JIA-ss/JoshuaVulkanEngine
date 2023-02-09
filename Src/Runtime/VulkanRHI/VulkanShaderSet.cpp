@@ -1,7 +1,7 @@
 #include "VulkanShaderSet.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
-#include "Util/fileutil.h"
+#include "Util/Fileutil.h"
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_structs.hpp"
 #include <algorithm>
@@ -53,7 +53,7 @@ vk::ShaderModule VulkanShaderSet::createShaderModule(const boost::filesystem::pa
 {
     vk::ShaderModule shader;
     std::vector<char> code;
-    if (!util::file::readFile(spvFile, code) || code.empty())
+    if (!Util::File::readFile(spvFile, code) || code.empty())
     {
         return shader;
     }

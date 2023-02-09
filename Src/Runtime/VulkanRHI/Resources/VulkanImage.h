@@ -1,7 +1,7 @@
 #pragma once
 #include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
-#include "Util/textureutil.h"
+#include "Util/Textureutil.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
 #include <stdint.h>
@@ -83,14 +83,14 @@ private:
 
     std::unique_ptr<VulkanImageResource> m_pVulkanImageResource;
     std::unique_ptr<VulkanBuffer> m_pVulkanStagingBuffer;
-    std::shared_ptr<util::texture::RawData> m_pRawData;
+    std::shared_ptr<Util::Texture::RawData> m_pRawData;
     Config m_config;
 
     vk::Sampler m_vkSampler;
 public:
     explicit VulkanImageSampler(
         VulkanDevice* device,
-        std::shared_ptr<util::texture::RawData> rawData,
+        std::shared_ptr<Util::Texture::RawData> rawData,
         vk::MemoryPropertyFlags memProps,
         Config config,
         VulkanImageResource::Config resourceConfig
