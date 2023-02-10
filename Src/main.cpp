@@ -15,6 +15,7 @@
 
 #include "Runtime/VulkanRHI/VulkanContext.h"
 #include "vulkan/vulkan_core.h"
+#include "vulkan/vulkan_enums.hpp"
 
 
 std::unique_ptr<platform::PlatformWindow> window = nullptr;
@@ -28,10 +29,10 @@ void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::pa
 
     vk::PhysicalDeviceFeatures feature;
     feature.setSamplerAnisotropy(VK_TRUE);
-    auto& ctx = RHI::VulkanContext::CreateInstance();
+    auto& ctx = RHI::VulkanContext::CreateInstance(); 
     ctx.Init(
         RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
-        RHI::VulkanPhysicalDevice::Config { window.get(), feature }
+        RHI::VulkanPhysicalDevice::Config { window.get(), feature, {}, vk::SampleCountFlagBits::e2 }
         );
 
 }

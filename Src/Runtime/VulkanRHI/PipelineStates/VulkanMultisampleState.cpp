@@ -5,7 +5,8 @@
 
 RHI_NAMESPACE_USING
 
-VulkanMultisampleState::VulkanMultisampleState()
+VulkanMultisampleState::VulkanMultisampleState(vk::SampleCountFlagBits sampleCount)
+    : m_sampleCount(sampleCount)
 {
 
 }
@@ -21,6 +22,6 @@ vk::PipelineMultisampleStateCreateInfo VulkanMultisampleState::GetMultisampleSta
 {
     auto createInfo = vk::PipelineMultisampleStateCreateInfo()
                     .setSampleShadingEnable(false)
-                    .setRasterizationSamples(vk::SampleCountFlagBits::e1);
+                    .setRasterizationSamples(m_sampleCount);
     return createInfo;
 }

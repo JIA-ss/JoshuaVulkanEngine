@@ -1,7 +1,9 @@
 #include "VulkanSwapchain.h"
+#include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
+#include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
 #include <iostream>
 RHI_NAMESPACE_USING
@@ -45,13 +47,15 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice* device)
 
     getImages();
     createImageViews();
-    createDepthImage();
+    createDepthAndResolveColorImage();
 
     std::cout << "=== === === VulkanSwapchain Construct End === === ===" << std::endl;
 }
 
 VulkanSwapchain::~VulkanSwapchain()
 {
+    m_pVulkanDepthImage.reset();
+    m_pVulkanResolveColorImage.reset();
     for (auto& imgView : m_vkImageViews)
     {
         m_pVulkanDevice->GetVkDevice().destroyImageView(imgView);
@@ -125,10 +129,11 @@ void VulkanSwapchain::createImageViews()
     }
 }
 
-void VulkanSwapchain::createDepthImage()
+void VulkanSwapchain::createDepthAndResolveColorImage()
 {
     VulkanImageResource::Config config;
     config.format = m_pVulkanDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
+    config.sampleCount = m_pVulkanDevice->GetVulkanPhysicalDevice()->GetSampleCount();
     config.extent = vk::Extent3D{ m_swapchainInfo.imageExtent, 1};
     config.imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
     if (m_pVulkanDevice->GetVulkanPhysicalDevice()->HasStencilComponent(config.format))
@@ -142,7 +147,16 @@ void VulkanSwapchain::createDepthImage()
         // config.subresourceLayers.setAspectMask(vk::ImageAspectFlagBits::eDepth);
     }
     m_pVulkanDepthImage.reset(new VulkanImageResource(m_pVulkanDevice, vk::MemoryPropertyFlagBits::eDeviceLocal, config));
-    m_pVulkanDepthImage->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    // m_pVulkanDepthImage->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+    if (m_pVulkanDevice->GetVulkanPhysicalDevice()->IsUsingMSAA())
+    {
+        config.format = m_swapchainInfo.format.format;
+        config.imageUsage = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
+        config.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
+        m_pVulkanResolveColorImage.reset(new VulkanImageResource(m_pVulkanDevice, vk::MemoryPropertyFlagBits::eDeviceLocal, config));
+        // m_pVulkanResolveColorImage->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
+    }
 }
 
 void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPipeline* pipeline)
@@ -155,11 +169,16 @@ void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPipeline* pipeline)
     for (int i = 0; i < m_vkImageViews.size(); i++)
     {
         vk::FramebufferCreateInfo createInfo;
-        std::vector<vk::ImageView> attachments
+        std::vector<vk::ImageView> attachments;
+        attachments.reserve(4);
+        if (m_pVulkanResolveColorImage)
         {
-            m_vkImageViews[i],
-            m_pVulkanDepthImage->GetVkImageView()
-        };
+            attachments.push_back(m_pVulkanResolveColorImage->GetVkImageView());
+        }
+        attachments.push_back(m_pVulkanDepthImage->GetVkImageView());
+        attachments.push_back(m_vkImageViews[i]);
+
+
         createInfo.setAttachments(attachments)
                     .setWidth(windowWidth)
                     .setHeight(windowHeight)

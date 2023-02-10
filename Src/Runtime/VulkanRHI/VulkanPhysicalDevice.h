@@ -20,6 +20,7 @@ public:
         platform::PlatformWindow* window;
         std::optional<vk::PhysicalDeviceFeatures> requiredFeatures;
         std::vector<const char*> requiredExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+        vk::SampleCountFlagBits msaaSampleCount = vk::SampleCountFlagBits::e1;
     };
 
     struct PhysicalDeviceInfo
@@ -62,6 +63,8 @@ public:
 
     vk::Format QuerySupportedDepthFormat(vk::ImageTiling tiling = vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment);
     bool HasStencilComponent(vk::Format format);
+    inline vk::SampleCountFlagBits GetSampleCount() { return m_config.msaaSampleCount > m_physicalDeviceInfo.maxUsableSampleCount ? m_physicalDeviceInfo.maxUsableSampleCount : m_config.msaaSampleCount; }
+    inline bool IsUsingMSAA() { return GetSampleCount() > vk::SampleCountFlagBits::e1; }
     inline platform::PlatformWindow* GetPWindow() { return m_config.window; }
     inline int GetWindowWidth() { return m_config.window ? m_config.window->GetWindowSetting().width : 0; }
     inline int GetWindowHeight() { return m_config.window ? m_config.window->GetWindowSetting().height : 0; }

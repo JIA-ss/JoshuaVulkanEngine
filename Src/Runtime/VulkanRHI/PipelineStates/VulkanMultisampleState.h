@@ -8,8 +8,9 @@ class VulkanMultisampleState
 {
 public:
 private:
+    vk::SampleCountFlagBits m_sampleCount;
 public:
-    VulkanMultisampleState();
+    VulkanMultisampleState(vk::SampleCountFlagBits sampleCount);
     ~VulkanMultisampleState();
 
     vk::PipelineMultisampleStateCreateInfo GetMultisampleStateCreateInfo();

@@ -39,17 +39,17 @@ VulkanRenderPipeline::VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet
     vk::Rect2D scissor{vk::Offset2D{0,0}, vk::Extent2D{(uint32_t)windowWidth, (uint32_t)windowHeight}};
 
     vk::Format depthForamt = device->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
-
+    vk::SampleCountFlagBits sampleCount = m_vulkanDevice->GetVulkanPhysicalDevice()->GetSampleCount();
     m_pVulkanDynamicState.reset(new VulkanDynamicState(this));
     m_pVulkanInputAssemblyState.reset(new VulkanInputAssemblyState());
     m_pVulkanVertexInputState.reset(new VulkanVertextInputState());
     m_pVulkanViewPortState.reset(new VulkanViewportState({viewport}, {scissor}));
     m_pVulkanRasterizationState.reset(new VulkanRasterizationState());
-    m_pVulkanMultisampleState.reset(new VulkanMultisampleState());
+    m_pVulkanMultisampleState.reset(new VulkanMultisampleState(sampleCount));
     m_pVulkanDepthStencilState.reset(new VulkanDepthStencilState());
     m_pVulkanColorBlendState.reset(new VulkanColorBlendState());
 
-    m_pVulkanRenderPass.reset(new VulkanRenderPass(device, device->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, vk::SampleCountFlagBits::e1));
+    m_pVulkanRenderPass.reset(new VulkanRenderPass(device, device->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, sampleCount));
 
     m_pVulkanPipelineLayout.reset(new VulkanPipelineLayout(m_vulkanDevice, m_vulkanDescSetLayout));
 

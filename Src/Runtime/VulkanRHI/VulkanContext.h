@@ -7,6 +7,7 @@
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "VulkanRHI.h"
+#include "vulkan/vulkan_enums.hpp"
 #include <memory>
 RHI_NAMESPACE_BEGIN
 
