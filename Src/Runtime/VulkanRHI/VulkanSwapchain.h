@@ -5,6 +5,7 @@
 #include "Runtime/VulkanRHI/VulkanInstance.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
+#include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "vulkan/vulkan_enums.hpp"
 
 RHI_NAMESPACE_BEGIN
@@ -42,7 +43,7 @@ public:
     inline std::vector<vk::Framebuffer>& GetFramebuffers() { return m_vkFramebuffers; }
     inline vk::Framebuffer& GetFramebuffer(int index) { assert(index >= 0 && index < m_vkFramebuffers.size()); return m_vkFramebuffers[index]; }
 
-    void CreateFrameBuffers(VulkanRenderPipeline* pipeline);
+    void CreateFrameBuffers(VulkanRenderPass* renderpass);
 private:
     void queryInfo();
     void getImages();

@@ -1,5 +1,5 @@
 {
-    "Print to conaole":
+    "RHI Cpp File":
     {
         "prefix": "RHICPP",
         "body": [
@@ -22,5 +22,37 @@
 			"}"
         ],
         "description": "A RHI cpp file template."
+    },
+    "Render Cpp File":
+    {
+        "prefix": "RENDERCPP",
+        "body": [
+            "#include \"${TM_FILENAME_BASE}.h\"",
+            "",
+            "using namespace Render;",
+            "",
+            "${TM_FILENAME_BASE}::${TM_FILENAME_BASE}(const RHI::VulkanInstance::Config& instanceConfig,",
+            "   const RHI::VulkanPhysicalDevice::Config& physicalConfig)",
+            "   : RendererBase(instanceConfig, physicalConfig)",
+            "{",
+            "",
+            "}",
+            "",
+            "${TM_FILENAME_BASE}::~${TM_FILENAME_BASE}()",
+            "{",
+            "",
+            "}",
+            "",
+            "void ${TM_FILENAME_BASE}::prepare()",
+            "{",
+            "",
+            "}",
+            "",
+            "void ${TM_FILENAME_BASE}::render()",
+            "{",
+            "",
+            "}",
+            ""
+        ]
     }
 }

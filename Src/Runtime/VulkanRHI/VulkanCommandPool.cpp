@@ -29,6 +29,12 @@ vk::CommandBuffer VulkanCommandPool::CreateReUsableCmd()
     return m_pVulkanDevice->GetVkDevice().allocateCommandBuffers(allocateInfo).front();
 }
 
+void VulkanCommandPool::FreeReUsableCmd(vk::CommandBuffer cmd)
+{
+    m_pVulkanDevice->GetVkDevice().freeCommandBuffers(m_vkCmdPool, cmd);
+}
+
+
 vk::CommandBuffer VulkanCommandPool::BeginSingleTimeCommand()
 {
     auto allocInfo = vk::CommandBufferAllocateInfo()

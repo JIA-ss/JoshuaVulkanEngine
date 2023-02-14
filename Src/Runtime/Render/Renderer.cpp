@@ -24,6 +24,8 @@
 namespace Render
 {
 
+uint32_t Renderer::s_frameIdxInFlight = 0;
+
 Renderer::Renderer()
 {
     m_pRHIDevice = &RHI::VulkanContext::GetInstance().GetVulkanDevice();
@@ -63,7 +65,7 @@ void Renderer::Render()
 
     */
 
-    static int s_frameIdxInFlight = 0;
+
     // wait for fence
     if (
         m_pVkDevice->waitForFences(m_vkFenceInFlights[s_frameIdxInFlight], true, std::numeric_limits<uint64_t>::max())
@@ -99,7 +101,7 @@ void Renderer::Render()
     {
         m_vkCmds[s_frameIdxInFlight].bindPipeline(vk::PipelineBindPoint::eGraphics, m_pRHIRenderPipeline->GetVkPipeline());
 
-        m_pRHIRenderPipeline->GetPVulkanDynamicState()->SetUpCmdBuf(m_vkCmds[s_frameIdxInFlight]);
+        m_pRHIRenderPipeline->GetPVulkanDynamicState()->SetUpCmdBuf(m_vkCmds[s_frameIdxInFlight], m_pRHIRenderPipeline);
 
         m_vkCmds[s_frameIdxInFlight].bindVertexBuffers(0, *m_pVulkanVertexBuffer->GetPVkBuf(), {0});
         m_vkCmds[s_frameIdxInFlight].bindIndexBuffer(*m_pVulkanVertexIndexBuffer->GetPVkBuf(), 0, vk::IndexType::eUint32);
@@ -211,10 +213,6 @@ void Renderer::createIndiciesBuf()
     m_vkCmds[0].reset();
 }
 
-void Renderer::createTextureImage()
-{
-
-}
 
 void Renderer::createCmdBufs()
 {
@@ -264,6 +262,6 @@ void Renderer::recreateSwapchain()
         return;
     }
 
-    m_pRHIDevice->ReCreateSwapchain(m_pRHIRenderPipeline);
+    m_pRHIDevice->ReCreateSwapchain(m_pRHIRenderPipeline->GetPVulkanRenderPass());
 }
 }

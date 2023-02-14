@@ -20,39 +20,81 @@
 
 RHI_NAMESPACE_USING
 
-VulkanRenderPipeline::VulkanRenderPipeline(VulkanDevice* device, VulkanShaderSet* shaderset,VulkanDescriptorSetLayout* layout, VulkanRenderPipeline* input)
-    : m_vulkanShaderSet(shaderset)
-    , m_vulkanDescSetLayout(layout)
-    , m_vulkanDevice(device)
-    , m_parent(input)
+std::shared_ptr<VulkanRenderPipeline> VulkanRenderPipelineBuilder::build()
 {
-    if (!shaderset)
-    {
-        m_vulkanShaderSet = m_parent->m_vulkanShaderSet;
-    }
-
-    int windowWidth = device->GetVulkanPhysicalDevice()->GetWindowWidth();
-    int windowHeight = device->GetVulkanPhysicalDevice()->GetWindowHeight();
-    
+    assert(m_vulkanDevice);
+    int windowWidth = m_vulkanDevice->GetVulkanPhysicalDevice()->GetWindowWidth();
+    int windowHeight = m_vulkanDevice->GetVulkanPhysicalDevice()->GetWindowHeight();
 
     vk::Viewport viewport{0,0,(float)windowWidth, (float)windowHeight, 0,0};
     vk::Rect2D scissor{vk::Offset2D{0,0}, vk::Extent2D{(uint32_t)windowWidth, (uint32_t)windowHeight}};
 
-    vk::Format depthForamt = device->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
+    vk::Format depthForamt = m_vulkanDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
     vk::SampleCountFlagBits sampleCount = m_vulkanDevice->GetVulkanPhysicalDevice()->GetSampleCount();
-    m_pVulkanDynamicState.reset(new VulkanDynamicState(this));
-    m_pVulkanInputAssemblyState.reset(new VulkanInputAssemblyState());
-    m_pVulkanVertexInputState.reset(new VulkanVertextInputState());
-    m_pVulkanViewPortState.reset(new VulkanViewportState({viewport}, {scissor}));
-    m_pVulkanRasterizationState.reset(new VulkanRasterizationState());
-    m_pVulkanMultisampleState.reset(new VulkanMultisampleState(sampleCount));
-    m_pVulkanDepthStencilState.reset(new VulkanDepthStencilState());
-    m_pVulkanColorBlendState.reset(new VulkanColorBlendState());
+    if (!m_VulkanDynamicState) m_VulkanDynamicState.reset(new VulkanDynamicState());
+    if (!m_VulkanInputAssemblyState) m_VulkanInputAssemblyState.reset(new VulkanInputAssemblyState());
+    if (!m_VulkanVertexInputState) m_VulkanVertexInputState.reset(new VulkanVertextInputState());
+    if (!m_VulkanViewPortState) m_VulkanViewPortState.reset(new VulkanViewportState({viewport}, {scissor}));
+    if (!m_VulkanRasterizationState) m_VulkanRasterizationState.reset(new VulkanRasterizationState());
+    if (!m_VulkanMultisampleState) m_VulkanMultisampleState.reset(new VulkanMultisampleState(sampleCount));
+    if (!m_VulkanDepthStencilState) m_VulkanDepthStencilState.reset(new VulkanDepthStencilState());
+    if (!m_VulkanColorBlendState) m_VulkanColorBlendState.reset(new VulkanColorBlendState());
+    if (!m_VulkanRenderPass) m_VulkanRenderPass.reset(new VulkanRenderPass(m_vulkanDevice, m_vulkanDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, sampleCount));
+    if (!m_VulkanPipelineLayout) m_VulkanPipelineLayout.reset(new VulkanPipelineLayout(m_vulkanDevice, m_descriptorSetLayout));
 
-    m_pVulkanRenderPass.reset(new VulkanRenderPass(device, device->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, sampleCount));
+    return std::make_shared<VulkanRenderPipeline>(
+        m_vulkanDevice,
+        m_shaderSet,
+        m_descriptorSetLayout,
+        m_parent.lock(),
+        m_VulkanRenderPass,
+        m_VulkanDynamicState,
+        m_VulkanInputAssemblyState,
+        m_VulkanVertexInputState,
+        m_VulkanViewPortState,
+        m_VulkanRasterizationState,
+        m_VulkanMultisampleState,
+        m_VulkanDepthStencilState,
+        m_VulkanColorBlendState,
+        m_VulkanPipelineLayout
+    );
+}
 
-    m_pVulkanPipelineLayout.reset(new VulkanPipelineLayout(m_vulkanDevice, m_vulkanDescSetLayout));
-
+VulkanRenderPipeline::VulkanRenderPipeline(
+    VulkanDevice* device,
+    std::shared_ptr<VulkanShaderSet> shaderset,
+    std::shared_ptr<VulkanDescriptorSetLayout> layout,
+    std::shared_ptr<VulkanRenderPipeline> input,
+    std::shared_ptr<VulkanRenderPass> renderpass,
+    std::shared_ptr<VulkanDynamicState> dynamicState,
+    std::shared_ptr<VulkanInputAssemblyState> inputAssemblyState,
+    std::shared_ptr<VulkanVertextInputState> vertexInputState,
+    std::shared_ptr<VulkanViewportState> viewPortState,
+    std::shared_ptr<VulkanRasterizationState> rasterizationState,
+    std::shared_ptr<VulkanMultisampleState> multisampleState,
+    std::shared_ptr<VulkanDepthStencilState> depthStencilState,
+    std::shared_ptr<VulkanColorBlendState> blendState,
+    std::shared_ptr<VulkanPipelineLayout> pipelineLayout
+)
+    : m_vulkanDevice(device)
+    , m_vulkanShaderSet(shaderset)
+    , m_vulkanDescSetLayout(layout)
+    , m_parent(input)
+    , m_pVulkanRenderPass(renderpass)
+    , m_pVulkanDynamicState(dynamicState)
+    , m_pVulkanInputAssemblyState(inputAssemblyState)
+    , m_pVulkanVertexInputState(vertexInputState)
+    , m_pVulkanViewPortState(viewPortState)
+    , m_pVulkanRasterizationState(rasterizationState)
+    , m_pVulkanMultisampleState(multisampleState)
+    , m_pVulkanDepthStencilState(depthStencilState)
+    , m_pVulkanColorBlendState(blendState)
+    , m_pVulkanPipelineLayout(pipelineLayout)
+{
+    if (!shaderset && !m_parent.expired())
+    {
+        m_vulkanShaderSet = m_parent.lock()->m_vulkanShaderSet;
+    }
 
     vk::GraphicsPipelineCreateInfo createInfo;
     auto dynamicInfo = m_pVulkanDynamicState->GetDynamicStateCreateInfo();

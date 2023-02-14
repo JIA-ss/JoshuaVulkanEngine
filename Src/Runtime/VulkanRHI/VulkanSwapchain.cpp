@@ -2,6 +2,7 @@
 #include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
+#include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
@@ -159,7 +160,7 @@ void VulkanSwapchain::createDepthAndResolveColorImage()
     }
 }
 
-void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPipeline* pipeline)
+void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPass* renderpass)
 {
     int windowWidth = m_pVulkanDevice->GetVulkanPhysicalDevice()->GetWindowWidth();
     int windowHeight = m_pVulkanDevice->GetVulkanPhysicalDevice()->GetWindowHeight();
@@ -182,7 +183,7 @@ void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPipeline* pipeline)
         createInfo.setAttachments(attachments)
                     .setWidth(windowWidth)
                     .setHeight(windowHeight)
-                    .setRenderPass(pipeline->GetVkRenderPass())
+                    .setRenderPass(renderpass->GetVkRenderPass())
                     .setLayers(1)
                     ;
         m_vkFramebuffers[i] = m_pVulkanDevice->GetVkDevice().createFramebuffer(createInfo);

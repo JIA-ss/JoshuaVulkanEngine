@@ -7,12 +7,12 @@
 
 RHI_NAMESPACE_USING
 
-VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice* device, VulkanDescriptorSetLayout* descLayout)
+VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice* device, std::shared_ptr<VulkanDescriptorSetLayout> descLayout)
     : m_vulkanDevice(device)
     , m_vulkanDescSetLayout(descLayout)
 {
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-    pipelineLayoutCreateInfo.setSetLayouts(m_vulkanDescSetLayout->GetVkDescriptorSetLayout())
+    pipelineLayoutCreateInfo.setSetLayouts(m_vulkanDescSetLayout.lock()->GetVkDescriptorSetLayout())
                             ; //.setPushConstantRanges(m_vkPushConstRanges);
 
     m_vkPipelineLayout = m_vulkanDevice->GetVkDevice().createPipelineLayout(pipelineLayoutCreateInfo);

@@ -12,13 +12,13 @@ class VulkanPipelineLayout
 {
 public:
 private:
-    VulkanDescriptorSetLayout* m_vulkanDescSetLayout = nullptr;
+    std::weak_ptr<VulkanDescriptorSetLayout> m_vulkanDescSetLayout;
     VulkanDevice* m_vulkanDevice = nullptr;
 
     vk::PipelineLayout m_vkPipelineLayout;
     std::vector<vk::PushConstantRange> m_vkPushConstRanges;
 public:
-    explicit VulkanPipelineLayout(VulkanDevice* device, VulkanDescriptorSetLayout* descLayout);
+    explicit VulkanPipelineLayout(VulkanDevice* device, std::shared_ptr<VulkanDescriptorSetLayout> descLayout);
     ~VulkanPipelineLayout();
 
     inline vk::PipelineLayout& GetVkPieplineLayout() { return m_vkPipelineLayout; }

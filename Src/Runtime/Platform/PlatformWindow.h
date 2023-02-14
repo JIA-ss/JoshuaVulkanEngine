@@ -36,6 +36,7 @@ public:
 
     virtual void AddFrameBufferSizeChangedCallback(std::function<void(int, int)> func) = 0;
     virtual void WaitIfMinimization() = 0;
+    virtual void PollWindowEvent() = 0;
 };
 
 std::unique_ptr<PlatformWindow> CreatePlatformWindow(int width, int height, const char* title);

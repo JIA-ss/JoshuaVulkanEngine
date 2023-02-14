@@ -140,17 +140,17 @@ std::vector<vk::PresentModeKHR> VulkanDevice::GetSurfacePresentMode()
     return m_vulkanPhysicalDevice->GetVkPhysicalDevice().getSurfacePresentModesKHR(*m_vkSurfaceKHR);;
 }
 
-void VulkanDevice::CreateSwapchainFramebuffer(VulkanRenderPipeline *renderPipeline)
+void VulkanDevice::CreateSwapchainFramebuffer(VulkanRenderPass* renderPass)
 {
-    m_pVulkanSwapchain->CreateFrameBuffers(renderPipeline);
+    m_pVulkanSwapchain->CreateFrameBuffers(renderPass);
 }
 vk::Framebuffer VulkanDevice::GetSwapchainFramebuffer(int index)
 {
     return m_pVulkanSwapchain->GetFramebuffer(index);
 }
-void VulkanDevice::ReCreateSwapchain(VulkanRenderPipeline* renderPipeline)
+void VulkanDevice::ReCreateSwapchain(VulkanRenderPass* renderPass)
 {
     m_pVulkanSwapchain.reset();
     m_pVulkanSwapchain.reset(new VulkanSwapchain(this));
-    CreateSwapchainFramebuffer(renderPipeline);
+    CreateSwapchainFramebuffer(renderPass);
 }

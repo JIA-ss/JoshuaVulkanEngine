@@ -34,9 +34,9 @@ public:
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormat();
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities();
 
-    void CreateSwapchainFramebuffer(VulkanRenderPipeline* renderPipeline);
+    void CreateSwapchainFramebuffer(VulkanRenderPass* renderPass);
     vk::Framebuffer GetSwapchainFramebuffer(int index);
-    void ReCreateSwapchain(VulkanRenderPipeline* renderPipeline);
+    void ReCreateSwapchain(VulkanRenderPass* renderPass);
 
     inline vk::Extent2D GetSwapchainExtent() { return m_pVulkanSwapchain->GetSwapchainInfo().imageExtent; }
     inline const VulkanPhysicalDevice::QueueFamilyIndices& GetQueueFamilyIndices() { return *m_queueFamilyIndices; }

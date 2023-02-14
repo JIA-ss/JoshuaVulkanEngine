@@ -20,14 +20,18 @@ private:
     std::unique_ptr<VulkanInstance> m_pInstance;
     std::unique_ptr<VulkanPhysicalDevice> m_pPhysicalDevice;
     std::unique_ptr<VulkanDevice> m_pDevice;
-    std::unique_ptr<VulkanDescriptorSetLayout> m_pDescSetLayout;
-    std::unique_ptr<VulkanDescriptorSets> m_pDescSet;
-    std::unique_ptr<VulkanShaderSet> m_pShaderSet;
-    std::unique_ptr<VulkanRenderPipeline> m_pRenderPipeline;
+    std::shared_ptr<VulkanDescriptorSetLayout> m_pDescSetLayout;
+    std::shared_ptr<VulkanDescriptorSets> m_pDescSet;
+    std::shared_ptr<VulkanShaderSet> m_pShaderSet;
+    std::shared_ptr<VulkanRenderPipeline> m_pRenderPipeline;
 public:
     static VulkanContext& CreateInstance();
     static void DestroyInstance();
     static VulkanContext& GetInstance();
+
+    void operator=(const VulkanContext&) = delete;
+    VulkanContext(const VulkanContext&) = delete;
+
 public:
     VulkanContext() = default;
     ~VulkanContext() = default;

@@ -16,6 +16,7 @@ public:
     ~VulkanCommandPool();
 
     vk::CommandBuffer CreateReUsableCmd();
+    void FreeReUsableCmd(vk::CommandBuffer cmd);
 
     vk::CommandBuffer BeginSingleTimeCommand();
     void EndSingleTimeCommand(vk::CommandBuffer cmd, vk::Queue queue);

@@ -27,6 +27,7 @@ public:
     std::vector<const char*> GetRequiredExtensions() override;
     void AddFrameBufferSizeChangedCallback(std::function<void(int, int)> func) override;
     void WaitIfMinimization() override;
+    void PollWindowEvent() override;
 private:
     static void frameBufferSizeChanged(GLFWwindow* window, int, int);
 };

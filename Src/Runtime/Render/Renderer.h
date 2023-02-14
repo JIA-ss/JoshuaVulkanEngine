@@ -28,7 +28,6 @@ private:
     std::vector<uint32_t> m_indices;
     std::unique_ptr<RHI::VulkanVertexIndexBuffer> m_pVulkanVertexIndexBuffer;
 
-
     uint32_t m_imageIdx = 0;
     std::array<vk::CommandBuffer, MAX_FRAMES_IN_FLIGHT> m_vkCmds;
     std::array<vk::Fence, MAX_FRAMES_IN_FLIGHT> m_vkFenceInFlights;
@@ -38,7 +37,11 @@ private:
     std::chrono::steady_clock::time_point m_lastframeTimePoint;
     std::size_t m_frameNum = 0;
     bool m_frameBufferSizeChanged = false;
+
+    static uint32_t s_frameIdxInFlight;
 public:
+    static uint32_t GetCurrentFrameIndex() { return s_frameIdxInFlight; };
+
     Renderer();
     ~Renderer();
 
@@ -49,7 +52,6 @@ private:
     void createVertexBuf();
     void createIndiciesBuf();
 
-    void createTextureImage();
 
     void createCmdBufs();
     void createSyncObjects();

@@ -7,6 +7,7 @@
 #include "Runtime/VulkanRHI/VulkanInstance.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
+#include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Util/Fileutil.h"
@@ -51,10 +52,11 @@ void VulkanContext::Init(
 
     m_pShaderSet->AddShader(Util::File::getResourcePath() / "Shader\\GLSL\\SPIR-V\\shader.vert.spv", vk::ShaderStageFlagBits::eVertex);
     m_pShaderSet->AddShader(Util::File::getResourcePath() / "Shader\\GLSL\\SPIR-V\\shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
-    
-    m_pRenderPipeline.reset(new VulkanRenderPipeline(m_pDevice.get(), m_pShaderSet.get(), m_pDescSetLayout.get(), nullptr));
-    
-    m_pDevice->CreateSwapchainFramebuffer(m_pRenderPipeline.get());
+    m_pRenderPipeline = VulkanRenderPipelineBuilder(m_pDevice.get())
+                        .SetshaderSet(m_pShaderSet)
+                        .SetdescriptorSetLayout(m_pDescSetLayout)
+                        .build();
+    m_pDevice->CreateSwapchainFramebuffer(m_pRenderPipeline->GetPVulkanRenderPass());
 }
 
 

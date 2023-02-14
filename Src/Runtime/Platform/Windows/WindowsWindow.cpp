@@ -97,3 +97,8 @@ void platform::WindowsWindow::WaitIfMinimization()
         glfwWaitEvents();
     }
 }
+
+void platform::WindowsWindow::PollWindowEvent()
+{
+    glfwPollEvents();
+}
