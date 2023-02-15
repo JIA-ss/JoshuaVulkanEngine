@@ -8,19 +8,14 @@
             "type": "cppvsdbg",
             "console": "integratedTerminal",
             "request": "launch",
-            "name": "Debug",
+            "name": "Launch Demo",
             "program": "${workspaceFolder}/build/Debug/VulkanRHI.exe",
             "cwd": "${workspaceFolder}",
             "args": [
-                "${workspaceFolder}/Resources"
+                "${workspaceFolder}/Resources",
+                "MultiPipeline"
             ],
             "preLaunchTask": "compile glsl shaders"
         },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "RelWithDebInfo",
-            "program": "${workspaceFolder}/build/RelWithDebInfo/VulkanRHI.exe",
-        }
     ]
 }

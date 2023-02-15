@@ -37,7 +37,7 @@ public:
 
     void RenderLoop();
 
-
+    static std::shared_ptr<RendererBase> StartUpRenderer(const std::string& demoName, const RHI::VulkanInstance::Config& instanceConfig, const RHI::VulkanPhysicalDevice::Config& physicalConfig);
 protected:
     virtual void prepare() = 0;
     virtual void prepareRenderpass() = 0;

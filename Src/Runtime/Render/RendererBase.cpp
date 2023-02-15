@@ -1,8 +1,35 @@
 #include "RendererBase.h"
+#include "Runtime/Render/SimpleModel/SimpleModelRenderer.h"
+#include "Runtime/Render/MultiPipelines/MultiPipelineRenderer.h"
 #include "vulkan/vulkan_enums.hpp"
 #include <Runtime/VulkanRHI/VulkanShaderSet.h>
 #include <iostream>
+#include <memory>
 using namespace Render;
+
+std::shared_ptr<RendererBase> RendererBase::StartUpRenderer(const std::string& demoName, const RHI::VulkanInstance::Config& instanceConfig, const RHI::VulkanPhysicalDevice::Config& physicalConfig)
+{
+    static std::vector<std::string> targetDemoName;
+#define MAKE_SHARED_WITH_NAME(_NAME_)   \
+    targetDemoName.push_back(#_NAME_);  \
+    if (demoName == #_NAME_) {  \
+        return std::make_shared<_NAME_##Renderer>(instanceConfig, physicalConfig);  \
+    }
+
+    MAKE_SHARED_WITH_NAME(SimpleModel)
+    MAKE_SHARED_WITH_NAME(MultiPipeline)
+
+    std::cout << "!!!!arg error!!!!" << std::endl
+                << "please input arg as the following demo name: " << std::endl;
+    for (auto& name : targetDemoName)
+    {
+        std::cout << name << std::endl;
+    }
+
+    return nullptr;
+
+#undef MAKE_SHARED_WITH_NAME
+}
 
 RendererBase::RendererBase(const RHI::VulkanInstance::Config& instanceConfig,
     const RHI::VulkanPhysicalDevice::Config& physicalConfig)

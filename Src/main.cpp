@@ -22,10 +22,11 @@
 
 
 std::unique_ptr<platform::PlatformWindow> window = nullptr;
-std::unique_ptr<Render::RendererBase> render = nullptr;
+std::shared_ptr<Render::RendererBase> render = nullptr;
 
-void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::path& resourcesPath)
+void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::path& resourcesPath, const std::string& demoName)
 {
+
     window = platform::CreatePlatformWindow(1920, 1080, "RHI");
     window->Init();
     auto extensions = window->GetRequiredExtensions();
@@ -35,10 +36,11 @@ void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::pa
     feature.setSamplerAnisotropy(VK_TRUE)
             .setFillModeNonSolid(VK_TRUE);
 
-    render.reset(new Render::MultiPipelineRenderer(
+    render = Render::RendererBase::StartUpRenderer(
+        demoName,
         RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
         RHI::VulkanPhysicalDevice::Config { window.get(), feature, {}, vk::SampleCountFlagBits::e2 }
-    ));
+    );
 }
 
 void Run()
@@ -61,14 +63,21 @@ int main(int argc, char* argv[])
         std::cout << "launch args must specify path of Resources" << std::endl;
         return -1;
     }
+    if (argc < 3)
+    {
+        std::cout << "launch args must specify demo name" << std::endl;
+        return -1;
+    }
 
     boost::filesystem::path exePath = argv[0];
     boost::filesystem::path resourcesPath = argv[1];
     Util::File::setExePath(exePath);
     Util::File::setResourcePath(resourcesPath);
+    std::string demoName = argv[2];
 #ifndef NDEBUG
     std::cout << "exePath: " << exePath << std::endl;
     std::cout << "resourcesPath: " << resourcesPath << std::endl;
+    std::cout << "demoName: " << demoName <<  std::endl;
 #endif
     //return _01::createWindow();
     //return _02::createVulkanInstance();
@@ -85,7 +94,7 @@ int main(int argc, char* argv[])
     // window.initWindow();
 
 
-    StartUp(exePath, resourcesPath);
+    StartUp(exePath, resourcesPath, demoName);
 
     Run();
 
