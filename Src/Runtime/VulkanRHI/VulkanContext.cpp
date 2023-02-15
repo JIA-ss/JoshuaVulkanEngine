@@ -56,7 +56,7 @@ void VulkanContext::Init(
                         .SetshaderSet(m_pShaderSet)
                         .SetdescriptorSetLayout(m_pDescSetLayout)
                         .build();
-    m_pDevice->CreateSwapchainFramebuffer(m_pRenderPipeline->GetPVulkanRenderPass());
+    m_pDevice->CreateSwapchainFramebuffer(m_pRenderPipeline->GetVulkanRenderPass().get());
 }
 
 

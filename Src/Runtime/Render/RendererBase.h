@@ -16,7 +16,7 @@ protected:
     std::unique_ptr<RHI::VulkanPhysicalDevice> m_pPhysicalDevice;
     std::unique_ptr<RHI::VulkanDevice> m_pDevice;
 
-    std::unique_ptr<RHI::VulkanRenderPass> m_pRenderPass;
+    std::shared_ptr<RHI::VulkanRenderPass> m_pRenderPass;
 protected:
     std::array<vk::CommandBuffer, MAX_FRAMES_IN_FLIGHT> m_vkCmds;
     std::array<vk::Fence, MAX_FRAMES_IN_FLIGHT> m_vkFences;
@@ -39,6 +39,7 @@ public:
 
 protected:
     virtual void prepare() = 0;
+    virtual void prepareRenderpass() = 0;
     virtual void render() = 0;
 
     void recreateSwapchain();

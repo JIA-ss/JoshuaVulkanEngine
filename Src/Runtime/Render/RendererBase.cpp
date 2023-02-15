@@ -1,4 +1,5 @@
 #include "RendererBase.h"
+#include "vulkan/vulkan_enums.hpp"
 #include <Runtime/VulkanRHI/VulkanShaderSet.h>
 #include <iostream>
 using namespace Render;
@@ -36,6 +37,7 @@ RendererBase::~RendererBase()
 {
     unInitCmd();
     unInitSyncObj();
+    m_pRenderPass.reset();
 
     m_pDevice.reset();
     m_pPhysicalDevice.reset();
@@ -88,6 +90,8 @@ void RendererBase::unInitSyncObj()
 {
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
+        auto res = m_pDevice->GetVkDevice().waitForFences(m_vkFences[i], true, std::numeric_limits<uint64_t>::max());
+        assert(res == vk::Result::eSuccess);
         m_pDevice->GetVkDevice().destroyFence(m_vkFences[i]);
         m_pDevice->GetVkDevice().destroySemaphore(m_vkSemaphoreImageAvaliables[i]);
         m_pDevice->GetVkDevice().destroySemaphore(m_vkSemaphoreRenderFinisheds[i]);

@@ -65,7 +65,7 @@ public:
 
     inline VulkanDynamicState* GetPVulkanDynamicState() { return m_pVulkanDynamicState.get(); }
     inline VulkanDevice* GetPVulkanDevice() { return m_vulkanDevice; }
-    inline VulkanRenderPass* GetPVulkanRenderPass() { return m_pVulkanRenderPass.get(); }
+    inline std::shared_ptr<VulkanRenderPass> GetVulkanRenderPass() { return m_pVulkanRenderPass; }
     inline vk::Pipeline& GetVkPipeline() { return m_vkPipeline; }
     inline vk::RenderPass& GetVkRenderPass() { return m_pVulkanRenderPass->GetVkRenderPass(); }
     inline vk::PipelineLayout& GetVkPipelineLayout() { return m_pVulkanPipelineLayout->GetVkPieplineLayout(); }

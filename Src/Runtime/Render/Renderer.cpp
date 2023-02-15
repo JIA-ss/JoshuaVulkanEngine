@@ -262,6 +262,6 @@ void Renderer::recreateSwapchain()
         return;
     }
 
-    m_pRHIDevice->ReCreateSwapchain(m_pRHIRenderPipeline->GetPVulkanRenderPass());
+    m_pRHIDevice->ReCreateSwapchain(m_pRHIRenderPipeline->GetVulkanRenderPass().get());
 }
 }

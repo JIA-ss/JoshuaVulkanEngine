@@ -8,6 +8,7 @@
 #include "CppDemo/01_context/context.h"
 #include "Runtime/Platform/PlatformWindow.h"
 #include "Runtime/Render/Renderer.h"
+#include "Runtime/Render/SimpleModel/SimpleModelRenderer.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Util/Fileutil.h"
 #include <GLFW/glfw3.h>
@@ -19,6 +20,7 @@
 
 
 std::unique_ptr<platform::PlatformWindow> window = nullptr;
+std::unique_ptr<Render::SimpleModelRenderer> simpleModelRender = nullptr;
 
 void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::path& resourcesPath)
 {
@@ -29,29 +31,22 @@ void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::pa
 
     vk::PhysicalDeviceFeatures feature;
     feature.setSamplerAnisotropy(VK_TRUE);
-    auto& ctx = RHI::VulkanContext::CreateInstance(); 
-    ctx.Init(
+
+    simpleModelRender.reset(new Render::SimpleModelRenderer(
         RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
         RHI::VulkanPhysicalDevice::Config { window.get(), feature, {}, vk::SampleCountFlagBits::e2 }
-        );
-
+    ));
 }
 
 void Run()
 {
-    Render::Renderer rd;
-    while(!window->ShouldClose())
-    {
-        glfwPollEvents();
-        rd.Render();
-    }
+    simpleModelRender->RenderLoop();
 }
 
 void Shutdown()
 {
-    RHI::VulkanContext::GetInstance().Destroy();
+    simpleModelRender.reset();
     window->Destroy();
-    RHI::VulkanContext::DestroyInstance();
     window.reset();
 }
 
