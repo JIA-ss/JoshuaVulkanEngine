@@ -7,7 +7,9 @@
 
 #include "CppDemo/01_context/context.h"
 #include "Runtime/Platform/PlatformWindow.h"
+#include "Runtime/Render/MultiPipelines/MultiPipelineRenderer.h"
 #include "Runtime/Render/Renderer.h"
+#include "Runtime/Render/RendererBase.h"
 #include "Runtime/Render/SimpleModel/SimpleModelRenderer.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Util/Fileutil.h"
@@ -20,7 +22,7 @@
 
 
 std::unique_ptr<platform::PlatformWindow> window = nullptr;
-std::unique_ptr<Render::SimpleModelRenderer> simpleModelRender = nullptr;
+std::unique_ptr<Render::RendererBase> render = nullptr;
 
 void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::path& resourcesPath)
 {
@@ -32,7 +34,7 @@ void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::pa
     vk::PhysicalDeviceFeatures feature;
     feature.setSamplerAnisotropy(VK_TRUE);
 
-    simpleModelRender.reset(new Render::SimpleModelRenderer(
+    render.reset(new Render::MultiPipelineRenderer(
         RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
         RHI::VulkanPhysicalDevice::Config { window.get(), feature, {}, vk::SampleCountFlagBits::e2 }
     ));
@@ -40,12 +42,12 @@ void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::pa
 
 void Run()
 {
-    simpleModelRender->RenderLoop();
+    render->RenderLoop();
 }
 
 void Shutdown()
 {
-    simpleModelRender.reset();
+    render.reset();
     window->Destroy();
     window.reset();
 }

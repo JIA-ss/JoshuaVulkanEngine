@@ -130,3 +130,6 @@ void RendererBase::recreateSwapchain()
 
     m_pDevice->ReCreateSwapchain(m_pRenderPass.get());
 }
+
+vk::CommandBuffer& beginCommand();
+void endCommand(vk::CommandBuffer& cmd);

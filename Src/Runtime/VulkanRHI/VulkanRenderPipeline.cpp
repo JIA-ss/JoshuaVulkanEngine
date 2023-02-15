@@ -35,7 +35,7 @@ std::shared_ptr<VulkanRenderPipeline> VulkanRenderPipelineBuilder::build()
     if (!m_VulkanInputAssemblyState) m_VulkanInputAssemblyState.reset(new VulkanInputAssemblyState());
     if (!m_VulkanVertexInputState) m_VulkanVertexInputState.reset(new VulkanVertextInputState());
     if (!m_VulkanViewPortState) m_VulkanViewPortState.reset(new VulkanViewportState({viewport}, {scissor}));
-    if (!m_VulkanRasterizationState) m_VulkanRasterizationState.reset(new VulkanRasterizationState());
+    if (!m_VulkanRasterizationState) m_VulkanRasterizationState = VulkanRasterizationStateBuilder().build();
     if (!m_VulkanMultisampleState) m_VulkanMultisampleState.reset(new VulkanMultisampleState(sampleCount));
     if (!m_VulkanDepthStencilState) m_VulkanDepthStencilState.reset(new VulkanDepthStencilState());
     if (!m_VulkanColorBlendState) m_VulkanColorBlendState.reset(new VulkanColorBlendState());
@@ -127,6 +127,17 @@ VulkanRenderPipeline::VulkanRenderPipeline(
                 .setLayout(m_pVulkanPipelineLayout->GetVkPieplineLayout())
                 // render pass
                 .setRenderPass(m_pVulkanRenderPass->GetVkRenderPass());
+    if (!m_parent.expired())
+    {
+        createInfo.setFlags(vk::PipelineCreateFlagBits::eDerivative)
+                    .setBasePipelineHandle(m_parent.lock()->GetVkPipeline())
+                    .setBasePipelineIndex(-1);
+    }
+    else
+    {
+        createInfo.setFlags(vk::PipelineCreateFlagBits::eAllowDerivatives);
+    }
+
     auto result = m_vulkanDevice->GetVkDevice().createGraphicsPipeline(nullptr, createInfo);
     if (result.result != vk::Result::eSuccess)
     {

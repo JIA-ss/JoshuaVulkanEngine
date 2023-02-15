@@ -72,11 +72,6 @@ public:
 };
 
 
-#define BUILDER_SHARED_PTR_SET_FUNC(_BUILDER_TYPE_, _PROP_TYPE_, _PROP_NAME_)   \
-private:    \
-    std::shared_ptr<_PROP_TYPE_> m_##_PROP_NAME_ = nullptr; \
-public: \
-    inline _BUILDER_TYPE_& Set##_PROP_NAME_(std::shared_ptr<_PROP_TYPE_> prop) { m_##_PROP_NAME_ = prop; return *this; }
 
 class VulkanRenderPipelineBuilder
 {
@@ -105,6 +100,6 @@ public:
     std::shared_ptr<VulkanRenderPipeline> build();
 };
 
-#undef BUILDER_SHARED_PTR_SET_FUNC
+
 
 RHI_NAMESPACE_END

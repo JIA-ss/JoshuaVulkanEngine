@@ -1,6 +1,7 @@
 #pragma once
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
+#include "vulkan/vulkan_handles.hpp"
 #include <memory>
 #include <Runtime/VulkanRHI/VulkanInstance.h>
 #include <Runtime/VulkanRHI/VulkanPhysicalDevice.h>
@@ -41,6 +42,9 @@ protected:
     virtual void prepare() = 0;
     virtual void prepareRenderpass() = 0;
     virtual void render() = 0;
+
+    vk::CommandBuffer& beginCommand();
+    void endCommand(vk::CommandBuffer& cmd);
 
     void recreateSwapchain();
 private:

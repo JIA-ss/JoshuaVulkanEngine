@@ -8,6 +8,13 @@
     "boost-filesystem",
     "boost-system",
     "stb",
-    "tinyobjloader"
+    "tinyobjloader",
+    "tinygltf",
+    {
+      "name": "ktx",
+      "features":[
+        "vulkan"
+      ]
+    }
   ]
 }

@@ -6,6 +6,30 @@
 
 RHI_NAMESPACE_USING
 
+VulkanCmdBeginEndRAII::VulkanCmdBeginEndRAII(vk::CommandBuffer cmd)
+    : m_cmd(cmd)
+{
+    vk::CommandBufferBeginInfo beginInfo;
+    beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    m_cmd.begin(beginInfo);
+}
+
+VulkanCmdBeginEndRAII::~VulkanCmdBeginEndRAII()
+{
+    m_cmd.end();
+}
+
+VulkanCmdBeginEndRenderPassRAII::VulkanCmdBeginEndRenderPassRAII(vk::CommandBuffer cmd, vk::RenderPassBeginInfo beginInfo, vk::SubpassContents subpasscontents)
+    : m_cmd(cmd)
+{
+    m_cmd.beginRenderPass(beginInfo, subpasscontents);
+}
+
+VulkanCmdBeginEndRenderPassRAII::~VulkanCmdBeginEndRenderPassRAII()
+{
+    m_cmd.endRenderPass();
+}
+
 VulkanCommandPool::VulkanCommandPool(VulkanDevice* device, uint32_t queueFamilyIndex)
     : m_pVulkanDevice(device)
 {

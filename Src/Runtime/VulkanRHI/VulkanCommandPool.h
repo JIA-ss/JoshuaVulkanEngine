@@ -4,6 +4,24 @@
 #include <vulkan/vulkan.hpp>
 RHI_NAMESPACE_BEGIN
 
+class VulkanCmdBeginEndRAII
+{
+private:
+    vk::CommandBuffer m_cmd;
+public:
+    VulkanCmdBeginEndRAII(vk::CommandBuffer cmd);
+    ~VulkanCmdBeginEndRAII();
+};
+
+class VulkanCmdBeginEndRenderPassRAII
+{
+private:
+    vk::CommandBuffer m_cmd;
+public:
+    VulkanCmdBeginEndRenderPassRAII(vk::CommandBuffer cmd, vk::RenderPassBeginInfo beginInfo, vk::SubpassContents subpasscontents = {});
+    ~VulkanCmdBeginEndRenderPassRAII();
+};
+
 class VulkanDevice;
 class VulkanCommandPool
 {

@@ -34,7 +34,7 @@ protected:
     void prepareRenderpass() override;
     void render() override;
 
-private:
+protected:
     void prepareVertexData();
     void prepareShader();
     void preparePipeline();
