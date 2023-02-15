@@ -25,7 +25,7 @@ std::shared_ptr<RendererBase> RendererBase::StartUpRenderer(const std::string& d
     {
         std::cout << name << std::endl;
     }
-
+    assert(false);
     return nullptr;
 
 #undef MAKE_SHARED_WITH_NAME
