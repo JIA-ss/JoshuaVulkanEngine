@@ -86,7 +86,7 @@ void VulkanSwapchain::queryInfo()
     }
 
     auto capabilities = m_pVulkanDevice->GetSurfaceCapabilities();
-    m_swapchainInfo.imageCount = std::clamp<uint32_t>(2, capabilities.minImageCount, capabilities.maxImageCount);
+    m_swapchainInfo.imageCount = std::clamp<uint32_t>(MAX_FRAMES_IN_FLIGHT, capabilities.minImageCount, capabilities.maxImageCount);
     m_swapchainInfo.imageExtent.width = std::clamp<uint32_t>(windowWidth, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
     m_swapchainInfo.imageExtent.height = std::clamp<uint32_t>(windowHeight, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
     m_swapchainInfo.transform = capabilities.currentTransform;
