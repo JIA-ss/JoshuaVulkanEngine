@@ -32,7 +32,8 @@ void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::pa
     std::vector<const char*> enabledInstanceExtensions;
 
     vk::PhysicalDeviceFeatures feature;
-    feature.setSamplerAnisotropy(VK_TRUE);
+    feature.setSamplerAnisotropy(VK_TRUE)
+            .setFillModeNonSolid(VK_TRUE);
 
     render.reset(new Render::MultiPipelineRenderer(
         RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },

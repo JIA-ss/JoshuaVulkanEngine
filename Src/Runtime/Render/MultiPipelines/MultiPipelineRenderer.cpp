@@ -17,7 +17,10 @@ MultiPipelineRenderer::MultiPipelineRenderer(const RHI::VulkanInstance::Config& 
 
 MultiPipelineRenderer::~MultiPipelineRenderer()
 {
+    m_pDevice->GetVkDevice().waitIdle();
 
+    m_Pipelines.clear();
+    m_pVulkanPipelineLayout.reset();
 }
 
 void MultiPipelineRenderer::prepare()
