@@ -19,17 +19,6 @@ VulkanCmdBeginEndRAII::~VulkanCmdBeginEndRAII()
     m_cmd.end();
 }
 
-VulkanCmdBeginEndRenderPassRAII::VulkanCmdBeginEndRenderPassRAII(vk::CommandBuffer cmd, vk::RenderPassBeginInfo beginInfo, vk::SubpassContents subpasscontents)
-    : m_cmd(cmd)
-{
-    m_cmd.beginRenderPass(beginInfo, subpasscontents);
-}
-
-VulkanCmdBeginEndRenderPassRAII::~VulkanCmdBeginEndRenderPassRAII()
-{
-    m_cmd.endRenderPass();
-}
-
 VulkanCommandPool::VulkanCommandPool(VulkanDevice* device, uint32_t queueFamilyIndex)
     : m_pVulkanDevice(device)
 {

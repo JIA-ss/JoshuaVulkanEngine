@@ -20,7 +20,8 @@ private:
     RHI::VulkanDevice* m_pRHIDevice;
     vk::Device* m_pVkDevice;
     RHI::VulkanRenderPipeline* m_pRHIRenderPipeline;
-    RHI::VulkanDescriptorSets* m_pRHIDescSets;
+    RHI::VulkanDescriptorSets* m_pRHIUniformDescSets;
+    RHI::VulkanDescriptorSets* m_pRHISamplerDescSets;
 
     std::vector<RHI::Vertex> m_vertices;
     std::unique_ptr<RHI::VulkanVertexBuffer> m_pVulkanVertexBuffer;

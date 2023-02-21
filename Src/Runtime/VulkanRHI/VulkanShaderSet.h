@@ -23,7 +23,6 @@ public:
     ~VulkanShaderSet();
 
     bool AddShader(const boost::filesystem::path& spvFile, vk::ShaderStageFlagBits type, const char *entryPoint = "main");
-    void AppendVertexAttributeDescription();
 
     std::vector<vk::PipelineShaderStageCreateInfo> GetShaderCreateInfos();
 private:

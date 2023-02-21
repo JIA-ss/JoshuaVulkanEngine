@@ -15,24 +15,38 @@ const vk::VertexInputBindingDescription& Vertex::GetBindingDescription()
     return bindingDesc;
 }
 
-const std::array<vk::VertexInputAttributeDescription,3>& Vertex::GetAttributeDescriptions()
+const std::array<vk::VertexInputAttributeDescription,5>& Vertex::GetAttributeDescriptions()
 {
-    static std::array<vk::VertexInputAttributeDescription, 3> attributeDescs{};
+    static std::array<vk::VertexInputAttributeDescription, 5> attributeDescs{};
     attributeDescs[0]
                     .setBinding(0)
                     .setLocation(0)
                     .setFormat(vk::Format::eR32G32B32Sfloat)
                     .setOffset(offsetof(Vertex, position));
+
     attributeDescs[1]
                     .setBinding(0)
                     .setLocation(1)
-                    .setFormat(vk::Format::eR32G32B32Sfloat)
-                    .setOffset(offsetof(Vertex, color));
+                    .setFormat(vk::Format::eR32G32Sfloat)
+                    .setOffset(offsetof(Vertex, texCoord));
+
     attributeDescs[2]
                     .setBinding(0)
                     .setLocation(2)
-                    .setFormat(vk::Format::eR32G32Sfloat)
-                    .setOffset(offsetof(Vertex, texCoord));
+                    .setFormat(vk::Format::eR32G32B32Sfloat)
+                    .setOffset(offsetof(Vertex, normal));
+
+    attributeDescs[3]
+                    .setBinding(0)
+                    .setLocation(3)
+                    .setFormat(vk::Format::eR32G32B32Sfloat)
+                    .setOffset(offsetof(Vertex, tangent));
+
+    attributeDescs[4]
+                    .setBinding(0)
+                    .setLocation(4)
+                    .setFormat(vk::Format::eR32G32B32Sfloat)
+                    .setOffset(offsetof(Vertex, bitangent));
 
     return attributeDescs;
 }

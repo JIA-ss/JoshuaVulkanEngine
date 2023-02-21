@@ -1,4 +1,6 @@
 #pragma once
+#include "Runtime/VulkanRHI/Graphic/Model.h"
+#include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorSets.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
@@ -11,18 +13,9 @@ namespace Render {
 
 class SimpleModelRenderer : public RendererBase
 {
+
 protected:
-    std::vector<RHI::Vertex> m_vertices;
-    std::unique_ptr<RHI::VulkanVertexBuffer> m_pVulkanVertexBuffer;
-
-    std::vector<uint32_t> m_indices;
-    std::unique_ptr<RHI::VulkanVertexIndexBuffer> m_pVulkanVertexIndexBuffer;
-
-    std::shared_ptr<RHI::VulkanShaderSet> m_pVulkanShaderSet;
-    std::shared_ptr<RHI::VulkanDescriptorSetLayout> m_pVulkanDescriptorSetLayout;
-    std::shared_ptr<RHI::VulkanDescriptorSets> m_pVulkanDescriptorSets;
-    std::shared_ptr<RHI::VulkanRenderPipeline> m_pVulkanRenderPipeline;
-
+    std::unique_ptr<RHI::Model> m_pModel;
     uint32_t m_imageIdx = 0;
 public:
     explicit SimpleModelRenderer(const RHI::VulkanInstance::Config& instanceConfig,
@@ -31,12 +24,11 @@ public:
 
 protected:
     void prepare() override;
+    virtual void prepareModel();
     void prepareRenderpass() override;
     void render() override;
 
 protected:
-    void prepareVertexData();
-    void prepareShader();
     void preparePipeline();
     void prepareFrameBuffer();
 

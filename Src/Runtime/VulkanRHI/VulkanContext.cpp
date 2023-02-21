@@ -3,6 +3,7 @@
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanDynamicState.h"
 #include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/VulkanDescriptorPool.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/VulkanInstance.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
@@ -16,6 +17,7 @@
 #include "vulkan/vulkan_structs.hpp"
 #include <assert.h>
 #include <stdio.h>
+#include <vector>
 RHI_NAMESPACE_USING
 
 std::unique_ptr<VulkanContext> VulkanContext::s_instance = nullptr;
@@ -54,8 +56,8 @@ void VulkanContext::Init(
     m_pShaderSet->AddShader(Util::File::getResourcePath() / "Shader\\GLSL\\SPIR-V\\shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
     m_pRenderPipeline = VulkanRenderPipelineBuilder(m_pDevice.get())
                         .SetshaderSet(m_pShaderSet)
-                        .SetdescriptorSetLayout(m_pDescSetLayout)
-                        .build();
+                        .AddDescriptorLayout(m_pDescSetLayout)
+                        .buildShared();
     m_pDevice->CreateSwapchainFramebuffer(m_pRenderPipeline->GetVulkanRenderPass().get());
 }
 
@@ -64,31 +66,32 @@ void VulkanContext::Init(
 void VulkanContext::createVulkanDescriptorSetLayout()
 {
     m_pDescSetLayout.reset(new VulkanDescriptorSetLayout(m_pDevice.get()));
-    std::vector<vk::DescriptorSetLayoutBinding> bindings(2);
-    bindings[0]
-            .setBinding(0)
-            .setDescriptorCount(1)
-            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-            .setStageFlags(vk::ShaderStageFlagBits::eVertex)
-            ;
-    bindings[1]
-            .setBinding(1)
-            .setDescriptorCount(1)
-            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-            .setStageFlags(vk::ShaderStageFlagBits::eFragment)
-            ;
-    m_pDescSetLayout->AddBindings(bindings);
+
+    m_pDescSetLayout->AddBinding(0, vk::DescriptorSetLayoutBinding()
+                        .setBinding(0)
+                        .setDescriptorCount(1)
+                        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                        .setStageFlags(vk::ShaderStageFlagBits::eVertex)
+                    );
+    m_pDescSetLayout->AddBinding(1, vk::DescriptorSetLayoutBinding()
+                        .setBinding(1)
+                        .setDescriptorCount(1)
+                        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                        .setStageFlags(vk::ShaderStageFlagBits::eFragment)
+                    );
     m_pDescSetLayout->Finish();
 }
 
 void VulkanContext::createVulkanDescriptorSet()
 {
-    std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers(MAX_FRAMES_IN_FLIGHT);
-    std::vector<std::unique_ptr<VulkanImageSampler>> images(MAX_FRAMES_IN_FLIGHT);
+    m_images.resize(MAX_FRAMES_IN_FLIGHT);
+    std::vector<VulkanBuffer*> pBuffers(MAX_FRAMES_IN_FLIGHT);
+    std::vector<VulkanImageSampler *> pImageSamplers(MAX_FRAMES_IN_FLIGHT);
+
     auto imageRawData = Util::Texture::RawData::Load(Util::File::getResourcePath() / "Texture/viking_room.png", Util::Texture::RawData::Format::eRgbAlpha);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        uniformBuffers[i].reset(
+        m_uniformBuffers[i].reset(
             new VulkanBuffer(
                     m_pDevice.get(), sizeof(UniformBufferObject),
                     vk::BufferUsageFlagBits::eUniformBuffer,
@@ -96,10 +99,11 @@ void VulkanContext::createVulkanDescriptorSet()
                 vk::SharingMode::eExclusive
                 )
         );
+        pBuffers[i] = m_uniformBuffers[i].get();
         VulkanImageSampler::Config imageSamplerConfig;
         VulkanImageResource::Config imageResourceConfig;
         imageResourceConfig.extent = vk::Extent3D{(uint32_t)imageRawData->GetWidth(), (uint32_t)imageRawData->GetHeight(), 1};
-        images[i].reset(
+        m_images[i].reset(
             new VulkanImageSampler(
                 m_pDevice.get(),
                 imageRawData,
@@ -108,16 +112,37 @@ void VulkanContext::createVulkanDescriptorSet()
                 imageResourceConfig
                 )
         );
+        pImageSamplers[i] = m_images[i].get();
     }
+    std::vector<vk::DescriptorPoolSize> poolSizes
+    {
+        vk::DescriptorPoolSize
+        {
+        vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT
+        },
+        vk::DescriptorPoolSize
+        {
+        vk::DescriptorType::eCombinedImageSampler, (uint32_t)m_images.size()
+        },
+    };
+    m_pDescPool.reset(new VulkanDescriptorPool(m_pDevice.get(), poolSizes, poolSizes.size()));
 
-    m_pDescSet.reset(new VulkanDescriptorSets(m_pDevice.get(), m_pDescSetLayout.get(), std::move(uniformBuffers), std::move(images)));
+    std::vector<uint32_t> uniformBinding(MAX_FRAMES_IN_FLIGHT, VulkanDescriptorSetLayout::DESCRIPTOR_MVPUBO_BINDING_ID);
+    m_pUniformSets = m_pDescPool->AllocUniformDescriptorSet(m_pDescSetLayout.get(), pBuffers, uniformBinding);
+
+    std::vector<uint32_t> samplerBinding(1, VulkanDescriptorSetLayout::DESCRIPTOR_SAMPLER1_BINDING_ID);
+    for (int i = 1; i < m_images.size(); i++)
+    {
+        samplerBinding.emplace_back(VulkanDescriptorSetLayout::DESCRIPTOR_SAMPLER1_BINDING_ID + i);
+    }
+    m_pSamplerSets = m_pDescPool->AllocSamplerDescriptorSet(m_pDescSetLayout.get(), pImageSamplers, samplerBinding);
 }
 
 void VulkanContext::Destroy()
 {
     m_pRenderPipeline.reset();
     m_pDescSetLayout.reset();
-    m_pDescSet.reset();
+    m_pDescPool.reset();
     m_pShaderSet.reset();
     m_pDevice.reset();
     m_pPhysicalDevice.reset();

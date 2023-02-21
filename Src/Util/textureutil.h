@@ -1,5 +1,7 @@
 #pragma once
 #include <boost/filesystem/path.hpp>
+#include <vulkan/vulkan.hpp>
+#include <assimp/material.h>
 #include <memory>
 
 namespace Util { namespace Texture {
@@ -37,5 +39,6 @@ public:
     static std::shared_ptr<RawData> Load(const boost::filesystem::path& texturePath, Format format);
 };
 
+    vk::SamplerAddressMode Convert(aiTextureMapMode mapMode);
 }
 }

@@ -44,13 +44,14 @@ VulkanDevice::VulkanDevice(VulkanPhysicalDevice* physicalDevice) : m_vulkanPhysi
     m_pVulkanPipelineCache.reset(new VulkanPipelineCache(this, m_vulkanPhysicalDevice->GetPhysicalDeviceInfo().deviceProps,
         Util::File::getResourcePath() / "PipelineCache\\pipelinecache.bin"));
 
-
+    VulkanDescriptorSetLayoutPresets::Init(this);
     std::cout << "=== === === VulkanDevice Construct End === === ===" << std::endl;
 }
 
 VulkanDevice::~VulkanDevice()
 {
     m_vkDevice.waitIdle();
+    VulkanDescriptorSetLayoutPresets::UnInit();
     m_pVulkanPipelineCache.reset();
     m_pVulkanSwapchain.reset();
     m_pVulkanCmdPool.reset();

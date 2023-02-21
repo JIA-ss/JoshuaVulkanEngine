@@ -8,14 +8,14 @@
 
 
 #define BUILDER_SHARED_PTR_SET_FUNC(_BUILDER_TYPE_, _PROP_TYPE_, _PROP_NAME_)   \
-private:    \
+protected:    \
     std::shared_ptr<_PROP_TYPE_> m_##_PROP_NAME_ = nullptr; \
 public: \
     inline _BUILDER_TYPE_& Set##_PROP_NAME_(std::shared_ptr<_PROP_TYPE_> prop) { m_##_PROP_NAME_ = prop; return *this; }
 
 
 #define BUILDER_SET_FUNC(_BUILDER_TYPE_, _PROP_TYPE_, _PROP_NAME_, _DEFAULT_VALUE_)   \
-private:    \
+protected:    \
     _PROP_TYPE_ m_##_PROP_NAME_ = _DEFAULT_VALUE_; \
 public: \
     inline _BUILDER_TYPE_& Set##_PROP_NAME_(const _PROP_TYPE_& prop) { m_##_PROP_NAME_ = prop; return *this; }

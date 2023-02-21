@@ -1,6 +1,9 @@
 #include "RendererBase.h"
 #include "Runtime/Render/SimpleModel/SimpleModelRenderer.h"
 #include "Runtime/Render/MultiPipelines/MultiPipelineRenderer.h"
+#include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
+#include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
+#include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
 #include "vulkan/vulkan_enums.hpp"
 #include <Runtime/VulkanRHI/VulkanShaderSet.h>
 #include <iostream>
@@ -41,6 +44,9 @@ RendererBase::RendererBase(const RHI::VulkanInstance::Config& instanceConfig,
     initCmd();
     initSyncObj();
     initFrameBufferResizeCallback();
+    prepareLayout();
+    initMVPUniformBuffer();
+    
 
     m_lastframeTimePoint = std::chrono::high_resolution_clock::now();
 }
@@ -64,7 +70,9 @@ RendererBase::~RendererBase()
 {
     unInitCmd();
     unInitSyncObj();
+    unInitMVPUniformBuffer();
     m_pRenderPass.reset();
+    m_pPipelineLayout.reset();
 
     m_pDevice.reset();
     m_pPhysicalDevice.reset();
@@ -104,6 +112,34 @@ void RendererBase::initFrameBufferResizeCallback()
                         });
 }
 
+void RendererBase::initMVPUniformBuffer()
+{
+    std::vector<RHI::VulkanBuffer*> pBuffers(MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        m_pUniformBuffers[i].reset(
+            new RHI::VulkanBuffer(
+                    m_pDevice.get(), sizeof(RHI::UniformBufferObject),
+                    vk::BufferUsageFlagBits::eUniformBuffer,
+                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                vk::SharingMode::eExclusive
+                )
+        );
+        pBuffers[i] = m_pUniformBuffers[i].get();
+    }
+    std::vector<vk::DescriptorPoolSize> poolSizes
+    {
+        vk::DescriptorPoolSize
+        {
+        vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT
+        }
+    };
+    m_pDescPool.reset(new RHI::VulkanDescriptorPool(m_pDevice.get(), poolSizes, MAX_FRAMES_IN_FLIGHT));
+
+    std::vector<uint32_t> uniformBinding(MAX_FRAMES_IN_FLIGHT, RHI::VulkanDescriptorSetLayout::DESCRIPTOR_MVPUBO_BINDING_ID);
+    m_pUniformSets = m_pDescPool->AllocUniformDescriptorSet(m_pSet0UniformSetLayout.lock().get(), pBuffers, uniformBinding);
+}
+
 void RendererBase::unInitCmd()
 {
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
@@ -125,6 +161,17 @@ void RendererBase::unInitSyncObj()
         m_vkSemaphoreImageAvaliables[i] = nullptr;
         m_vkSemaphoreRenderFinisheds[i] = nullptr;
         m_vkFences[i] = nullptr;
+    }
+}
+
+void RendererBase::unInitMVPUniformBuffer()
+{
+    m_pUniformSets.reset();
+    m_pDescPool.reset();
+    for (int i = 0; i < m_pUniformBuffers.size(); i++)
+    {
+        m_pUniformBuffers[i].reset();
+        m_pUniformBuffers[i] = nullptr;
     }
 }
 
@@ -158,5 +205,10 @@ void RendererBase::recreateSwapchain()
     m_pDevice->ReCreateSwapchain(m_pRenderPass.get());
 }
 
-vk::CommandBuffer& beginCommand();
-void endCommand(vk::CommandBuffer& cmd);
+void RendererBase::prepareLayout()
+{
+    m_pSet0UniformSetLayout = RHI::VulkanDescriptorSetLayoutPresets::OnlyMVPUBO;
+    m_pSet1SamplerSetLayout = RHI::VulkanDescriptorSetLayoutPresets::Custom5Sampler;
+
+    m_pPipelineLayout.reset(new RHI::VulkanPipelineLayout(m_pDevice.get(), {m_pSet0UniformSetLayout.lock(), m_pSet1SamplerSetLayout.lock()}));
+}

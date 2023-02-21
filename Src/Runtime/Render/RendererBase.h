@@ -1,4 +1,8 @@
 #pragma once
+#include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
+#include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
+#include "Runtime/VulkanRHI/VulkanDescriptorPool.h"
+#include "Runtime/VulkanRHI/VulkanDescriptorSets.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "vulkan/vulkan_handles.hpp"
@@ -16,13 +20,23 @@ protected:
     std::unique_ptr<RHI::VulkanInstance> m_pInstance;
     std::unique_ptr<RHI::VulkanPhysicalDevice> m_pPhysicalDevice;
     std::unique_ptr<RHI::VulkanDevice> m_pDevice;
+    std::unique_ptr<RHI::VulkanDescriptorPool> m_pDescPool;
+    std::shared_ptr<RHI::VulkanDescriptorSets> m_pUniformSets;
+
+    std::weak_ptr<RHI::VulkanDescriptorSetLayout> m_pSet0UniformSetLayout;
+    std::weak_ptr<RHI::VulkanDescriptorSetLayout> m_pSet1SamplerSetLayout;
+    std::shared_ptr<RHI::VulkanPipelineLayout> m_pPipelineLayout;
 
     std::shared_ptr<RHI::VulkanRenderPass> m_pRenderPass;
+    std::array<std::unique_ptr<RHI::VulkanBuffer>, MAX_FRAMES_IN_FLIGHT> m_pUniformBuffers;
+
+
 protected:
     std::array<vk::CommandBuffer, MAX_FRAMES_IN_FLIGHT> m_vkCmds;
     std::array<vk::Fence, MAX_FRAMES_IN_FLIGHT> m_vkFences;
     std::array<vk::Semaphore, MAX_FRAMES_IN_FLIGHT> m_vkSemaphoreImageAvaliables;
     std::array<vk::Semaphore, MAX_FRAMES_IN_FLIGHT> m_vkSemaphoreRenderFinisheds;
+
 
     uint32_t m_frameIdxInFlight = 0;
 
@@ -47,14 +61,18 @@ protected:
     void endCommand(vk::CommandBuffer& cmd);
 
     void recreateSwapchain();
+
+    virtual void prepareLayout();
 private:
 
     void initCmd();
     void initSyncObj();
     void initFrameBufferResizeCallback();
+    void initMVPUniformBuffer();
 
     void unInitCmd();
     void unInitSyncObj();
+    void unInitMVPUniformBuffer();
 
     void outputFrameRate();
 };

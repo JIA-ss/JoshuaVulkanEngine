@@ -9,12 +9,6 @@
     "boost-system",
     "stb",
     "tinyobjloader",
-    "tinygltf",
-    {
-      "name": "ktx",
-      "features":[
-        "vulkan"
-      ]
-    }
+    "assimp"
   ]
 }

@@ -9,7 +9,7 @@ namespace Render {
 class MultiPipelineRenderer : public SimpleModelRenderer
 {
 protected:
-    std::shared_ptr<RHI::VulkanPipelineLayout> m_pVulkanPipelineLayout;
+
     std::vector<std::shared_ptr<RHI::VulkanRenderPipeline>> m_Pipelines;
 public:
     explicit MultiPipelineRenderer(const RHI::VulkanInstance::Config& instanceConfig,
@@ -21,7 +21,7 @@ protected:
     void render() override;
 
 protected:
-    void preparePipelineLayout();
+
     void prepareMultiPipelines();
 };
 

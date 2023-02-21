@@ -16,11 +16,28 @@
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
+#include <memory>
 #include <vulkan/vulkan.hpp>
 
 RHI_NAMESPACE_USING
 
-std::shared_ptr<VulkanRenderPipeline> VulkanRenderPipelineBuilder::build()
+VulkanRenderPipelineBuilder& VulkanRenderPipelineBuilder::AddDescriptorLayout(std::shared_ptr<VulkanDescriptorSetLayout> layout)
+{
+    m_descriptorSetLayouts.push_back(layout);
+    return *this;
+}
+
+VulkanRenderPipelineBuilder& VulkanRenderPipelineBuilder::SetDescriptorLayout(std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> layouts)
+{
+    m_descriptorSetLayouts.clear();
+    for (int i = 0; i < layouts.size(); i++)
+    {
+        AddDescriptorLayout(layouts[i]);
+    }
+    return *this;
+}
+
+VulkanRenderPipeline* VulkanRenderPipelineBuilder::build()
 {
     assert(m_vulkanDevice);
     int windowWidth = m_vulkanDevice->GetVulkanPhysicalDevice()->GetWindowWidth();
@@ -40,13 +57,12 @@ std::shared_ptr<VulkanRenderPipeline> VulkanRenderPipelineBuilder::build()
     if (!m_VulkanDepthStencilState) m_VulkanDepthStencilState.reset(new VulkanDepthStencilState());
     if (!m_VulkanColorBlendState) m_VulkanColorBlendState.reset(new VulkanColorBlendState());
     if (!m_VulkanRenderPass) m_VulkanRenderPass.reset(new VulkanRenderPass(m_vulkanDevice, m_vulkanDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, sampleCount));
-    if (!m_VulkanPipelineLayout) m_VulkanPipelineLayout.reset(new VulkanPipelineLayout(m_vulkanDevice, m_descriptorSetLayout));
+    if (!m_VulkanPipelineLayout) m_VulkanPipelineLayout.reset(new VulkanPipelineLayout(m_vulkanDevice, m_descriptorSetLayouts));
 
-    return std::make_shared<VulkanRenderPipeline>(
+    return new VulkanRenderPipeline(
         m_vulkanDevice,
         m_shaderSet,
-        m_descriptorSetLayout,
-        m_parent.lock(),
+        m_parent,
         m_VulkanRenderPass,
         m_VulkanDynamicState,
         m_VulkanInputAssemblyState,
@@ -60,11 +76,23 @@ std::shared_ptr<VulkanRenderPipeline> VulkanRenderPipelineBuilder::build()
     );
 }
 
+std::shared_ptr<VulkanRenderPipeline> VulkanRenderPipelineBuilder::buildShared()
+{
+    std::shared_ptr<VulkanRenderPipeline> pipeline;
+    pipeline.reset(build());
+    return pipeline;
+}
+std::unique_ptr<VulkanRenderPipeline> VulkanRenderPipelineBuilder::buildUnique()
+{
+    std::unique_ptr<VulkanRenderPipeline> pipeline;
+    pipeline.reset(build());
+    return pipeline;
+}
+
 VulkanRenderPipeline::VulkanRenderPipeline(
     VulkanDevice* device,
     std::shared_ptr<VulkanShaderSet> shaderset,
-    std::shared_ptr<VulkanDescriptorSetLayout> layout,
-    std::shared_ptr<VulkanRenderPipeline> input,
+    VulkanRenderPipeline* input,
     std::shared_ptr<VulkanRenderPass> renderpass,
     std::shared_ptr<VulkanDynamicState> dynamicState,
     std::shared_ptr<VulkanInputAssemblyState> inputAssemblyState,
@@ -78,7 +106,6 @@ VulkanRenderPipeline::VulkanRenderPipeline(
 )
     : m_vulkanDevice(device)
     , m_vulkanShaderSet(shaderset)
-    , m_vulkanDescSetLayout(layout)
     , m_parent(input)
     , m_pVulkanRenderPass(renderpass)
     , m_pVulkanDynamicState(dynamicState)
@@ -91,9 +118,9 @@ VulkanRenderPipeline::VulkanRenderPipeline(
     , m_pVulkanColorBlendState(blendState)
     , m_pVulkanPipelineLayout(pipelineLayout)
 {
-    if (!shaderset && !m_parent.expired())
+    if (!shaderset && m_parent)
     {
-        m_vulkanShaderSet = m_parent.lock()->m_vulkanShaderSet;
+        m_vulkanShaderSet = m_parent->m_vulkanShaderSet;
     }
 
     vk::GraphicsPipelineCreateInfo createInfo;
@@ -127,10 +154,10 @@ VulkanRenderPipeline::VulkanRenderPipeline(
                 .setLayout(m_pVulkanPipelineLayout->GetVkPieplineLayout())
                 // render pass
                 .setRenderPass(m_pVulkanRenderPass->GetVkRenderPass());
-    if (!m_parent.expired())
+    if (m_parent)
     {
         createInfo.setFlags(vk::PipelineCreateFlagBits::eDerivative)
-                    .setBasePipelineHandle(m_parent.lock()->GetVkPipeline())
+                    .setBasePipelineHandle(m_parent->GetVkPipeline())
                     .setBasePipelineIndex(-1);
     }
     else

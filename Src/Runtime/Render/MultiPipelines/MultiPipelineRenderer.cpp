@@ -5,7 +5,7 @@
 #include "Runtime/VulkanRHI/PipelineStates/VulkanViewportState.h"
 #include "Runtime/VulkanRHI/VulkanCommandPool.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
-
+#include "Util/Fileutil.h"
 using namespace Render;
 
 MultiPipelineRenderer::MultiPipelineRenderer(const RHI::VulkanInstance::Config& instanceConfig,
@@ -20,15 +20,12 @@ MultiPipelineRenderer::~MultiPipelineRenderer()
     m_pDevice->GetVkDevice().waitIdle();
 
     m_Pipelines.clear();
-    m_pVulkanPipelineLayout.reset();
 }
 
 void MultiPipelineRenderer::prepare()
 {
-    prepareVertexData();
-    prepareShader();
+    prepareModel();
     prepareRenderpass();
-    preparePipelineLayout();
     prepareMultiPipelines();
     prepareFrameBuffer();
 }
@@ -67,35 +64,33 @@ void MultiPipelineRenderer::render()
     {
         RHI::VulkanCmdBeginEndRAII cmdBeginEndGuard(m_vkCmds[m_frameIdxInFlight]);
 
-        m_vkCmds[m_frameIdxInFlight].bindVertexBuffers(0, *m_pVulkanVertexBuffer->GetPVkBuf(), {0});
-        m_vkCmds[m_frameIdxInFlight].bindIndexBuffer(*m_pVulkanVertexIndexBuffer->GetPVkBuf(), 0, vk::IndexType::eUint32);
-        m_vkCmds[m_frameIdxInFlight].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pVulkanPipelineLayout->GetVkPieplineLayout(), 0, m_pVulkanDescriptorSets->GetVkDescriptorSet(m_frameIdxInFlight), {});
-
+        std::vector<vk::DescriptorSet> tobinding;
+        m_pUniformSets->FillToBindedDescriptorSetsVector(tobinding, m_pPipelineLayout.get(), m_frameIdxInFlight);
 
         std::vector<vk::ClearValue> clears(2);
-
         clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
         clears[1] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
-        auto renderpassBeginInfo = vk::RenderPassBeginInfo()
-                                .setRenderPass(m_pRenderPass->GetVkRenderPass())
-                                .setClearValues(clears)
-                                .setRenderArea(vk::Rect2D{vk::Offset2D{0,0}, m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent})
-                                .setFramebuffer(m_pDevice->GetSwapchainFramebuffer(m_imageIdx)); 
+        auto& extent = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent;
+        auto vkFramebuffer = m_pDevice->GetSwapchainFramebuffer(m_imageIdx);
+
+        m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{{0,0},extent}, vkFramebuffer);
         {
-            RHI::VulkanCmdBeginEndRenderPassRAII cmdBeginEndRenderPassGuard(m_vkCmds[m_frameIdxInFlight], renderpassBeginInfo);
-            for (int i = 0; i < m_Pipelines.size(); i++)
+            vk::Rect2D rect{{0,0},extent};
             {
-                auto& pipeline = m_Pipelines[i];
-                // first viewport pipeline
-                m_vkCmds[m_frameIdxInFlight].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->GetVkPipeline());
-                auto& extent = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent;
-                m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{i * (float)extent.width / m_Pipelines.size(),0,(float)extent.width / m_Pipelines.size(), (float)extent.height,0,1});
-                vk::Rect2D rect{{0,0},extent};
+                m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "fill");
+                m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{0,0,(float)extent.width / 2, (float)extent.height,0,1});
                 m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
-                // m_vkCmds[m_frameIdxInFlight].draw(m_vertices.size(), 1, 0, 0);
-                m_vkCmds[m_frameIdxInFlight].drawIndexed(m_indices.size(), 1, 0,0,0);
+                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
+            }
+
+            {
+                m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "line");
+                m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{(float)extent.width / 2,0,(float)extent.width / 2, (float)extent.height,0,1});
+                m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
+                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
             }
         }
+        m_pRenderPass->End(m_vkCmds[m_frameIdxInFlight]);
     }
 
     // submit
@@ -133,29 +128,32 @@ void MultiPipelineRenderer::render()
     }
 }
 
-void MultiPipelineRenderer::preparePipelineLayout()
-{
-    m_pVulkanPipelineLayout = std::make_shared<RHI::VulkanPipelineLayout>(m_pDevice.get(), m_pVulkanDescriptorSetLayout);
-}
 
 void MultiPipelineRenderer::prepareMultiPipelines()
 {
+    std::shared_ptr<RHI::VulkanShaderSet> shaderSet = std::make_shared<RHI::VulkanShaderSet>(m_pDevice.get());
+    shaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/shader.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    shaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
+
     m_Pipelines.resize(2);
     std::shared_ptr<RHI::VulkanViewportState> viewPort;
-    m_Pipelines[0] = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
-                        .SetdescriptorSetLayout(m_pVulkanDescriptorSetLayout)
-                        .SetshaderSet(m_pVulkanShaderSet)
+    auto normalPipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
+                        .SetVulkanPipelineLayout(m_pPipelineLayout)
+                        .SetshaderSet(shaderSet)
                         .SetVulkanRenderPass(m_pRenderPass)
-                        .SetVulkanPipelineLayout(m_pVulkanPipelineLayout)
-                        .build();
+                        .buildUnique();
+
     std::shared_ptr<RHI::VulkanRasterizationState> rasterization = RHI::VulkanRasterizationStateBuilder()
                                                                     .SetPolygonMode(vk::PolygonMode::eLine)
                                                                     .build();
-    m_Pipelines[1] = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_Pipelines[0])
+    auto rawLinePipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), normalPipeline.get())
                         .SetVulkanRasterizationState(rasterization)
-                        .SetdescriptorSetLayout(m_pVulkanDescriptorSetLayout)
-                        .SetshaderSet(m_pVulkanShaderSet)
+                        .SetVulkanPipelineLayout(m_pPipelineLayout)
+                        .SetshaderSet(shaderSet)
                         .SetVulkanRenderPass(m_pRenderPass)
-                        .SetVulkanPipelineLayout(m_pVulkanPipelineLayout)
-                        .build();
+                        .buildUnique();
+
+
+    m_pRenderPass->AddGraphicRenderPipeline("fill", std::move(normalPipeline));
+    m_pRenderPass->AddGraphicRenderPipeline("line", std::move(rawLinePipeline));
 }

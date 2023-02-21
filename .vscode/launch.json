@@ -8,7 +8,20 @@
             "type": "cppvsdbg",
             "console": "integratedTerminal",
             "request": "launch",
-            "name": "Launch Demo",
+            "name": "Launch SimpleModel Demo",
+            "program": "${workspaceFolder}/build/Debug/VulkanRHI.exe",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "${workspaceFolder}/Resources",
+                "SimpleModel"
+            ],
+            "preLaunchTask": "compile glsl shaders"
+        },
+        {
+            "type": "cppvsdbg",
+            "console": "integratedTerminal",
+            "request": "launch",
+            "name": "Launch MultiPipeline Demo",
             "program": "${workspaceFolder}/build/Debug/VulkanRHI.exe",
             "cwd": "${workspaceFolder}",
             "args": [

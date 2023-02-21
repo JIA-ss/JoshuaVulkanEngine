@@ -13,14 +13,6 @@ public:
     ~VulkanCmdBeginEndRAII();
 };
 
-class VulkanCmdBeginEndRenderPassRAII
-{
-private:
-    vk::CommandBuffer m_cmd;
-public:
-    VulkanCmdBeginEndRenderPassRAII(vk::CommandBuffer cmd, vk::RenderPassBeginInfo beginInfo, vk::SubpassContents subpasscontents = {});
-    ~VulkanCmdBeginEndRenderPassRAII();
-};
 
 class VulkanDevice;
 class VulkanCommandPool

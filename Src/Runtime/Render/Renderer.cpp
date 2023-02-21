@@ -31,7 +31,8 @@ Renderer::Renderer()
     m_pRHIDevice = &RHI::VulkanContext::GetInstance().GetVulkanDevice();
     m_pVkDevice = &m_pRHIDevice->GetVkDevice();
     m_pRHIRenderPipeline = &RHI::VulkanContext::GetInstance().GetVulkanRenderPipeline();
-    m_pRHIDescSets = &RHI::VulkanContext::GetInstance().GetVulkanDescriptorSets();
+    m_pRHIUniformDescSets = RHI::VulkanContext::GetInstance().GetPUniformVulkanDescriptorSets();
+    m_pRHISamplerDescSets = RHI::VulkanContext::GetInstance().GetPSamplerVulkanDescriptorSets();
     createVertices();
     createCmdBufs();
     createSyncObjects();
@@ -105,7 +106,12 @@ void Renderer::Render()
 
         m_vkCmds[s_frameIdxInFlight].bindVertexBuffers(0, *m_pVulkanVertexBuffer->GetPVkBuf(), {0});
         m_vkCmds[s_frameIdxInFlight].bindIndexBuffer(*m_pVulkanVertexIndexBuffer->GetPVkBuf(), 0, vk::IndexType::eUint32);
-        m_vkCmds[s_frameIdxInFlight].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pRHIRenderPipeline->GetVkPipelineLayout(), 0, m_pRHIDescSets->GetVkDescriptorSet(s_frameIdxInFlight), {});
+
+        vk::DescriptorSet uniform = m_pRHIUniformDescSets->GetVkDescriptorSet(s_frameIdxInFlight);
+        m_vkCmds[s_frameIdxInFlight].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pRHIRenderPipeline->GetVkPipelineLayout(), 0, uniform, {});
+
+        std::vector<vk::DescriptorSet> samplers = m_pRHISamplerDescSets->GetVkDescriptorSets();
+        m_vkCmds[s_frameIdxInFlight].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pRHIRenderPipeline->GetVkPipelineLayout(), 0, samplers, {});
 
         std::vector<vk::ClearValue> clears(2);
 
@@ -197,7 +203,7 @@ void Renderer::updateUniformBuf(uint32_t currentFrameIdx)
     ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));    ubo.proj = glm::perspective(glm::radians(45.0f), extent.width / (float) extent.height, 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
-    m_pRHIDescSets->GetPWriteUniformBuffer(currentFrameIdx)->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
+    RHI::VulkanContext::GetInstance().GetPUniformBuffer(currentFrameIdx)->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
 }
 
 void Renderer::createVertexBuf()
