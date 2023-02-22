@@ -154,23 +154,23 @@ void SimpleModelRenderer::prepareInputCallback()
     auto inputMonitor = m_pPhysicalDevice->GetPWindow()->GetInputMonitor();
     inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::W, [&](){
         glm::vec3 dir = m_pCamera->GetDirection();
-        m_pCamera->GetVPMatrix().Rotate(glm::vec3(5,0,0));
+        m_pCamera->GetVPMatrix().Translate(dir * 0.1f);
     });
 
     inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::S, [&](){
         glm::vec3 dir = m_pCamera->GetDirection();
-        m_pCamera->GetVPMatrix().Rotate(glm::vec3(-5,0,0));
+        m_pCamera->GetVPMatrix().Translate(dir * -0.1f);
     });
 
     inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::A, [&](){
         glm::vec3 right = m_pCamera->GetRight();
-        m_pCamera->GetVPMatrix().Rotate(glm::vec3(0,5,0));
+        m_pCamera->GetVPMatrix().Translate(right * -0.1f);
     });
 
 
     inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::D, [&](){
         glm::vec3 right = m_pCamera->GetRight();
-        m_pCamera->GetVPMatrix().Rotate(glm::vec3(0,-5,0));
+        m_pCamera->GetVPMatrix().Translate(right * 0.1f);
     });
 
     inputMonitor->AddScrollCallback([&](double xoffset, double yoffset){
@@ -200,15 +200,13 @@ void SimpleModelRenderer::prepareInputCallback()
         offset.y = (offset.y - (int)offset.y >=0.5f) ? ((int)offset.y + 1) : (int)offset.y;
         if (BtnLeftPressing)
         {
-            m_pCamera->GetVPMatrix().Rotate(glm::vec3(-offset.y / 10,0,0));
-            m_pCamera->GetVPMatrix().Rotate(glm::vec3(0,-offset.x,0));
+            m_pCamera->GetVPMatrix().Rotate(glm::vec3(-offset.y / 30,0,0));
+            m_pCamera->GetVPMatrix().Rotate(glm::vec3(0,-offset.x / 30,0));
         }
         else if (BtnRightPressing)
         {
             glm::vec3 dir = m_pCamera->GetDirection();
-            glm::vec3 right = m_pCamera->GetRight();
-            glm::vec3 move = dir * -offset.y / 10.f;
-            move += right * offset.x / 10.f;
+            glm::vec3 move = dir * -offset.y / 100.f;
             m_pCamera->GetVPMatrix().Translate(move);
         }
     });
