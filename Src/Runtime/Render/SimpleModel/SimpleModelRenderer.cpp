@@ -1,4 +1,5 @@
 #include "SimpleModelRenderer.h"
+#include "Runtime/Platform/PlatformInputMonitor.h"
 #include "Runtime/Render/Camera.h"
 #include "Runtime/VulkanRHI/Graphic/Model.h"
 #include "Runtime/VulkanRHI/Graphic/Vertex.h"
@@ -139,9 +140,10 @@ void SimpleModelRenderer::render()
 
 void SimpleModelRenderer::prepareModel()
 {
-    m_pModel.reset(new RHI::Model(m_pDevice.get(), Util::File::getResourcePath() / "Model/nanosuit/nanosuit.obj", m_pSet1SamplerSetLayout.lock().get()));
+    m_pModel.reset(new RHI::Model(m_pDevice.get(), Util::File::getResourcePath() / "Model/Sponza-master/sponza.obj", m_pSet1SamplerSetLayout.lock().get()));
     auto& transformation = m_pModel->GetTransformation();
-    transformation.SetPosition(glm::vec3(0.0f, -10.f, -20.f));
+    transformation.SetPosition(glm::vec3(0.0f, -20.f, -20.f));
+    transformation.SetRotation(glm::vec3(0,90,0));
     transformation.SetScale(glm::vec3(0.05f));
 }
 
@@ -149,7 +151,7 @@ void SimpleModelRenderer::prepareInputCallback()
 {
     auto extent = m_pDevice->GetSwapchainExtent();
     float aspect = extent.width / (float) extent.height;
-    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 40.f));
+    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 100.f));
     m_pCamera->GetVPMatrix().SetPosition(glm::vec3(0,0,2));
     auto inputMonitor = m_pPhysicalDevice->GetPWindow()->GetInputMonitor();
     inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::W, [&](){
@@ -193,6 +195,10 @@ void SimpleModelRenderer::prepareInputCallback()
     inputMonitor->AddMouseUpCallback(platform::Mouse::Button::LEFT, [&](){ BtnLeftPressing = false; });
     inputMonitor->AddMousePressedCallback(platform::Mouse::Button::RIGHT, [&](){ BtnRightPressing = true; });
     inputMonitor->AddMouseUpCallback(platform::Mouse::Button::RIGHT, [&](){ BtnRightPressing = false; });
+    inputMonitor->AddMousePressedCallback(platform::Mouse::MIDDLE, [&](){
+        m_pCamera->GetVPMatrix().SetPosition(glm::vec3(0,0,2));
+        m_pCamera->GetVPMatrix().SetRotation(glm::vec3(0,0,0));
+    });
 
     inputMonitor->AddCursorPositionCallback([&](const glm::vec2& lastPos, const glm::vec2& newPos){
         glm::vec2 offset = newPos - lastPos;

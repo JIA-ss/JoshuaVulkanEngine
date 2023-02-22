@@ -73,22 +73,30 @@ void Model::initMatrials(const std::vector<Util::Model::MaterialData>& materialD
     // create image sampler
     for (auto& matData : materialDatas)
     {
+        if (m_descriptorsets.find(matData.name) != m_descriptorsets.end())
+        {
+            continue;
+        }
         for (auto& texData : matData.textureDatas)
         {
             if (m_vulkanImageSamplers.find(texData.name) == m_vulkanImageSamplers.end())
             {
                 VulkanImageSampler::Config imageSamplerConfig;
                 VulkanImageResource::Config imageResourceConfig;
-                imageResourceConfig.extent = vk::Extent3D{(uint32_t)texData.rawData->GetWidth(), (uint32_t)texData.rawData->GetHeight(), 1};
-                m_vulkanImageSamplers[texData.name] = std::make_shared<VulkanImageSampler>(
-                    m_pVulkanDevice,
-                    texData.rawData,
-                    vk::MemoryPropertyFlagBits::eDeviceLocal,
-                    imageSamplerConfig,
-                    imageResourceConfig
-                );
+                if (texData.rawData)
+                {
+                    imageResourceConfig.extent = vk::Extent3D{(uint32_t)texData.rawData->GetWidth(), (uint32_t)texData.rawData->GetHeight(), 1};
+                    m_vulkanImageSamplers[texData.name] = std::make_shared<VulkanImageSampler>(
+                        m_pVulkanDevice,
+                        texData.rawData,
+                        vk::MemoryPropertyFlagBits::eDeviceLocal,
+                        imageSamplerConfig,
+                        imageResourceConfig
+                    );
+                }
             }
         }
+        m_descriptorsets[matData.name] = nullptr;
     }
 
     // create descriptorsets pool
@@ -116,18 +124,12 @@ void Model::initMatrials(const std::vector<Util::Model::MaterialData>& materialD
     for (auto& matData : materialDatas)
     {
         std::vector<VulkanImageSampler*> samplers;
-        std::shared_ptr<Material> mat;
-        if (matData.textureDatas.size() == 1)
+        if (m_descriptorsets[matData.name] != nullptr)
         {
-            std::shared_ptr<VulkanImageSampler> sampler = m_vulkanImageSamplers[matData.textureDatas.front().name];
-            if (samplerToDescSet.find(sampler) == samplerToDescSet.end())
-            {
-                samplerToDescSet[sampler] = m_vulkanDescriptorPool->AllocSamplerDescriptorSet(layout, {sampler.get()}, {VulkanDescriptorSetLayout::DESCRIPTOR_SAMPLER2_BINDING_ID});
-                m_descriptorsets.push_back(samplerToDescSet[sampler]);
-            }
-            mat.reset(new Material(m_pVulkanDevice, {samplerToDescSet[sampler]}));
+            continue;
+            // mat.reset(new Material(m_pVulkanDevice, {m_descriptorsets[matData.name]}));
         }
-        else if (matData.textureDatas.size() > 0)
+        if (matData.textureDatas.size() > 0)
         {
             for (auto& texData : matData.textureDatas)
             {
@@ -140,8 +142,7 @@ void Model::initMatrials(const std::vector<Util::Model::MaterialData>& materialD
                 binding.emplace_back(i);
             }
             std::shared_ptr<VulkanDescriptorSets> descs = m_vulkanDescriptorPool->AllocSamplerDescriptorSet(layout, samplers, binding);
-            m_descriptorsets.push_back(descs);
-            mat.reset(new Material(m_pVulkanDevice, {descs}));
+            m_descriptorsets[matData.name] = descs;
         }
         else
         {
@@ -150,7 +151,20 @@ void Model::initMatrials(const std::vector<Util::Model::MaterialData>& materialD
             auto matName = matData.name;
             // assert(false);
         }
-        m_materials.emplace_back(mat);
+    }
+
+    std::map<std::string, int> matNameToIdx;
+    m_materials.resize(materialDatas.size());
+    for (int i = 0; i < materialDatas.size(); i++)
+    {
+        auto& matData = materialDatas[i];
+        if (matNameToIdx.find(matData.name) != matNameToIdx.end())
+        {
+            m_materials[i] = m_materials[matNameToIdx[matData.name]];
+            continue;
+        }
+
+        m_materials[i].reset(new Material(m_pVulkanDevice, {m_descriptorsets[matData.name]}));
     }
 }
 

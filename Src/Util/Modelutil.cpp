@@ -85,10 +85,13 @@ void Util::Model::AssimpObj::fillMeshData(Util::Model::MeshData& meshData, aiMes
         vec4.z = mesh->mVertices[i].z;
         vertex.position = vec4;
 
-        vec4.x = mesh->mNormals[i].x;
-        vec4.y = mesh->mNormals[i].y;
-        vec4.z = mesh->mNormals[i].z;
-        vertex.normal = vec4;
+        if (mesh->mNormals)
+        {
+            vec4.x = mesh->mNormals[i].x;
+            vec4.y = mesh->mNormals[i].y;
+            vec4.z = mesh->mNormals[i].z;
+            vertex.normal = vec4;
+        }
 
         if (mesh->mTextureCoords[0])
         {

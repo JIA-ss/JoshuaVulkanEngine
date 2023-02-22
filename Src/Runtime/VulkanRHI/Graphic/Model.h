@@ -26,10 +26,8 @@ private:
     std::vector<size_t> m_materialIndexs;
 
     std::unordered_map<std::string, std::shared_ptr<VulkanImageSampler>> m_vulkanImageSamplers;
-    std::unordered_map<std::string, std::shared_ptr<VulkanShaderSet>> m_vulkanShaderSets;
-
+    std::unordered_map<std::string, std::shared_ptr<VulkanDescriptorSets>> m_descriptorsets;
     std::unique_ptr<VulkanDescriptorPool> m_vulkanDescriptorPool;
-    std::vector<std::shared_ptr<VulkanDescriptorSets>> m_descriptorsets;
 
     Util::Math::SRTMatrix m_transformation;
 public:

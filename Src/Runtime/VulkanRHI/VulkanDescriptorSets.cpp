@@ -79,23 +79,30 @@ VulkanDescriptorSets::VulkanDescriptorSets(
     m_vkDescSets = m_vulkanDevice->GetVkDevice().allocateDescriptorSets(allocInfo);
     assert(m_vkDescSets.size() == 1);
 
-    std::vector<vk::WriteDescriptorSet> writeDescs(imageSamplers.size());
-    std::vector<vk::DescriptorImageInfo> imageInfo(imageSamplers.size());
+
+    std::vector<vk::DescriptorImageInfo> imageInfo;
     for (int i = 0; i < imageSamplers.size(); i++)
     {
-        imageInfo[i] = vk::DescriptorImageInfo()
+        if (!imageSamplers[i])
+        {
+            continue;
+        }
+        imageInfo.push_back(vk::DescriptorImageInfo()
                     .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
                     .setImageView(*imageSamplers[i]->GetPVkImageView())
                     .setSampler(*imageSamplers[i]->GetPVkSampler())
-                    ;
-        writeDescs[i] = vk::WriteDescriptorSet()
+        );
+    }
+    std::vector<vk::WriteDescriptorSet> writeDescs(imageInfo.size());
+    for (int i = 0; i < imageInfo.size(); i++)
+    {
+        writeDescs[i]
                     .setDstSet(m_vkDescSets[0])
                     .setDstBinding(binding[i])
                     .setDstArrayElement(0)
                     .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
                     .setDescriptorCount(1)
-                    .setImageInfo(imageInfo[i])
-                    ;
+                    .setImageInfo(imageInfo[i]);
     }
     m_vulkanDevice->GetVkDevice().updateDescriptorSets((uint32_t)writeDescs.size(), writeDescs.data(), 0, nullptr);
 }
