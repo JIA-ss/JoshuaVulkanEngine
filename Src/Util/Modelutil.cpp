@@ -47,17 +47,19 @@ Model::TinyObj::TinyObj(const boost::filesystem::path& objPath)
         {
             RHI::Vertex vertex;
 
-            vertex.position = glm::vec3
+            vertex.position = glm::vec4
             {
                 attrib.vertices[3 * index.vertex_index + 0],
                 attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]
+                attrib.vertices[3 * index.vertex_index + 2],
+                1.0f
             };
 
-            vertex.texCoord = glm::vec2
+            vertex.texCoord = glm::vec4
             {
                 attrib.texcoords[2 * index.texcoord_index + 0],
-                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                1.0f - attrib.texcoords[2 * index.texcoord_index + 1],
+                0.f,0.f
             };
 
             if (uniqueVertices.find(vertex) == uniqueVertices.end())
@@ -77,45 +79,45 @@ void Util::Model::AssimpObj::fillMeshData(Util::Model::MeshData& meshData, aiMes
     {
         meshData.vertices.push_back(Model::VertexData{});
         Util::Model::VertexData& vertex = meshData.vertices.back();
-        glm::vec3 vec3;
-        vec3.x = mesh->mVertices[i].x;
-        vec3.y = mesh->mVertices[i].y;
-        vec3.z = mesh->mVertices[i].z;
-        vertex.position = vec3;
+        glm::vec4 vec4(1.0f);
+        vec4.x = mesh->mVertices[i].x;
+        vec4.y = mesh->mVertices[i].y;
+        vec4.z = mesh->mVertices[i].z;
+        vertex.position = vec4;
 
-        vec3.x = mesh->mNormals[i].x;
-        vec3.y = mesh->mNormals[i].y;
-        vec3.z = mesh->mNormals[i].z;
-        vertex.normal = vec3;
+        vec4.x = mesh->mNormals[i].x;
+        vec4.y = mesh->mNormals[i].y;
+        vec4.z = mesh->mNormals[i].z;
+        vertex.normal = vec4;
 
         if (mesh->mTextureCoords[0])
         {
-            glm::vec2 vec2;
-            vec2.x = mesh->mTextureCoords[0][i].x;
-            vec2.y = mesh->mTextureCoords[0][i].y;
-            vertex.texCoord = vec2;
+            glm::vec4 vec4(0);
+            vec4.x = mesh->mTextureCoords[0][i].x;
+            vec4.y = mesh->mTextureCoords[0][i].y;
+            vertex.texCoord = vec4;
         }
         else
         {
-            vertex.texCoord = glm::vec2(0.0f, 0.0f);
+            vertex.texCoord = glm::vec4(0.0f);
         }
 
         if (mesh->mTangents)
         {
             // tangent
-            vec3.x = mesh->mTangents[i].x;
-            vec3.y = mesh->mTangents[i].y;
-            vec3.z = mesh->mTangents[i].z;
-            vertex.tangent = vec3;
+            vec4.x = mesh->mTangents[i].x;
+            vec4.y = mesh->mTangents[i].y;
+            vec4.z = mesh->mTangents[i].z;
+            vertex.tangent = vec4;
         }
 
         if (mesh->mBitangents)
         {
             // bitangent
-            vec3.x = mesh->mBitangents[i].x;
-            vec3.y = mesh->mBitangents[i].y;
-            vec3.z = mesh->mBitangents[i].z;
-            vertex.bitangent = vec3;
+            vec4.x = mesh->mBitangents[i].x;
+            vec4.y = mesh->mBitangents[i].y;
+            vec4.z = mesh->mBitangents[i].z;
+            vertex.bitangent = vec4;
         }
     }
 

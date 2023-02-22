@@ -10,6 +10,7 @@
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_handles.hpp"
 #include "vulkan/vulkan_structs.hpp"
+#include <glm/ext/matrix_transform.hpp>
 #include <map>
 #include <memory>
 #include <set>

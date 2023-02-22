@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include "Runtime/Platform/PlatformInputMonitor.h"
 #include "Runtime/VulkanRHI/VulkanInstance.h"
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_handles.hpp"
@@ -19,6 +20,7 @@ class PlatformWindow
 {
 protected:
     PlatformWindowSetting m_setting;
+    std::unique_ptr<PlatformInputMonitor> m_inputMonitor;
 public:
     explicit PlatformWindow(const PlatformWindowSetting& setting) : m_setting(setting) { };
     virtual ~PlatformWindow() { }
@@ -37,6 +39,8 @@ public:
     virtual void AddFrameBufferSizeChangedCallback(std::function<void(int, int)> func) = 0;
     virtual void WaitIfMinimization() = 0;
     virtual void PollWindowEvent() = 0;
+
+    inline PlatformInputMonitor* GetInputMonitor() { return m_inputMonitor.get(); }
 };
 
 std::unique_ptr<PlatformWindow> CreatePlatformWindow(int width, int height, const char* title);

@@ -1,4 +1,5 @@
 #include "SimpleModelRenderer.h"
+#include "Runtime/Render/Camera.h"
 #include "Runtime/VulkanRHI/Graphic/Model.h"
 #include "Runtime/VulkanRHI/Graphic/Vertex.h"
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
@@ -10,8 +11,10 @@
 #include "vulkan/vulkan_enums.hpp"
 #include <Util/Modelutil.h>
 #include <Util/Fileutil.h>
+#include <Util/Mathutil.h>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/quaternion_transform.hpp>
+#include <iostream>
 #include <stdint.h>
 using namespace Render;
 
@@ -33,6 +36,8 @@ void SimpleModelRenderer::prepare()
 {
     // prepare descriptor layout
     prepareModel();
+    // prepare callback
+    prepareInputCallback();
     // prepare renderpass
     prepareRenderpass();
     // prepare pipeline
@@ -135,6 +140,78 @@ void SimpleModelRenderer::render()
 void SimpleModelRenderer::prepareModel()
 {
     m_pModel.reset(new RHI::Model(m_pDevice.get(), Util::File::getResourcePath() / "Model/nanosuit/nanosuit.obj", m_pSet1SamplerSetLayout.lock().get()));
+    auto& transformation = m_pModel->GetTransformation();
+    transformation.SetPosition(glm::vec3(0.0f, -10.f, -20.f));
+    transformation.SetScale(glm::vec3(0.05f));
+}
+
+void SimpleModelRenderer::prepareInputCallback()
+{
+    auto extent = m_pDevice->GetSwapchainExtent();
+    float aspect = extent.width / (float) extent.height;
+    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 40.f));
+    m_pCamera->GetVPMatrix().SetPosition(glm::vec3(0,0,2));
+    auto inputMonitor = m_pPhysicalDevice->GetPWindow()->GetInputMonitor();
+    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::W, [&](){
+        glm::vec3 dir = m_pCamera->GetDirection();
+        m_pCamera->GetVPMatrix().Rotate(glm::vec3(5,0,0));
+    });
+
+    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::S, [&](){
+        glm::vec3 dir = m_pCamera->GetDirection();
+        m_pCamera->GetVPMatrix().Rotate(glm::vec3(-5,0,0));
+    });
+
+    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::A, [&](){
+        glm::vec3 right = m_pCamera->GetRight();
+        m_pCamera->GetVPMatrix().Rotate(glm::vec3(0,5,0));
+    });
+
+
+    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::D, [&](){
+        glm::vec3 right = m_pCamera->GetRight();
+        m_pCamera->GetVPMatrix().Rotate(glm::vec3(0,-5,0));
+    });
+
+    inputMonitor->AddScrollCallback([&](double xoffset, double yoffset){
+        glm::vec3 dir = m_pCamera->GetDirection();
+        glm::vec3 right = m_pCamera->GetRight();
+        glm::vec3 move = dir * (float)yoffset;
+        xoffset = -xoffset;
+        move += right * (float)xoffset;
+        m_pCamera->GetVPMatrix().Translate(move);
+    });
+
+    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::SPACE, [&](){
+        m_pCamera->GetVPMatrix().SetPosition(glm::vec3(0,0,2));
+        m_pCamera->GetVPMatrix().SetRotation(glm::vec3(0,0,0));
+    });
+
+    static bool BtnLeftPressing = false;
+    static bool BtnRightPressing = false;
+    inputMonitor->AddMousePressedCallback(platform::Mouse::Button::LEFT, [&](){ BtnLeftPressing = true; });
+    inputMonitor->AddMouseUpCallback(platform::Mouse::Button::LEFT, [&](){ BtnLeftPressing = false; });
+    inputMonitor->AddMousePressedCallback(platform::Mouse::Button::RIGHT, [&](){ BtnRightPressing = true; });
+    inputMonitor->AddMouseUpCallback(platform::Mouse::Button::RIGHT, [&](){ BtnRightPressing = false; });
+
+    inputMonitor->AddCursorPositionCallback([&](const glm::vec2& lastPos, const glm::vec2& newPos){
+        glm::vec2 offset = newPos - lastPos;
+        offset.x = (offset.x - (int)offset.x >=0.5f) ? ((int)offset.x + 1) : (int)offset.x;
+        offset.y = (offset.y - (int)offset.y >=0.5f) ? ((int)offset.y + 1) : (int)offset.y;
+        if (BtnLeftPressing)
+        {
+            m_pCamera->GetVPMatrix().Rotate(glm::vec3(-offset.y / 10,0,0));
+            m_pCamera->GetVPMatrix().Rotate(glm::vec3(0,-offset.x,0));
+        }
+        else if (BtnRightPressing)
+        {
+            glm::vec3 dir = m_pCamera->GetDirection();
+            glm::vec3 right = m_pCamera->GetRight();
+            glm::vec3 move = dir * -offset.y / 10.f;
+            move += right * offset.x / 10.f;
+            m_pCamera->GetVPMatrix().Translate(move);
+        }
+    });
 }
 
 void SimpleModelRenderer::prepareRenderpass()
@@ -168,23 +245,20 @@ void SimpleModelRenderer::updateUniformBuf(uint32_t currentFrameIdx)
 {
     static auto startTime = std::chrono::high_resolution_clock::now();
 
-    glm::vec3 camPos(2.0f, 2.0f, 2.0f);
-    glm::vec3 lightPos = camPos;
+    static glm::vec3 lightPos(1, 1, -2);
 
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     auto extent = m_pDevice->GetSwapchainExtent();
+
+    // auto& modelTransformation = m_pModel->GetTransformation();
+    // modelTransformation.Rotate(glm::vec3(0, time*90, 0));
     RHI::UniformBufferObject ubo{};
-    ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f,0.1f,0.1f));
-    ubo.model *= glm::translate(glm::mat4(1.0f), glm::vec3(4, 4,-4));
-    ubo.model *= glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    ubo.model *= glm::rotate(glm::mat4(1.0f), glm::radians(135.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    ubo.model *= glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    ubo.model = m_pModel->GetTransformation().GetMatrix();
+    ubo.view = m_pCamera->GetViewMatrix();
+    ubo.proj = m_pCamera->GetProjMatrix();
 
-    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));    ubo.proj = glm::perspective(glm::radians(45.0f), extent.width / (float) extent.height, 0.1f, 10.0f);
-    ubo.proj[1][1] *= -1;
-
-    ubo.camPos = camPos;
+    ubo.camPos = m_pCamera->GetPosition();
     ubo.lightPos = lightPos;
     m_pUniformBuffers[currentFrameIdx]->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
 }

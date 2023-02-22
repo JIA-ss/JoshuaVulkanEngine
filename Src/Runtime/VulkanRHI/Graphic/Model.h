@@ -9,6 +9,7 @@
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "Util/Modelutil.h"
+#include "Util/Mathutil.h"
 #include "vulkan/vulkan_handles.hpp"
 #include <boost/filesystem/path.hpp>
 #include <stdint.h>
@@ -30,6 +31,7 @@ private:
     std::unique_ptr<VulkanDescriptorPool> m_vulkanDescriptorPool;
     std::vector<std::shared_ptr<VulkanDescriptorSets>> m_descriptorsets;
 
+    Util::Math::SRTMatrix m_transformation;
 public:
     explicit Model(VulkanDevice* device, Util::Model::ModelData&& modelData, VulkanDescriptorSetLayout* layout);
     explicit Model(VulkanDevice* device, const boost::filesystem::path& modelPath, VulkanDescriptorSetLayout* layout);
@@ -38,6 +40,7 @@ public:
     void DrawWithNoMaterial(vk::CommandBuffer& cmd);
     void Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding);
 
+    inline Util::Math::SRTMatrix& GetTransformation() { return m_transformation; }
 private:
     void init(Util::Model::ModelData&& modelData, VulkanDescriptorSetLayout* layout);
     void initMatrials(const std::vector<Util::Model::MaterialData>& materialData, VulkanDescriptorSetLayout* layout);

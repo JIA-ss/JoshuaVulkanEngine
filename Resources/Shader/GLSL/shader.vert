@@ -21,11 +21,10 @@ layout(location = 3) out vec3 lightPos;
 layout(location = 4) out vec3 worldNormal;
 
 void main() {
-    vec4 pos = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
-    gl_Position = pos;
+    vec4 worldPos = ubo.model * vec4(inPosition, 1.0);
+    gl_Position = ubo.proj * ubo.view * worldPos;
 
-    fragPosition = vec3(pos.x, pos.y, pos.z);
-    fragPosition /= pos.w;
+    fragPosition = vec3(worldPos) / worldPos.z;
 
     fragTexCoord = inTexCoord;
 

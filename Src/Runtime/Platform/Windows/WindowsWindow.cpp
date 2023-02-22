@@ -1,6 +1,8 @@
 #include "WindowsWindow.h"
+#include "Runtime/Platform/Windows/WindowsInputMonitor.h"
 #include "Runtime/Platform/Windows/WindowsWindow.h"
 #include <GLFW/glfw3.h>
+#include <iostream>
 platform::WindowsWindow::~WindowsWindow()
 {
     assert(!m_glfwWindowPtr);
@@ -20,10 +22,16 @@ void platform::WindowsWindow::Init()
     m_glfwWindowPtr = glfwCreateWindow(m_setting.width, m_setting.height, m_setting.name, nullptr, nullptr);
     glfwSetWindowUserPointer(m_glfwWindowPtr, this);
     glfwSetFramebufferSizeCallback(m_glfwWindowPtr, platform::WindowsWindow::frameBufferSizeChanged);
+
+    m_inputMonitor.reset(new WindowsInputMonitor());
+    m_inputMonitor->Init(this);
 }
 
 void platform::WindowsWindow::Destroy()
 {
+    m_inputMonitor->UnInit(this);
+    m_inputMonitor.reset();
+
     if (m_glfwWindowPtr)
     {
         glfwSetWindowUserPointer(m_glfwWindowPtr, nullptr);
