@@ -40,7 +40,7 @@ protected:
     std::shared_ptr<VulkanMultisampleState> m_pVulkanMultisampleState;
     std::shared_ptr<VulkanDepthStencilState> m_pVulkanDepthStencilState;
     std::shared_ptr<VulkanColorBlendState> m_pVulkanColorBlendState;
-    std::shared_ptr<VulkanRenderPass> m_pVulkanRenderPass;
+    std::weak_ptr<VulkanRenderPass> m_pVulkanRenderPass;
     std::shared_ptr<VulkanPipelineLayout> m_pVulkanPipelineLayout;
 
     vk::Pipeline m_vkPipeline;
@@ -67,9 +67,9 @@ public:
     inline std::shared_ptr<VulkanPipelineLayout> GetVulkanPipelineLayout() { return m_pVulkanPipelineLayout; }
     inline VulkanDynamicState* GetPVulkanDynamicState() { return m_pVulkanDynamicState.get(); }
     inline VulkanDevice* GetPVulkanDevice() { return m_vulkanDevice; }
-    inline std::shared_ptr<VulkanRenderPass> GetVulkanRenderPass() { return m_pVulkanRenderPass; }
+    inline std::shared_ptr<VulkanRenderPass> GetVulkanRenderPass() { return m_pVulkanRenderPass.lock(); }
     inline vk::Pipeline& GetVkPipeline() { return m_vkPipeline; }
-    inline vk::RenderPass& GetVkRenderPass() { return m_pVulkanRenderPass->GetVkRenderPass(); }
+    inline vk::RenderPass& GetVkRenderPass() { return m_pVulkanRenderPass.lock()->GetVkRenderPass(); }
     inline vk::PipelineLayout& GetVkPipelineLayout() { return m_pVulkanPipelineLayout->GetVkPieplineLayout(); }
 };
 

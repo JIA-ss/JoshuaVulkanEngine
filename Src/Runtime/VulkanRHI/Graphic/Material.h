@@ -19,10 +19,10 @@ private:
     VulkanDevice* m_pVulkanDevice;
     Util::Model::MaterialData m_materialData;
 
-    std::vector<std::shared_ptr<VulkanDescriptorSets>> m_pVulkanDescriptorSets;
+    std::vector<std::weak_ptr<VulkanDescriptorSets>> m_pVulkanDescriptorSets;
 
 public:
-    explicit Material(VulkanDevice* device, const std::vector<std::shared_ptr<VulkanDescriptorSets>>& descriptors);
+    explicit Material(VulkanDevice* device, const std::vector<std::weak_ptr<VulkanDescriptorSets>>& descriptors);
 
 
 private:

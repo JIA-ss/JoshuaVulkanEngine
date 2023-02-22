@@ -102,7 +102,11 @@ VulkanDescriptorSets::VulkanDescriptorSets(
 
 VulkanDescriptorSets::~VulkanDescriptorSets()
 {
-    m_vulkanDevice->GetVkDevice().freeDescriptorSets(m_vkDescPool, m_vkDescSets);
+    /*
+        if descriptorPool is created by VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT flag
+        descriptorSets created by the pool need be free manually
+    */
+    // m_vulkanDevice->GetVkDevice().freeDescriptorSets(m_vkDescPool, m_vkDescSets);
 }
 
 void VulkanDescriptorSets::FillToBindedDescriptorSetsVector(std::vector<vk::DescriptorSet>& descList, VulkanPipelineLayout* pipelineLayout, int selfSetIndex)

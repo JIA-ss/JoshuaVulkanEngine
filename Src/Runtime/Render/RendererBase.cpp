@@ -71,7 +71,7 @@ RendererBase::~RendererBase()
     unInitCmd();
     unInitSyncObj();
     unInitMVPUniformBuffer();
-    m_pRenderPass.reset();
+    m_pRenderPass = nullptr;
     m_pPipelineLayout.reset();
 
     m_pDevice.reset();

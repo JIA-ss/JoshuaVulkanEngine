@@ -25,7 +25,7 @@ SimpleModelRenderer::SimpleModelRenderer(const RHI::VulkanInstance::Config& inst
 SimpleModelRenderer::~SimpleModelRenderer()
 {
     m_pDevice->GetVkDevice().waitIdle();
-    m_pRenderPass.reset();
+    m_pRenderPass = nullptr;
     m_pModel.reset();
 }
 
@@ -142,7 +142,7 @@ void SimpleModelRenderer::prepareRenderpass()
     vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
     vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
     vk::SampleCountFlagBits sampleCount = m_pDevice->GetVulkanPhysicalDevice()->GetSampleCount();
-    m_pRenderPass.reset(new RHI::VulkanRenderPass(m_pDevice.get(), colorFormat, depthForamt, sampleCount));
+    m_pRenderPass = std::make_shared<RHI::VulkanRenderPass>(m_pDevice.get(), colorFormat, depthForamt, sampleCount);
 }
 
 void SimpleModelRenderer::preparePipeline()

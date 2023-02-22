@@ -153,7 +153,7 @@ VulkanRenderPipeline::VulkanRenderPipeline(
                 // layout
                 .setLayout(m_pVulkanPipelineLayout->GetVkPieplineLayout())
                 // render pass
-                .setRenderPass(m_pVulkanRenderPass->GetVkRenderPass());
+                .setRenderPass(m_pVulkanRenderPass.lock()->GetVkRenderPass());
     if (m_parent)
     {
         createInfo.setFlags(vk::PipelineCreateFlagBits::eDerivative)
@@ -184,6 +184,6 @@ VulkanRenderPipeline::~VulkanRenderPipeline()
     m_pVulkanRasterizationState.reset();
     m_pVulkanMultisampleState.reset();
     m_pVulkanColorBlendState.reset();
-
+    m_vulkanShaderSet.reset();
     m_vulkanDevice->GetVkDevice().destroyPipeline(m_vkPipeline);   
 }

@@ -28,10 +28,12 @@ private:
     std::unordered_map<std::string, std::shared_ptr<VulkanShaderSet>> m_vulkanShaderSets;
 
     std::unique_ptr<VulkanDescriptorPool> m_vulkanDescriptorPool;
+    std::vector<std::shared_ptr<VulkanDescriptorSets>> m_descriptorsets;
 
 public:
     explicit Model(VulkanDevice* device, Util::Model::ModelData&& modelData, VulkanDescriptorSetLayout* layout);
     explicit Model(VulkanDevice* device, const boost::filesystem::path& modelPath, VulkanDescriptorSetLayout* layout);
+    ~Model();
 
     void DrawWithNoMaterial(vk::CommandBuffer& cmd);
     void Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding);

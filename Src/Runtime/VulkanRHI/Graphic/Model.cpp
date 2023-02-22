@@ -29,6 +29,15 @@ Model::Model(VulkanDevice* device, const boost::filesystem::path& modelPath, Vul
     init(Util::Model::AssimpObj(modelPath).MoveModelData(), layout);
 }
 
+Model::~Model()
+{
+    m_descriptorsets.clear();
+    m_materials.clear();
+    m_meshes.clear();
+    m_vulkanImageSamplers.clear();
+    m_vulkanDescriptorPool.reset();
+}
+
 void Model::DrawWithNoMaterial(vk::CommandBuffer& cmd)
 {
     for (auto& mesh : m_meshes)
@@ -113,6 +122,7 @@ void Model::initMatrials(const std::vector<Util::Model::MaterialData>& materialD
             if (samplerToDescSet.find(sampler) == samplerToDescSet.end())
             {
                 samplerToDescSet[sampler] = m_vulkanDescriptorPool->AllocSamplerDescriptorSet(layout, {sampler.get()}, {VulkanDescriptorSetLayout::DESCRIPTOR_SAMPLER2_BINDING_ID});
+                m_descriptorsets.push_back(samplerToDescSet[sampler]);
             }
             mat.reset(new Material(m_pVulkanDevice, {samplerToDescSet[sampler]}));
         }
@@ -128,7 +138,8 @@ void Model::initMatrials(const std::vector<Util::Model::MaterialData>& materialD
             {
                 binding.emplace_back(i);
             }
-            auto descs = m_vulkanDescriptorPool->AllocSamplerDescriptorSet(layout, samplers, binding);
+            std::shared_ptr<VulkanDescriptorSets> descs = m_vulkanDescriptorPool->AllocSamplerDescriptorSet(layout, samplers, binding);
+            m_descriptorsets.push_back(descs);
             mat.reset(new Material(m_pVulkanDevice, {descs}));
         }
         else

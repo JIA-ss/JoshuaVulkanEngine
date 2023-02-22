@@ -4,6 +4,7 @@
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "vulkan/vulkan_enums.hpp"
 #include <algorithm>
+#include <iostream>
 
 RHI_NAMESPACE_USING
 
@@ -12,6 +13,7 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, vk::Format colorFormat,
     , m_colorFormat(colorFormat)
     , m_depthFormat(depthFormat)
 {
+    std::cout << "[VulkanRenderPass] Construct" << std::endl;
     bool usingMSAA = sample > vk::SampleCountFlagBits::e1;
 
     vk::AttachmentDescription colorAttach, depthAttach, colorAttachResolve;
@@ -87,6 +89,7 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, vk::Format colorFormat,
 
 VulkanRenderPass::~VulkanRenderPass()
 {
+    std::cout << "[VulkanRenderPass] Destroy" << std::endl;
     m_vulkanDevice->GetVkDevice().destroyRenderPass(m_vkRenderPass);
 }
 
