@@ -19,9 +19,10 @@ private:
 public:
     explicit Mesh(VulkanDevice* device, Util::Model::MeshData&& meshData);
 
+    void Bind(vk::CommandBuffer& cmd);
+    void DrawIndexed(vk::CommandBuffer& cmd);
 private:
-    void bind(vk::CommandBuffer& cmd);
-    void drawIndexed(vk::CommandBuffer& cmd);
+
 };
 
 RHI_NAMESPACE_END

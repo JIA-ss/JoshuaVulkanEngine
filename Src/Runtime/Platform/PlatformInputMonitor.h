@@ -56,6 +56,7 @@ public:
         LEFT_SHIFT,RIGHT_SHIFT,
         LEFT_CONTROL,RIGHT_CONTROL,
         SPACE,
+        TAB,
 
         MAX
     };

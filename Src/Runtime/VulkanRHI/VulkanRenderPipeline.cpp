@@ -56,7 +56,7 @@ VulkanRenderPipeline* VulkanRenderPipelineBuilder::build()
     if (!m_VulkanMultisampleState) m_VulkanMultisampleState.reset(new VulkanMultisampleState(sampleCount));
     if (!m_VulkanDepthStencilState) m_VulkanDepthStencilState.reset(new VulkanDepthStencilState());
     if (!m_VulkanColorBlendState) m_VulkanColorBlendState.reset(new VulkanColorBlendState());
-    if (!m_VulkanRenderPass) m_VulkanRenderPass.reset(new VulkanRenderPass(m_vulkanDevice, m_vulkanDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, sampleCount));
+    assert(m_VulkanRenderPass); // m_VulkanRenderPass.reset(new VulkanRenderPass(m_vulkanDevice, m_vulkanDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, sampleCount));
     if (!m_VulkanPipelineLayout) m_VulkanPipelineLayout.reset(new VulkanPipelineLayout(m_vulkanDevice, m_descriptorSetLayouts));
 
     return new VulkanRenderPipeline(

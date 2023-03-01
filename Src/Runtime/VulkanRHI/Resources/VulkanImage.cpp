@@ -75,6 +75,13 @@ void VulkanImageResource::TransitionImageLayout(vk::ImageLayout oldLayout, vk::I
             srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
             dstStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
         }
+        else if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eDepthStencilReadOnlyOptimal)
+        {
+            barrier.setSrcAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+                    .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+            srcStage = vk::PipelineStageFlagBits::eLateFragmentTests;
+            dstStage = vk::PipelineStageFlagBits::eFragmentShader;
+        }
         else
         {
             throw std::invalid_argument("unsupported layout transition!");
@@ -127,9 +134,12 @@ VulkanImageSampler::VulkanImageSampler(
     m_pVulkanImageResource.reset(new VulkanImageResource(device, memProps, resourceConfig));
 
     createSampler();
-    createStagingBuffer();
 
-    UploadImageToGPU();
+    if (m_pRawData)
+    {
+        createStagingBuffer();
+        UploadImageToGPU();
+    }
 }
 
 VulkanImageSampler::~VulkanImageSampler()

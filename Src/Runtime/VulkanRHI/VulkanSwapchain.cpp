@@ -172,12 +172,13 @@ void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPass* renderpass)
         vk::FramebufferCreateInfo createInfo;
         std::vector<vk::ImageView> attachments;
         attachments.reserve(4);
+
+        attachments.push_back(m_vkImageViews[i]);
+        attachments.push_back(m_pVulkanDepthImage->GetVkImageView());
         if (m_pVulkanResolveColorImage)
         {
             attachments.push_back(m_pVulkanResolveColorImage->GetVkImageView());
         }
-        attachments.push_back(m_pVulkanDepthImage->GetVkImageView());
-        attachments.push_back(m_vkImageViews[i]);
 
 
         createInfo.setAttachments(attachments)

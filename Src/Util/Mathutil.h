@@ -7,7 +7,6 @@ namespace Util { namespace Math {
 class RTMatrix
 {
 protected:
-    glm::vec3 m_center = glm::vec3(0);
     glm::vec3 m_rotation = glm::vec3(0);
     glm::vec3 m_position = glm::vec3(0);
     glm::mat4 m_matrix = glm::mat4(1.0f);
@@ -15,9 +14,7 @@ protected:
 protected:
     virtual void updateMatrix();
 public:
-    RTMatrix(const glm::vec3& r = glm::vec3(0), const glm::vec3& t = glm::vec3(0), const glm::vec3& center = glm::vec3(0));
-
-    inline void SetCenter(const glm::vec3& center) { m_center = center; m_dirty = true; }
+    RTMatrix(const glm::vec3& r = glm::vec3(0), const glm::vec3& t = glm::vec3(0));
 
     inline RTMatrix& SetRotation(const glm::vec3& r) { m_rotation = r; m_dirty = true; return *this; }
     inline RTMatrix& SetPosition(const glm::vec3& p) { m_position = p; m_dirty = true; return *this; }
@@ -27,7 +24,6 @@ public:
 
     inline const glm::vec3& GetRotation() { return m_rotation; }
     inline const glm::vec3& GetPosition() { return m_position; }
-    inline const glm::vec3& GetCenter() { return m_center; }
 
     const glm::mat4& GetMatrix() { updateMatrix(); return m_matrix; }
 
@@ -101,6 +97,7 @@ class VPMatrix : public RTMatrix
 {
 protected:
     glm::vec3 m_upDirection = glm::vec3(0,1,0);
+    glm::vec3 m_frontDirection = glm::vec3(0,0,-1);
     OrthogonalProjectMatrix m_orthoMatrix;
     PerspectiveProjectMatrix m_perspMatrix;
 
@@ -115,14 +112,25 @@ public:
         float fovDegree, float aspect, float near = 0.1f, float far = 10.f,
         const glm::vec3& rot = glm::vec3(0),
         const glm::vec3& pos = glm::vec3(0),
-        const glm::vec3& center = glm::vec3(0),
-        glm::vec3 upDirection = glm::vec3(0,1,0)
+        glm::vec3 upDirection = glm::vec3(0,1,0),
+        glm::vec3 frontDirection = glm::vec3(0,0,-1)
+        );
+    VPMatrix(
+        float xmin, float xmax, float ymin, float ymax, float zmin, float zmax,
+        const glm::vec3& rot = glm::vec3(0),
+        const glm::vec3& pos = glm::vec3(0),
+        glm::vec3 upDirection = glm::vec3(0,1,0),
+        glm::vec3 frontDirection = glm::vec3(0,0,-1)
         );
 
     PerspectiveProjectMatrix* GetPPerspectiveMatrix();
     OrthogonalProjectMatrix* GetPOrthogonalMatrix();
     const glm::mat4& GetProjMatrix();
     const glm::mat4& GetViewMatrix() { return GetMatrix(); }
+
+    glm::vec3 GetFrontDir();
+    float GetNear();
+    float GetFar();
 };
 
 class SRTMatrix : public RTMatrix

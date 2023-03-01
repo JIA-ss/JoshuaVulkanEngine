@@ -6,6 +6,7 @@
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
@@ -35,6 +36,10 @@ SimpleModelRenderer::~SimpleModelRenderer()
 
 void SimpleModelRenderer::prepare()
 {
+    // prepare camera
+    prepareCamera();
+    // prepare Light
+    prepareLight();
     // prepare descriptor layout
     prepareModel();
     // prepare callback
@@ -73,7 +78,9 @@ void SimpleModelRenderer::render()
     }
     m_imageIdx = res.value;
 
-    updateUniformBuf(m_imageIdx);
+    m_pCamera->UpdateUniformBuffer(m_imageIdx);
+    m_pLight->UpdateLightUBO(m_imageIdx);
+
     // reset fence after acquiring the image
     m_pDevice->GetVkDevice().resetFences(m_vkFences[m_frameIdxInFlight]);
 
@@ -84,9 +91,7 @@ void SimpleModelRenderer::render()
     m_vkCmds[m_frameIdxInFlight].begin(beginInfo);
     {
         m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "default");
-
         std::vector<vk::DescriptorSet> tobinding;
-        m_pUniformSets->FillToBindedDescriptorSetsVector(tobinding, m_pPipelineLayout.get(), m_frameIdxInFlight);
 
         std::vector<vk::ClearValue> clears(2);
         clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
@@ -97,7 +102,7 @@ void SimpleModelRenderer::render()
             vk::Rect2D rect{{0,0},extent};
             m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{0,0,(float)extent.width, (float)extent.height,0,1});
             m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
-            m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
+            m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
         }
         m_pRenderPass->End(m_vkCmds[m_frameIdxInFlight]);
     }
@@ -145,14 +150,36 @@ void SimpleModelRenderer::prepareModel()
     transformation.SetPosition(glm::vec3(0.0f, -20.f, -20.f));
     transformation.SetRotation(glm::vec3(0,90,0));
     transformation.SetScale(glm::vec3(0.05f));
+
+    std::array<std::vector<RHI::Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT> uboInfos;
+    auto camUbo = m_pCamera->GetUboInfo();
+    auto lightUbo = m_pLight->GetUboInfo();
+    for (int frameId = 0; frameId < uboInfos.size(); frameId++)
+    {
+        uboInfos[frameId].push_back(camUbo[frameId]);
+        uboInfos[frameId].push_back(lightUbo[frameId]);
+    }
+    m_pModel->InitUniformDescriptorSets(uboInfos);
+}
+
+void SimpleModelRenderer::prepareCamera()
+{
+    auto extent = m_pDevice->GetSwapchainExtent();
+    float aspect = extent.width / (float) extent.height;
+    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 500.f));
+    m_pCamera->GetVPMatrix().SetPosition(glm::vec3(0,0,2));
+
+    m_pCamera->InitUniformBuffer(m_pDevice.get());
+}
+
+void SimpleModelRenderer::prepareLight()
+{
+    m_pLight.reset(new Lights(m_pDevice.get(), 1));
+    m_pLight->GetLightTransformation().SetPosition(glm::vec3(1, 1, -2));
 }
 
 void SimpleModelRenderer::prepareInputCallback()
 {
-    auto extent = m_pDevice->GetSwapchainExtent();
-    float aspect = extent.width / (float) extent.height;
-    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 100.f));
-    m_pCamera->GetVPMatrix().SetPosition(glm::vec3(0,0,2));
     auto inputMonitor = m_pPhysicalDevice->GetPWindow()->GetInputMonitor();
     inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::W, [&](){
         glm::vec3 dir = m_pCamera->GetDirection();
@@ -242,27 +269,4 @@ void SimpleModelRenderer::preparePipeline()
 void SimpleModelRenderer::prepareFrameBuffer()
 {
     m_pDevice->CreateSwapchainFramebuffer(m_pRenderPass.get());
-}
-
-
-void SimpleModelRenderer::updateUniformBuf(uint32_t currentFrameIdx)
-{
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    static glm::vec3 lightPos(1, 1, -2);
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    auto extent = m_pDevice->GetSwapchainExtent();
-
-    // auto& modelTransformation = m_pModel->GetTransformation();
-    // modelTransformation.Rotate(glm::vec3(0, time*90, 0));
-    RHI::UniformBufferObject ubo{};
-    ubo.model = m_pModel->GetTransformation().GetMatrix();
-    ubo.view = m_pCamera->GetViewMatrix();
-    ubo.proj = m_pCamera->GetProjMatrix();
-
-    ubo.camPos = m_pCamera->GetPosition();
-    ubo.lightPos = lightPos;
-    m_pUniformBuffers[currentFrameIdx]->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
 }

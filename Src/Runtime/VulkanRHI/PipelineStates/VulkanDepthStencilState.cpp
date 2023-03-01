@@ -6,7 +6,10 @@
 
 RHI_NAMESPACE_USING
 
-VulkanDepthStencilState::VulkanDepthStencilState()
+const VulkanDepthStencilState::Config VulkanDepthStencilState::Config::DEFAULT = {};
+
+VulkanDepthStencilState::VulkanDepthStencilState(const Config& config)
+    : m_config(config)
 {
 
 }
@@ -20,11 +23,11 @@ VulkanDepthStencilState::~VulkanDepthStencilState()
 vk::PipelineDepthStencilStateCreateInfo VulkanDepthStencilState::GetDepthStencilStateCreateInfo()
 {
     return vk::PipelineDepthStencilStateCreateInfo()
-            .setDepthTestEnable(VK_TRUE)
-            .setDepthWriteEnable(VK_TRUE)
-            .setDepthCompareOp(vk::CompareOp::eLess)
-            .setDepthBoundsTestEnable(VK_FALSE)
-            .setMinDepthBounds(0.0f)
-            .setMaxDepthBounds(1.0f)
-            .setStencilTestEnable(VK_FALSE);
+            .setDepthTestEnable(m_config.DepthTestEnable)
+            .setDepthWriteEnable(m_config.DepthWriteEnable)
+            .setDepthCompareOp(m_config.DepthCompareOp)
+            .setDepthBoundsTestEnable(m_config.DepthBoundsTestEnable)
+            .setMinDepthBounds(m_config.MinDepthBounds)
+            .setMaxDepthBounds(m_config.MaxDepthBounds)
+            .setStencilTestEnable(m_config.StencilTestEnable);
 }

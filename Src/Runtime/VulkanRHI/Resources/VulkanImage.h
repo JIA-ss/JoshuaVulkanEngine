@@ -96,11 +96,11 @@ public:
         VulkanImageResource::Config resourceConfig
     );
     ~VulkanImageSampler();
-
+    inline vk::ImageLayout GetImageLayout() { return m_config.imageLayout; }
     inline vk::Image* GetPVkImage() { return &m_pVulkanImageResource->GetVkImage(); }
     inline vk::ImageView* GetPVkImageView() { return &m_pVulkanImageResource->GetVkImageView(); }
     inline vk::Sampler* GetPVkSampler() { return m_vkSampler ? &m_vkSampler : nullptr; }
-
+    inline VulkanImageResource* GetPImageResource() { return m_pVulkanImageResource.get(); }
     void UploadImageToGPU();
 private:
 

@@ -17,7 +17,9 @@ VulkanDescriptorSets::VulkanDescriptorSets(
         vk::DescriptorPool descPool,
         VulkanDescriptorSetLayout* layout,
         const std::vector<VulkanBuffer*>& uniformBuffers,
-        const std::vector<uint32_t>& binding
+        const std::vector<uint32_t>& binding,
+        const std::vector<uint32_t>& range,
+        int descriptorNum
     )
     : m_vulkanDevice(device)
     , m_vulkanDescLayout(layout)
@@ -25,32 +27,41 @@ VulkanDescriptorSets::VulkanDescriptorSets(
     , m_vkDescPool(descPool)
 {
     assert(binding.size() == uniformBuffers.size());
+    assert(uniformBuffers.size() == range.size());
 
-    std::vector<vk::DescriptorSetLayout> layouts(uniformBuffers.size(), layout->GetVkDescriptorSetLayout());
+    std::vector<vk::DescriptorSetLayout> layouts(descriptorNum, layout->GetVkDescriptorSetLayout());
     auto allocInfo = vk::DescriptorSetAllocateInfo()
                 .setDescriptorPool(descPool)
-                .setDescriptorSetCount(uniformBuffers.size())
+                .setDescriptorSetCount(descriptorNum)
                 .setSetLayouts(layouts);
     m_vkDescSets = m_vulkanDevice->GetVkDevice().allocateDescriptorSets(allocInfo);
-    assert(uniformBuffers.size() == m_vkDescSets.size());
+    assert(descriptorNum == m_vkDescSets.size());
+
     std::vector<vk::WriteDescriptorSet> writeDescs;
-    std::vector<vk::DescriptorBufferInfo> bufferInfo(m_vkDescSets.size());
-    for (int i = 0; i < m_vkDescSets.size(); i++)
+    std::vector<vk::DescriptorBufferInfo> bufferInfo(uniformBuffers.size());
+    for (vk::DescriptorSet& vkSet : m_vkDescSets)
     {
-        bufferInfo[i] = vk::DescriptorBufferInfo()
-                    .setBuffer(*uniformBuffers[i]->GetPVkBuf())
-                    .setOffset(0)
-                    .setRange(sizeof(UniformBufferObject))
-                    ;
-        auto writeDesc = vk::WriteDescriptorSet()
-                    .setDstSet(m_vkDescSets[i])
-                    .setDstBinding(binding[i])
-                    .setDstArrayElement(0)
-                    .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-                    .setDescriptorCount(1)
-                    .setBufferInfo(bufferInfo[i])
-                    ;
-        writeDescs.emplace_back(writeDesc);
+        for (int i = 0; i < uniformBuffers.size(); i++)
+        {
+            if (uniformBuffers[i] == nullptr)
+            {
+                continue;
+            }
+            bufferInfo[i] = vk::DescriptorBufferInfo()
+                        .setBuffer(*uniformBuffers[i]->GetPVkBuf())
+                        .setOffset(0)
+                        .setRange(range[i])
+                        ;
+            auto writeDesc = vk::WriteDescriptorSet()
+                        .setDstSet(vkSet)
+                        .setDstBinding(binding[i])
+                        .setDstArrayElement(0)
+                        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                        .setDescriptorCount(1)
+                        .setBufferInfo(bufferInfo[i])
+                        ;
+            writeDescs.emplace_back(writeDesc);
+        }
     }
     m_vulkanDevice->GetVkDevice().updateDescriptorSets((uint32_t)writeDescs.size(), writeDescs.data(), 0, nullptr);
 }
@@ -61,7 +72,9 @@ VulkanDescriptorSets::VulkanDescriptorSets(
         vk::DescriptorPool descPool,
         VulkanDescriptorSetLayout* layout,
         std::vector<VulkanImageSampler*> imageSamplers,
-        const std::vector<uint32_t>& binding
+        const std::vector<uint32_t>& binding,
+        vk::ImageLayout imageLayout,
+        int descriptorNum
     )
     : m_vulkanDevice(device)
     , m_vulkanDescLayout(layout)
@@ -88,7 +101,7 @@ VulkanDescriptorSets::VulkanDescriptorSets(
             continue;
         }
         imageInfo.push_back(vk::DescriptorImageInfo()
-                    .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                    .setImageLayout(imageLayout)
                     .setImageView(*imageSamplers[i]->GetPVkImageView())
                     .setSampler(*imageSamplers[i]->GetPVkSampler())
         );

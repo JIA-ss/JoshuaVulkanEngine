@@ -24,6 +24,8 @@ MultiPipelineRenderer::~MultiPipelineRenderer()
 
 void MultiPipelineRenderer::prepare()
 {
+    prepareCamera();
+    prepareInputCallback();
     prepareModel();
     prepareRenderpass();
     prepareMultiPipelines();
@@ -55,7 +57,8 @@ void MultiPipelineRenderer::render()
     }
     m_imageIdx = res.value;
 
-    updateUniformBuf(m_imageIdx);
+    m_pCamera->UpdateUniformBuffer(m_imageIdx);
+    m_pLight->UpdateLightUBO(m_imageIdx);
     // reset fence after acquiring the image
     m_pDevice->GetVkDevice().resetFences(m_vkFences[m_frameIdxInFlight]);
 
@@ -65,7 +68,6 @@ void MultiPipelineRenderer::render()
         RHI::VulkanCmdBeginEndRAII cmdBeginEndGuard(m_vkCmds[m_frameIdxInFlight]);
 
         std::vector<vk::DescriptorSet> tobinding;
-        m_pUniformSets->FillToBindedDescriptorSetsVector(tobinding, m_pPipelineLayout.get(), m_frameIdxInFlight);
 
         std::vector<vk::ClearValue> clears(2);
         clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
@@ -80,14 +82,14 @@ void MultiPipelineRenderer::render()
                 m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "fill");
                 m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{0,0,(float)extent.width / 2, (float)extent.height,0,1});
                 m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
-                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
+                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
             }
 
             {
                 m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "line");
                 m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{(float)extent.width / 2,0,(float)extent.width / 2, (float)extent.height,0,1});
                 m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
-                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
+                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
             }
         }
         m_pRenderPass->End(m_vkCmds[m_frameIdxInFlight]);

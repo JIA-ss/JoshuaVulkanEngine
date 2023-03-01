@@ -4,6 +4,7 @@
 #include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
+#include "vulkan/vulkan_enums.hpp"
 #include <stdint.h>
 #include <vulkan/vulkan.hpp>
 
@@ -29,7 +30,9 @@ public:
         vk::DescriptorPool descPool,
         VulkanDescriptorSetLayout* layout,
         const std::vector<VulkanBuffer*>& uniformBuffers,
-        const std::vector<uint32_t>& binding
+        const std::vector<uint32_t>& binding,
+        const std::vector<uint32_t>& range,
+        int descriptorNum = 1
     );
 
     explicit VulkanDescriptorSets(
@@ -37,7 +40,9 @@ public:
         vk::DescriptorPool descPool,
         VulkanDescriptorSetLayout* layout,
         std::vector<VulkanImageSampler*> imageSamplers,
-        const std::vector<uint32_t>& binding
+        const std::vector<uint32_t>& binding,
+        vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+        int descriptorNum = 1
     );
 
     ~VulkanDescriptorSets();

@@ -24,11 +24,17 @@ public:
     std::shared_ptr<VulkanDescriptorSets> AllocUniformDescriptorSet(
                 VulkanDescriptorSetLayout* layout,
                 const std::vector<VulkanBuffer*>& uniformBuffers,
-                const std::vector<uint32_t>& binding);
+                const std::vector<uint32_t>& binding,
+                const std::vector<uint32_t>& range,
+                int descriptorNum = 1
+            );
 
     std::shared_ptr<VulkanDescriptorSets> AllocSamplerDescriptorSet(
                 VulkanDescriptorSetLayout* layout,
                 const std::vector<VulkanImageSampler*>& imageSamplers,
-                const std::vector<uint32_t>& binding);
+                const std::vector<uint32_t>& binding,
+                vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+                int descriptorNum = 1
+            );
 };
 RHI_NAMESPACE_END

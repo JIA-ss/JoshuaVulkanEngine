@@ -1,5 +1,6 @@
 #pragma once
 #include "Runtime/Render/Camera.h"
+#include "Runtime/Render/Light.h"
 #include "Runtime/VulkanRHI/Graphic/Model.h"
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
@@ -19,6 +20,7 @@ class SimpleModelRenderer : public RendererBase
 protected:
     std::unique_ptr<RHI::Model> m_pModel;
     std::unique_ptr<Camera> m_pCamera;
+    std::unique_ptr<Lights> m_pLight;
     uint32_t m_imageIdx = 0;
 
 public:
@@ -35,11 +37,12 @@ protected:
 protected:
     void preparePipeline();
     void prepareFrameBuffer();
+    void prepareCamera();
+    void prepareLight();
     void prepareInputCallback();
 
-    void updateUniformBuf(uint32_t currentFrameIdx);
+    void updateLightUniformBuf(uint32_t currentFrameIdx);
 
-    
 };
 
 }

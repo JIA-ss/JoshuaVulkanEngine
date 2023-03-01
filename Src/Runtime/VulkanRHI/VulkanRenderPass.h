@@ -25,6 +25,7 @@ private:
     std::vector<VulkanPipelineWrapper> m_graphicPipelines;
 public:
     VulkanRenderPass(VulkanDevice* device, vk::Format colorFormat, vk::Format depthFormat, vk::SampleCountFlagBits sample);
+    VulkanRenderPass(VulkanDevice* device, vk::RenderPass renderpass);
     ~VulkanRenderPass();
 
     void Begin(vk::CommandBuffer cmd, const std::vector<vk::ClearValue>& clearValues, const vk::Rect2D& renderArea, vk::Framebuffer frameBuffer, vk::SubpassContents contents = {});

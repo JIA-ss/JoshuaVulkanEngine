@@ -93,7 +93,7 @@ void VulkanContext::createVulkanDescriptorSet()
     {
         m_uniformBuffers[i].reset(
             new VulkanBuffer(
-                    m_pDevice.get(), sizeof(UniformBufferObject),
+                    m_pDevice.get(), sizeof(CameraUniformBufferObject),
                     vk::BufferUsageFlagBits::eUniformBuffer,
                 vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
                 vk::SharingMode::eExclusive
@@ -127,8 +127,9 @@ void VulkanContext::createVulkanDescriptorSet()
     };
     m_pDescPool.reset(new VulkanDescriptorPool(m_pDevice.get(), poolSizes, poolSizes.size()));
 
-    std::vector<uint32_t> uniformBinding(MAX_FRAMES_IN_FLIGHT, VulkanDescriptorSetLayout::DESCRIPTOR_MVPUBO_BINDING_ID);
-    m_pUniformSets = m_pDescPool->AllocUniformDescriptorSet(m_pDescSetLayout.get(), pBuffers, uniformBinding);
+    std::vector<uint32_t> uniformBinding(MAX_FRAMES_IN_FLIGHT, VulkanDescriptorSetLayout::DESCRIPTOR_CAMVPUBO_BINDING_ID);
+    std::vector<uint32_t> range(MAX_FRAMES_IN_FLIGHT, sizeof(CameraUniformBufferObject));
+    m_pUniformSets = m_pDescPool->AllocUniformDescriptorSet(m_pDescSetLayout.get(), pBuffers, uniformBinding, range, MAX_FRAMES_IN_FLIGHT);
 
     std::vector<uint32_t> samplerBinding(1, VulkanDescriptorSetLayout::DESCRIPTOR_SAMPLER1_BINDING_ID);
     for (int i = 1; i < m_images.size(); i++)

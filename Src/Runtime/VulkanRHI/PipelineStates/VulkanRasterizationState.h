@@ -39,7 +39,7 @@ class VulkanRasterizationStateBuilder
     BUILDER_SET_FUNC(VulkanRasterizationStateBuilder, bool,                 DiscardEnable,      false)
     BUILDER_SET_FUNC(VulkanRasterizationStateBuilder, vk::PolygonMode,      PolygonMode,        vk::PolygonMode::eFill)
     BUILDER_SET_FUNC(VulkanRasterizationStateBuilder, float,                LineWidth,          1.0f)
-    BUILDER_SET_FUNC(VulkanRasterizationStateBuilder, vk::CullModeFlags,    CullMode,           vk::CullModeFlagBits::eBack)
+    BUILDER_SET_FUNC(VulkanRasterizationStateBuilder, vk::CullModeFlags,    CullMode,           vk::CullModeFlagBits::eNone)
     BUILDER_SET_FUNC(VulkanRasterizationStateBuilder, vk::FrontFace,        FrontFace,          vk::FrontFace::eCounterClockwise)
     BUILDER_SET_FUNC(VulkanRasterizationStateBuilder, bool,                 DepthBiasEnable,    false)
 public:

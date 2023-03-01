@@ -8,8 +8,9 @@ class VulkanColorBlendState
 {
 public:
 private:
-    vk::PipelineColorBlendAttachmentState m_vkColorBlendAttachmentState;
+    std::vector<vk::PipelineColorBlendAttachmentState> m_vkColorBlendAttachmentStates;
 public:
+    VulkanColorBlendState(const std::vector<vk::PipelineColorBlendAttachmentState>& states) : m_vkColorBlendAttachmentStates(states) { }
     VulkanColorBlendState();
     ~VulkanColorBlendState();
 

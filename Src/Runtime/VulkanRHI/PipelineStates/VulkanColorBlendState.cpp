@@ -29,8 +29,8 @@ VulkanColorBlendState::VulkanColorBlendState()
         finalColor.rgb = newColor.rgb * newAlpha + (1 - newAlpha) * oldColor
         finalColor.a = new Alpha.a
     */
-
-    m_vkColorBlendAttachmentState.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+    m_vkColorBlendAttachmentStates.resize(1);
+    m_vkColorBlendAttachmentStates[0].setColorWriteMask(vk::ColorComponentFlagBits::eR |
                                                     vk::ColorComponentFlagBits::eG |
                                                     vk::ColorComponentFlagBits::eB |
                                                     vk::ColorComponentFlagBits::eA)
@@ -52,7 +52,7 @@ VulkanColorBlendState::~VulkanColorBlendState()
 vk::PipelineColorBlendStateCreateInfo VulkanColorBlendState::GetColorBlendStateCreateInfo()
 {
     auto createInfo = vk::PipelineColorBlendStateCreateInfo()
-                    .setAttachments(m_vkColorBlendAttachmentState)
+                    .setAttachments(m_vkColorBlendAttachmentStates)
                     .setLogicOpEnable(false);
     return createInfo;
 }

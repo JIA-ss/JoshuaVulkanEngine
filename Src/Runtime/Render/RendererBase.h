@@ -20,16 +20,13 @@ protected:
     std::unique_ptr<RHI::VulkanInstance> m_pInstance;
     std::unique_ptr<RHI::VulkanPhysicalDevice> m_pPhysicalDevice;
     std::unique_ptr<RHI::VulkanDevice> m_pDevice;
-    std::unique_ptr<RHI::VulkanDescriptorPool> m_pDescPool;
-    std::shared_ptr<RHI::VulkanDescriptorSets> m_pUniformSets;
 
     std::weak_ptr<RHI::VulkanDescriptorSetLayout> m_pSet0UniformSetLayout;
     std::weak_ptr<RHI::VulkanDescriptorSetLayout> m_pSet1SamplerSetLayout;
+    std::weak_ptr<RHI::VulkanDescriptorSetLayout> m_pSet2ShadowmapSamplerLayout;
     std::shared_ptr<RHI::VulkanPipelineLayout> m_pPipelineLayout;
 
     std::shared_ptr<RHI::VulkanRenderPass> m_pRenderPass;
-    std::array<std::unique_ptr<RHI::VulkanBuffer>, MAX_FRAMES_IN_FLIGHT> m_pUniformBuffers;
-
 
 protected:
     std::array<vk::CommandBuffer, MAX_FRAMES_IN_FLIGHT> m_vkCmds;
@@ -68,11 +65,9 @@ private:
     void initCmd();
     void initSyncObj();
     void initFrameBufferResizeCallback();
-    void initMVPUniformBuffer();
 
     void unInitCmd();
     void unInitSyncObj();
-    void unInitMVPUniformBuffer();
 
     void outputFrameRate();
 };

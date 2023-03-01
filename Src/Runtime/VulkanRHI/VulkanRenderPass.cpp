@@ -50,13 +50,25 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, vk::Format colorFormat,
                 .setPDepthStencilAttachment(&depthAttachRef)
                 ;
 
-    vk::SubpassDependency dependency;
-    dependency.setSrcSubpass(VK_SUBPASS_EXTERNAL)
+    std::array<vk::SubpassDependency, 2> dependency;
+    dependency[0]
+                .setSrcSubpass(VK_SUBPASS_EXTERNAL)
                 .setDstSubpass(0)
-                .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
+                .setSrcStageMask(vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests)
+                .setDstStageMask(vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests)
+                .setSrcAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+                .setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead)
+                .setDependencyFlags(vk::DependencyFlagBits(0));
+    dependency[1]
+                .setSrcSubpass(VK_SUBPASS_EXTERNAL)
+                .setDstSubpass(0)
+                .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+                .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
                 .setSrcAccessMask(vk::AccessFlagBits(0))
-                .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
-                .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite);
+                .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite)
+                .setDependencyFlags(vk::DependencyFlagBits(0));
+
+
 
     std::vector<vk::AttachmentDescription> attachments {colorAttach, depthAttach};
     if (usingMSAA)
@@ -84,6 +96,12 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, vk::Format colorFormat,
                 .setDependencies(dependency);
 
     m_vkRenderPass = m_vulkanDevice->GetVkDevice().createRenderPass(renderPassCreateInfo);
+}
+
+VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, vk::RenderPass renderpass)
+{
+    std::cout << "[VulkanRenderPass] Construct" << std::endl;
+    m_vkRenderPass = renderpass;
 }
 
 

@@ -23,7 +23,7 @@ public: \
 
 RHI_NAMESPACE_BEGIN
 
-#define MAX_FRAMES_IN_FLIGHT 3
+#define MAX_FRAMES_IN_FLIGHT 2
 
 class RHIInterface
 {

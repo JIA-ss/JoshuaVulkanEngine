@@ -27,13 +27,6 @@ public:
 
 private:
     void bind(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding);
-
-
-    void initDescriptorSetLayout();
-    void initDescriptorSets();
-    void initShader();
-    std::array<std::unique_ptr<RHI::VulkanBuffer>, MAX_FRAMES_IN_FLIGHT>&& initUniformBuffers();
-    std::vector<std::unique_ptr<RHI::VulkanImageSampler>>&& initImageSamplers();
 };
 
 RHI_NAMESPACE_END

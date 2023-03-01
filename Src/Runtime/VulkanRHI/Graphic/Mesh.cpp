@@ -1,6 +1,8 @@
 #include "Mesh.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanDevice.h"
+#include <glm/fwd.hpp>
+#include <stdint.h>
 RHI_NAMESPACE_USING
 
 Mesh::Mesh(VulkanDevice* device, Util::Model::MeshData&& meshData)
@@ -20,13 +22,13 @@ Mesh::Mesh(VulkanDevice* device, Util::Model::MeshData&& meshData)
     m_pVulkanDevice->GetPVulkanCmdPool()->FreeReUsableCmd(cmd);
 }
 
-void Mesh::bind(vk::CommandBuffer& cmd)
+void Mesh::Bind(vk::CommandBuffer& cmd)
 {
     cmd.bindVertexBuffers(0, *m_pVulkanVertexBuffer->GetPVkBuf(), {0});
     cmd.bindIndexBuffer(*m_pVulkanVertexIndexBuffer->GetPVkBuf(), 0, vk::IndexType::eUint32);
 }
 
-void Mesh::drawIndexed(vk::CommandBuffer &cmd)
+void Mesh::DrawIndexed(vk::CommandBuffer &cmd)
 {
     cmd.drawIndexed(m_meshData.indices.size(), 1, 0,0,0);
 }

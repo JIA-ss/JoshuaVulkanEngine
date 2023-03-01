@@ -26,15 +26,19 @@ VulkanDescriptorPool::~VulkanDescriptorPool()
 std::shared_ptr<VulkanDescriptorSets> VulkanDescriptorPool::AllocUniformDescriptorSet(
     VulkanDescriptorSetLayout* layout,
     const std::vector<VulkanBuffer*>& uniformBuffers,
-    const std::vector<uint32_t>& binding)
+    const std::vector<uint32_t>& binding,
+    const std::vector<uint32_t>& range,
+    int descriptorNum)
 {
-    return std::make_shared<VulkanDescriptorSets>(m_vulkanDevice, m_vkDescriptorPool, layout, uniformBuffers, binding);
+    return std::make_shared<VulkanDescriptorSets>(m_vulkanDevice, m_vkDescriptorPool, layout, uniformBuffers, binding, range, descriptorNum);
 }
 
 std::shared_ptr<VulkanDescriptorSets> VulkanDescriptorPool::AllocSamplerDescriptorSet(
     VulkanDescriptorSetLayout* layout,
     const std::vector<VulkanImageSampler*>& imageSamplers,
-    const std::vector<uint32_t>& binding)
+    const std::vector<uint32_t>& binding,
+    vk::ImageLayout imageLayout,
+    int descriptorNum)
 {
-    return std::make_shared<VulkanDescriptorSets>(m_vulkanDevice, m_vkDescriptorPool, layout, imageSamplers, binding);
+    return std::make_shared<VulkanDescriptorSets>(m_vulkanDevice, m_vkDescriptorPool, layout, imageSamplers, binding, imageLayout, descriptorNum);
 }
