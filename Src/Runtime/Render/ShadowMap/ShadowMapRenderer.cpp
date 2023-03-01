@@ -375,19 +375,6 @@ void ShadowMapRenderer::preparePipeline()
                     .SetVulkanDepthStencilState(debugDepthState)
                     .buildUnique();
         m_pRenderPass->AddGraphicRenderPipeline("[debug]show shadowmap texture", std::move(pipeline));
-
-
-        std::shared_ptr<RHI::VulkanShaderSet> debugRenderfromLightShaderSet = std::make_shared<RHI::VulkanShaderSet>(m_pDevice.get());
-        debugRenderfromLightShaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/debug.quad.renderfromlight.vert.spv", vk::ShaderStageFlagBits::eVertex);
-        debugRenderfromLightShaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/debug.quad.shadow.frag.spv", vk::ShaderStageFlagBits::eFragment);
-
-        pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
-                    .SetVulkanRenderPass(m_pRenderPass)
-                    .SetshaderSet(debugRenderfromLightShaderSet)
-                    .SetVulkanPipelineLayout(m_pPipelineLayout)
-                    .SetVulkanDepthStencilState(debugDepthState)
-                    .buildUnique();
-        m_pRenderPass->AddGraphicRenderPipeline("[debug]render from light texture", std::move(pipeline));
     }
 }
 
