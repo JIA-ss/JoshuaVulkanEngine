@@ -58,6 +58,8 @@ public:
         SPACE,
         TAB,
 
+        F11,
+        ESCAPE,
         MAX
     };
 

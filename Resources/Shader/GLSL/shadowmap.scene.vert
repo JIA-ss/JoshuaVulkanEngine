@@ -39,6 +39,7 @@ layout(location = 15) out vec4 lightColor[5];
 layout(location = 20) out vec2 lightNearFar[5];
 layout(location = 25) out vec4 lightDirection[5];
 
+layout(location = 30) out vec4 modelColor;
 
 // ????
 const mat4 biasMat = mat4(
@@ -73,4 +74,5 @@ void main() {
 
 
     worldNormal = mat3(transpose(inverse(modelUbo.model))) * inNormal;
+    modelColor = modelUbo.color;
 }

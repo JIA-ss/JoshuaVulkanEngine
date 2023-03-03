@@ -129,6 +129,7 @@ VulkanImageSampler::VulkanImageSampler(
     : m_vulkanDevice(device)
     , m_pRawData(rawData)
     , m_config(config)
+    , m_memProps(memProps)
 {
 
     m_pVulkanImageResource.reset(new VulkanImageResource(device, memProps, resourceConfig));
@@ -217,4 +218,13 @@ void VulkanImageSampler::createSampler()
                 .setMaxLod(m_config.maxLod)
                 ;
     m_vkSampler = m_vulkanDevice->GetVkDevice().createSampler(samplerInfo);
+}
+
+
+std::shared_ptr<VulkanImageSampler> VulkanImageSampler::ConvertDevice(VulkanDevice* device)
+{
+    std::shared_ptr<VulkanImageSampler> sampler(
+        new VulkanImageSampler(device, m_pRawData, m_memProps, m_config, m_pVulkanImageResource->m_config)
+    );
+    return sampler;
 }

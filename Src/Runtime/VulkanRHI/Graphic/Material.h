@@ -12,9 +12,12 @@
 
 RHI_NAMESPACE_BEGIN
 
+class MaterialView;
 class Material
 {
     friend class Model;
+    friend class ModelView;
+    friend class MaterialView;
 private:
     VulkanDevice* m_pVulkanDevice;
     Util::Model::MaterialData m_materialData;

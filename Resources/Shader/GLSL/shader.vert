@@ -32,6 +32,7 @@ layout(location = 1) out vec2 fragTexCoord;
 layout(location = 2) out vec3 camPos;
 layout(location = 3) out vec3 lightPos;
 layout(location = 4) out vec3 worldNormal;
+layout(location = 5) out vec4 modelColor;
 
 void main() {
     vec4 worldPos = modelUbo.model * vec4(inPosition, 1.0);
@@ -44,4 +45,5 @@ void main() {
     camPos = camUbo.camPos.xyz;
     lightPos = lightUbo.position[0].xyz;
     worldNormal = mat3(transpose(inverse(modelUbo.model))) * inNormal;
+    modelColor = modelUbo.color;
 }

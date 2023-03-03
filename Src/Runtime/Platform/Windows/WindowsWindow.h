@@ -28,6 +28,8 @@ public:
     void AddFrameBufferSizeChangedCallback(std::function<void(int, int)> func) override;
     void WaitIfMinimization() override;
     void PollWindowEvent() override;
+
+    void SetMaximizationMode() override;
 private:
     static void frameBufferSizeChanged(GLFWwindow* window, int, int);
 };

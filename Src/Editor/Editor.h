@@ -1,10 +1,14 @@
 #pragma once
+#include "Runtime/Render/RendererBase.h"
+#include <memory>
 
-#include "Runtime/Platform/PlatformWindow.h"
-namespace editor {
+#define EDITOR_NAMESPACE_BEGIN namespace editor {
+#define EDITOR_NAMESPACE_END }
+#define EDITOR_NAMESPACE_USING using namespace editor;
 
-void StartUp();
-void Run();
-void ShutDown();
-platform::PlatformWindow* GetWindow();
-}
+
+EDITOR_NAMESPACE_BEGIN
+
+Render::RendererBase* Init(Render::RendererBase* runtime_renderer);
+void UnInit();
+EDITOR_NAMESPACE_END

@@ -64,6 +64,8 @@ void WindowsInputMonitor::key_callback(GLFWwindow* window, int key, int scancode
     KEYBOARD_CONVERT_CASE(RIGHT_SHIFT)
     KEYBOARD_CONVERT_CASE(SPACE)
     KEYBOARD_CONVERT_CASE(TAB)
+    KEYBOARD_CONVERT_CASE(F11)
+    KEYBOARD_CONVERT_CASE(ESCAPE)
     default:
     {
         return;

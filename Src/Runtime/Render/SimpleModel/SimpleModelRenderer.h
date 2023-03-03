@@ -9,6 +9,7 @@
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "Runtime/VulkanRHI/VulkanSwapchain.h"
+#include <vector>
 #include <vulkan/vulkan.hpp>
 #include <Runtime/Render/RendererBase.h>
 
@@ -28,6 +29,8 @@ public:
                 const RHI::VulkanPhysicalDevice::Config& physicalConfig);
     ~SimpleModelRenderer() override;
 
+    std::vector<RHI::Model*> GetModels() override { return {m_pModel.get()}; }
+    Camera* GetCamera() override { return m_pCamera.get(); }
 protected:
     void prepare() override;
     virtual void prepareModel();

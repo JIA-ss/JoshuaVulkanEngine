@@ -10,8 +10,10 @@
 RHI_NAMESPACE_BEGIN
 
 class VulkanDevice;
+class VulkanImageSampler;
 class VulkanImageResource
 {
+    friend class VulkanImageSampler;
 public:
     struct Config
     {
@@ -29,7 +31,7 @@ public:
         uint32_t                    miplevel = 1;
         uint32_t                    arrayLayer = 1;
     };
-private:
+protected:
     VulkanDevice* m_vulkanDevice;
     std::unique_ptr<VulkanDeviceMemory> m_pVulkanDeviceMemory;
     vk::Image m_vkImage;
@@ -44,7 +46,7 @@ public:
     );
 
     ~VulkanImageResource();
-
+    Config GetConfig() { return m_config; }
 public:
     void TransitionImageLayout(vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
@@ -78,7 +80,7 @@ public:
         float                   minLod = 0.0f;
         float                   maxLod = 0.0f;
     };
-private:
+protected:
     VulkanDevice* m_vulkanDevice;
 
     std::unique_ptr<VulkanImageResource> m_pVulkanImageResource;
@@ -87,6 +89,7 @@ private:
     Config m_config;
 
     vk::Sampler m_vkSampler;
+    vk::MemoryPropertyFlags m_memProps;
 public:
     explicit VulkanImageSampler(
         VulkanDevice* device,
@@ -102,6 +105,8 @@ public:
     inline vk::Sampler* GetPVkSampler() { return m_vkSampler ? &m_vkSampler : nullptr; }
     inline VulkanImageResource* GetPImageResource() { return m_pVulkanImageResource.get(); }
     void UploadImageToGPU();
+    Config GetConfig() { return m_config; }
+    std::shared_ptr<VulkanImageSampler> ConvertDevice(VulkanDevice* device);
 private:
 
     void createStagingBuffer();

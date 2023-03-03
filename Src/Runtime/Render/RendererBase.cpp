@@ -52,20 +52,62 @@ RendererBase::RendererBase(const RHI::VulkanInstance::Config& instanceConfig,
     m_lastframeTimePoint = std::chrono::high_resolution_clock::now();
 }
 
-void RendererBase::RenderLoop()
+void RendererBase::PreRenderLoop()
 {
     prepare();
     assert(m_pRenderPass);
 
-    auto window = m_pDevice->GetVulkanPhysicalDevice()->GetPWindow();
-    while (!window->ShouldClose())
+    for(auto& cb : m_enterRenderLoopCallbacks)
     {
-        window->PollWindowEvent();
-        render();
-        outputFrameRate();
-        m_frameIdxInFlight = (m_frameIdxInFlight + 1) % MAX_FRAMES_IN_FLIGHT;
+        cb();
     }
 }
+
+void RendererBase::PostRenderLoop()
+{
+    for(auto& cb : m_quiteRenderLoopCallbacks)
+    {
+        cb();
+    }
+}
+
+void RendererBase::RenderFrame()
+{
+    GetPWindow()->PollWindowEvent();
+
+    if (!IsRendering())
+    {
+        return;
+    }
+
+    for(auto& cb : m_preRenderFrameCallbacks)
+    {
+        cb();
+    }
+
+    render();
+    outputFrameRate();
+    m_frameIdxInFlight = (m_frameIdxInFlight + 1) % MAX_FRAMES_IN_FLIGHT;
+
+    for(auto& cb : m_postRenderFrameCallbacks)
+    {
+        cb();
+    }
+}
+
+void RendererBase::RenderLoop()
+{
+    PreRenderLoop();
+
+
+    while (!GetPWindow()->ShouldClose())
+    {
+        RenderFrame();
+    }
+
+    PostRenderLoop();
+}
+
 
 RendererBase::~RendererBase()
 {
@@ -169,9 +211,65 @@ void RendererBase::recreateSwapchain()
 
 void RendererBase::prepareLayout()
 {
-    m_pSet0UniformSetLayout = RHI::VulkanDescriptorSetLayoutPresets::UBO;
-    m_pSet1SamplerSetLayout = RHI::VulkanDescriptorSetLayoutPresets::CUSTOM5SAMPLER;
-    m_pSet2ShadowmapSamplerLayout = RHI::VulkanDescriptorSetLayoutPresets::SHADOWMAP;
+    m_pSet0UniformSetLayout = m_pDevice->GetDescLayoutPresets().UBO;
+    m_pSet1SamplerSetLayout = m_pDevice->GetDescLayoutPresets().CUSTOM5SAMPLER;
+    m_pSet2ShadowmapSamplerLayout = m_pDevice->GetDescLayoutPresets().SHADOWMAP;
 
     m_pPipelineLayout.reset(new RHI::VulkanPipelineLayout(m_pDevice.get(), {m_pSet0UniformSetLayout.lock(), m_pSet1SamplerSetLayout.lock(), m_pSet2ShadowmapSamplerLayout.lock()}));
+}
+
+
+
+
+
+
+
+
+RendererList::RendererList(const std::vector<RendererBase*>& renderers)
+{
+    m_renderers.insert(m_renderers.end(), renderers.begin(), renderers.end());
+}
+
+void RendererList::prepareRenderLoop()
+{
+    for (auto& render : m_renderers)
+    {
+        render->PreRenderLoop();
+    }
+}
+
+void RendererList::renderFrame()
+{
+    auto it = m_renderers.begin();
+    while (it != m_renderers.end())
+    {
+        RendererBase* renderer = *it;
+        if (renderer == nullptr)
+        {
+            it = m_renderers.erase(it);
+            continue;
+        }
+
+        if (!renderer->GetPWindow()->ShouldClose())
+        {
+            renderer->RenderFrame();
+        }
+        else
+        {
+            it = m_renderers.erase(it);
+            renderer->PostRenderLoop();
+            continue;
+        }
+
+        it++;
+    }
+}
+
+void RendererList::RenderLoop()
+{
+    prepareRenderLoop();
+    while (!m_renderers.empty())
+    {
+        renderFrame();
+    }
 }

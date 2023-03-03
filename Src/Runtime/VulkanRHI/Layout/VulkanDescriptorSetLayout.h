@@ -45,11 +45,11 @@ public:
 
 struct VulkanDescriptorSetLayoutPresets
 {
-    static std::shared_ptr<VulkanDescriptorSetLayout> UBO;
-    static std::shared_ptr<VulkanDescriptorSetLayout> CUSTOM5SAMPLER;
-    static std::shared_ptr<VulkanDescriptorSetLayout> SHADOWMAP;
-    static void Init(VulkanDevice* device);
-    static void UnInit();
+    std::shared_ptr<VulkanDescriptorSetLayout> UBO;
+    std::shared_ptr<VulkanDescriptorSetLayout> CUSTOM5SAMPLER;
+    std::shared_ptr<VulkanDescriptorSetLayout> SHADOWMAP;
+    void Init(VulkanDevice* device);
+    void UnInit();
 };
 
 class VulkanUBODescriptorSetLayout final : public VulkanDescriptorSetLayout

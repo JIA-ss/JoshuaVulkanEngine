@@ -1,8 +1,23 @@
 #include "WindowsWindow.h"
 #include "Runtime/Platform/Windows/WindowsInputMonitor.h"
 #include "Runtime/Platform/Windows/WindowsWindow.h"
+#include "backends/imgui_impl_glfw.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
+
+namespace glfwUtil{
+
+GLFWmonitor* GetValidMonitor(int id)
+{
+    int monitorCount=-1;
+    GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+    GLFWmonitor* monitor = id < monitorCount ? monitors[id] : monitors[0];
+
+    return monitor;
+}
+
+}
+
 platform::WindowsWindow::~WindowsWindow()
 {
     assert(!m_glfwWindowPtr);
@@ -13,18 +28,39 @@ void platform::WindowsWindow::Init()
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    AddFrameBufferSizeChangedCallback([this](int width, int height)
-    {
-        m_setting.width = width;
-        m_setting.height = height;
-    });
 
     m_glfwWindowPtr = glfwCreateWindow(m_setting.width, m_setting.height, m_setting.name, nullptr, nullptr);
+    glfwSetWindowPos(m_glfwWindowPtr, m_setting.pos.x, m_setting.pos.y);
+
+    if (m_setting.maximization)
+    {
+        glfwMaximizeWindow(m_glfwWindowPtr);
+    }
+
     glfwSetWindowUserPointer(m_glfwWindowPtr, this);
     glfwSetFramebufferSizeCallback(m_glfwWindowPtr, platform::WindowsWindow::frameBufferSizeChanged);
 
+
     m_inputMonitor.reset(new WindowsInputMonitor());
     m_inputMonitor->Init(this);
+
+
+
+    m_inputMonitor->AddKeyboardPressedCallback(Keyboard::Key::F11, [&](){
+            SetMaximizationMode();
+    });
+
+    AddFrameBufferSizeChangedCallback([this](int width, int height)
+    {
+        if (width != 0 && height != 0)
+        {
+            m_setting.width = width;
+            m_setting.height = height;
+        }
+    });
+
+
+
 }
 
 void platform::WindowsWindow::Destroy()
@@ -78,6 +114,21 @@ std::vector<const char*> platform::WindowsWindow::GetRequiredExtensions()
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
     return extensions;
 }
+
+
+void platform::WindowsWindow::SetMaximizationMode()
+{
+    m_setting.maximization = glfwGetWindowAttrib(m_glfwWindowPtr, GLFW_MAXIMIZED);
+    if (m_setting.maximization)
+    {
+        glfwMaximizeWindow(m_glfwWindowPtr);
+    }
+    else
+    {
+        glfwRestoreWindow(m_glfwWindowPtr);
+    }
+}
+
 
 
 void platform::WindowsWindow::frameBufferSizeChanged(GLFWwindow* window, int width, int height)

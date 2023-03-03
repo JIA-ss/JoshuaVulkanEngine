@@ -64,10 +64,10 @@ public:
     inline PerspectiveProjectMatrix& SetNear(float near) { m_near = near; m_dirty = true; return *this; }
     inline PerspectiveProjectMatrix& SetFar(float far) { m_far = far; m_dirty = true; return *this; }
 
-    inline float GetFovDegree() { return m_fovDegree; }
-    inline float GetAspect() { return m_aspect; }
-    inline float GetNear() { return m_near; }
-    inline float GetFar() { return m_far; }
+    inline float GetFovDegree() const { return m_fovDegree; }
+    inline float GetAspect() const { return m_aspect; }
+    inline float GetNear() const { return m_near; }
+    inline float GetFar() const { return m_far; }
 };
 
 class OrthogonalProjectMatrix : public ProjectionMatrix
@@ -128,9 +128,11 @@ public:
     const glm::mat4& GetProjMatrix();
     const glm::mat4& GetViewMatrix() { return GetMatrix(); }
 
-    glm::vec3 GetFrontDir();
-    float GetNear();
-    float GetFar();
+    glm::vec3 GetFrontDir() const;
+    float GetNear() const;
+    float GetFar() const;
+    float GetFovDegree() const { return m_perspMatrix.GetFovDegree(); }
+    float GetAspect() const { return m_perspMatrix.GetAspect(); }
 };
 
 class SRTMatrix : public RTMatrix

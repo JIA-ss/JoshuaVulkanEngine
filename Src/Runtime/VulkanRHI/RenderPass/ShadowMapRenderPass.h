@@ -17,7 +17,7 @@ class VulkanDevice;
 class ShadowMapRenderPass
 {
 public:
-    static constexpr const uint32_t SHADOWMAP_DEFAULT_DIM = 256;
+    static constexpr const uint32_t SHADOWMAP_DEFAULT_DIM = 2048;
     static constexpr const float DEPTH_BIAS_CONSTANT = 1.25f;
     static constexpr const float DEPTH_BIAS_SLOP = 1.75f;
 private:

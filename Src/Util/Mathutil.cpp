@@ -119,7 +119,7 @@ Math::VPMatrix::VPMatrix(
     m_upDirection = glm::cross(right, v3front);
 }
 
-glm::vec3 Math::VPMatrix::GetFrontDir()
+glm::vec3 Math::VPMatrix::GetFrontDir() const
 {
     glm::mat4 xrot = glm::rotate(glm::mat4(1.0), glm::radians(m_rotation.x), glm::vec3(1,0,0));
     glm::mat4 yrot = glm::rotate(glm::mat4(1.0), glm::radians(m_rotation.y), glm::vec3(0,1,0));
@@ -129,7 +129,7 @@ glm::vec3 Math::VPMatrix::GetFrontDir()
     return glm::normalize(v3front);
 }
 
-float Math::VPMatrix::GetNear()
+float Math::VPMatrix::GetNear() const
 {
     if (m_mode == ProjectionMatrix::Mode::kPerspective)
     {
@@ -137,7 +137,7 @@ float Math::VPMatrix::GetNear()
     }
     return 0.0f;
 }
-float Math::VPMatrix::GetFar()
+float Math::VPMatrix::GetFar() const
 {
     if (m_mode == ProjectionMatrix::Mode::kPerspective)
     {

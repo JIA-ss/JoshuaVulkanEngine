@@ -45,17 +45,34 @@ void MultiPipelineRenderer::render()
     }
 
     // acquire image
-    auto res = m_pDevice->GetVkDevice().acquireNextImageKHR(m_pDevice->GetPVulkanSwapchain()->GetSwapchain(), std::numeric_limits<uint64_t>::max(), m_vkSemaphoreImageAvaliables[m_frameIdxInFlight], nullptr);
-    if (res.result == vk::Result::eErrorOutOfDateKHR)
+    vk::Result acquireImageResult;
+    try
     {
+        auto res = m_pDevice->GetVkDevice().acquireNextImageKHR(m_pDevice->GetPVulkanSwapchain()->GetSwapchain(), std::numeric_limits<uint64_t>::max(), m_vkSemaphoreImageAvaliables[m_frameIdxInFlight], nullptr);
+        acquireImageResult = res.result;
+        m_imageIdx = res.value;
+        if (res.result == vk::Result::eErrorOutOfDateKHR)
+        {
+            recreateSwapchain();
+            return;
+        }
+    }
+    catch(vk::OutOfDateKHRError)
+    {
+        m_frameBufferSizeChanged = true;
+    }
+
+    if (m_frameBufferSizeChanged || acquireImageResult == vk::Result::eErrorOutOfDateKHR)
+    {
+        m_frameBufferSizeChanged = false;
         recreateSwapchain();
         return;
     }
-    if (res.result != vk::Result::eSuccess && res.result != vk::Result::eSuboptimalKHR)
+
+    if (acquireImageResult != vk::Result::eSuccess && acquireImageResult != vk::Result::eSuboptimalKHR)
     {
         throw std::runtime_error("acquire next image failed");
     }
-    m_imageIdx = res.value;
 
     m_pCamera->UpdateUniformBuffer(m_imageIdx);
     m_pLight->UpdateLightUBO(m_imageIdx);

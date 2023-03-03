@@ -6,6 +6,7 @@
 #include "Demo/03_physicalDeviceAndQueue/physicalDeviceAndQueue.h"
 
 #include "CppDemo/01_context/context.h"
+#include "Editor/Editor.h"
 #include "Runtime/Platform/PlatformWindow.h"
 #include "Runtime/Render/MultiPipelines/MultiPipelineRenderer.h"
 #include "Runtime/Render/Renderer.h"
@@ -27,7 +28,7 @@ std::shared_ptr<Render::RendererBase> render = nullptr;
 void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::path& resourcesPath, const std::string& demoName)
 {
 
-    window = platform::CreatePlatformWindow(1920, 1080, "RHI");
+    window = platform::CreatePlatformWindow({1920, 1080, "RHI", 1, {-1920,820}, false});
     window->Init();
     auto extensions = window->GetRequiredExtensions();
     std::vector<const char*> enabledInstanceExtensions;
@@ -41,15 +42,20 @@ void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::pa
         RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
         RHI::VulkanPhysicalDevice::Config { window.get(), feature, {}, vk::SampleCountFlagBits::e1 }
     );
+
+
 }
 
 void Run()
 {
-    render->RenderLoop();
+    auto editor = editor::Init(render.get());
+    Render::RendererList renderers({render.get(), editor});
+    renderers.RenderLoop();
 }
 
 void Shutdown()
 {
+    editor::UnInit();
     render.reset();
     window->Destroy();
     window.reset();

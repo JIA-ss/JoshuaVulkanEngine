@@ -19,8 +19,10 @@
 
 RHI_NAMESPACE_BEGIN
 
+class ModelView;
 class Model
 {
+    friend class ModelView;
 public:
     struct UBOLayoutInfo
     {
@@ -33,7 +35,7 @@ private:
     std::vector<std::shared_ptr<Mesh>> m_meshes;
     std::vector<std::shared_ptr<Material>> m_materials;
     std::vector<size_t> m_materialIndexs;
-
+    std::vector<Util::Model::MaterialData> m_materialData;
 
     std::unordered_map<std::string, std::shared_ptr<VulkanImageSampler>> m_vulkanImageSamplers;
     std::unordered_map<std::string, std::shared_ptr<VulkanDescriptorSets>> m_descriptorsets;
@@ -44,15 +46,13 @@ private:
     std::array<std::shared_ptr<RHI::VulkanDescriptorSets>, MAX_FRAMES_IN_FLIGHT> m_uniformSets;
     std::array<std::vector<std::shared_ptr<RHI::VulkanDescriptorSets>>, MAX_FRAMES_IN_FLIGHT> m_shadowPassUniformSets;
     Util::Math::SRTMatrix m_transformation;
+    glm::vec4 m_color;
 public:
-    explicit Model(VulkanDevice* device, Util::Model::ModelData&& modelData, VulkanDescriptorSetLayout* layout);
-    explicit Model(VulkanDevice* device, const boost::filesystem::path& modelPath, VulkanDescriptorSetLayout* layout);
+    explicit Model(VulkanDevice* device, Util::Model::ModelData&& modelData, VulkanDescriptorSetLayout* layout, const glm::vec4& color = glm::vec4(1.0f));
+    explicit Model(VulkanDevice* device, const boost::filesystem::path& modelPath, VulkanDescriptorSetLayout* layout, const glm::vec4& color = glm::vec4(1.0f));
     ~Model();
 
-    static std::unique_ptr<Model> CreatePlaneModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout);
-    static std::unique_ptr<Model> CreateCubeModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout);
-
-
+    void SetColor(const glm::vec4& color) { m_color = color; }
     void InitShadowPassUniforDescriptorSets(const std::array<std::vector<UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT>& uboInfo, int lightIdx);
     void InitUniformDescriptorSets(const std::array<std::vector<UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT>& uboInfo);
     void DrawShadowPass(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, int frameId, int lightId);
@@ -66,6 +66,32 @@ private:
     void initMeshes(std::vector<Util::Model::MeshData>& meshData);
     void initModelUniformBuffers();
     void updateModelUniformBuffer(int frameId);
+};
+
+class ModelView
+{
+private:
+    VulkanDevice* m_pVulkanDevice;
+    Model* m_model;
+    std::vector<std::shared_ptr<MeshView>> m_meshViews;
+    std::vector<std::shared_ptr<Material>> m_materials;
+
+    std::unordered_map<std::string, std::shared_ptr<VulkanImageSampler>> m_vulkanImageSamplers;
+    std::unordered_map<std::string, std::shared_ptr<VulkanDescriptorSets>> m_descriptorsets;
+    std::unique_ptr<VulkanDescriptorPool> m_vulkanDescriptorPool;
+
+    std::array<ModelUniformBufferObject, MAX_FRAMES_IN_FLIGHT> m_uniformBufferObjects;
+    std::array<std::unique_ptr<VulkanBuffer>, MAX_FRAMES_IN_FLIGHT> m_uniformBuffers;
+    std::array<std::shared_ptr<RHI::VulkanDescriptorSets>, MAX_FRAMES_IN_FLIGHT> m_uniformSets;
+public:
+    explicit ModelView(Model* model, VulkanDevice* device, VulkanDescriptorSetLayout* layout);
+    ~ModelView();
+
+    void InitUniformDescriptorSets(const std::array<std::vector<Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT>& uboInfo);
+    void DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding, int frameId);
+    void Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding, int frameId);
+    void updateModelUniformBuffer(int frameId);
+    Util::Math::SRTMatrix& GetTransformation();
 };
 
 RHI_NAMESPACE_END

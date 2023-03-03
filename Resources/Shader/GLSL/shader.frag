@@ -10,6 +10,7 @@ layout(location = 1) in vec2 fragTexCoord;
 layout(location = 2) in vec3 camPos;
 layout(location = 3) in vec3 lightPos;
 layout(location = 4) in vec3 worldNormal;
+layout(location = 5) in vec4 modelColor;
 
 layout(location = 0) out vec4 outColor;
 
@@ -28,8 +29,8 @@ void main() {
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
     vec3 specularColor = specularCoeffi * spec * specularTex;
 
-    vec3 finalColor = diffuseColor + specularColor;
-    vec3 gammaOutput = pow(finalColor, vec3(1.0/2.2));
+    vec3 finalColor = (diffuseColor + specularColor);
+    vec3 gammaOutput = pow(finalColor, vec3(1.0/2.2)) * modelColor.rgb;
 
     outColor = vec4(gammaOutput, 1.0);
     // outColor = vec4(fragColor, 1.0);

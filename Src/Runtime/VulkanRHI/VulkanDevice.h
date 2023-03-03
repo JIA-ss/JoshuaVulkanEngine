@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/VulkanCommandPool.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Runtime/VulkanRHI/VulkanPipelineCache.h"
@@ -26,6 +27,7 @@ private:
     std::unique_ptr<VulkanSwapchain> m_pVulkanSwapchain;
     std::unique_ptr<VulkanCommandPool> m_pVulkanCmdPool;
     std::unique_ptr<VulkanPipelineCache> m_pVulkanPipelineCache;
+    VulkanDescriptorSetLayoutPresets m_VulkanDescriptorSetLayoutPresets;
 public:
     explicit VulkanDevice(VulkanPhysicalDevice* physicalDevice);
     ~VulkanDevice();
@@ -37,6 +39,7 @@ public:
     void CreateSwapchainFramebuffer(VulkanRenderPass* renderPass);
     vk::Framebuffer GetSwapchainFramebuffer(int index);
     void ReCreateSwapchain(VulkanRenderPass* renderPass);
+    VulkanDescriptorSetLayoutPresets& GetDescLayoutPresets() { return m_VulkanDescriptorSetLayoutPresets; }
 
     inline vk::Extent2D GetSwapchainExtent() { return m_pVulkanSwapchain->GetSwapchainInfo().imageExtent; }
     inline const VulkanPhysicalDevice::QueueFamilyIndices& GetQueueFamilyIndices() { return *m_queueFamilyIndices; }

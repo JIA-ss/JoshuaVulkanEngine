@@ -6,7 +6,6 @@
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Util/Mathutil.h"
 #include <vulkan/vulkan.hpp>
-#include <Runtime/Render/RendererBase.h>
 
 namespace Render {
 

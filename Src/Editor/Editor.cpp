@@ -1,30 +1,34 @@
 #include "Editor.h"
-#include "Runtime/Platform/PlatformWindow.h"
-#include <GLFW/glfw3.h>
+#include "Editor/Render/EditorRenderer.h"
+#include "Editor/Window/EditorWindow.h"
+#include "Runtime/VulkanRHI/VulkanInstance.h"
+#include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 
-namespace editor {
+std::unique_ptr<editor::EditorRenderer> s_pEditorRenderer{};
 
-std::unique_ptr<platform::PlatformWindow> g_platformWindow = nullptr;
-platform::PlatformWindow* GetWindow() { return g_platformWindow.get(); }
-void StartUp()
+Render::RendererBase* editor::Init(Render::RendererBase* runtime_renderer)
 {
-    g_platformWindow = platform::CreatePlatformWindow(1920, 1080, "VulkanEngine");
-    g_platformWindow->Init();
+    platform::PlatformWindow* window = InitEditorWindow();
 
+    auto extensions = window->GetRequiredExtensions();
+    std::vector<const char*> enabledInstanceExtensions;
+
+    vk::PhysicalDeviceFeatures feature;
+    feature.setSamplerAnisotropy(VK_TRUE)
+            .setFillModeNonSolid(VK_TRUE);
+
+    s_pEditorRenderer.reset(
+        new editor::EditorRenderer(
+            runtime_renderer,
+            RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
+            RHI::VulkanPhysicalDevice::Config { window, feature, {}, vk::SampleCountFlagBits::e1 }
+        )
+    );
+    return s_pEditorRenderer.get();
 }
 
-void Run()
+void editor::UnInit()
 {
-    while (g_platformWindow && !g_platformWindow->ShouldClose())
-    {
-        glfwPollEvents();
-    }
-}
-
-void ShutDown()
-{
-    g_platformWindow->Destroy();
-    g_platformWindow.reset();
-}
-
+    s_pEditorRenderer.reset();
+    DestroyEditorWindow();
 }

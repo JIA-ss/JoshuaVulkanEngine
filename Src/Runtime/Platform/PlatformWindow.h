@@ -14,6 +14,9 @@ struct PlatformWindowSetting
     int width;
     int height;
     const char* name;
+    int screenId = 0;
+    glm::vec2 pos = glm::vec2(0);
+    bool maximization = false;
 };
 
 class PlatformWindow
@@ -39,9 +42,11 @@ public:
     virtual void AddFrameBufferSizeChangedCallback(std::function<void(int, int)> func) = 0;
     virtual void WaitIfMinimization() = 0;
     virtual void PollWindowEvent() = 0;
+    virtual void SetMaximizationMode() = 0;
+
 
     inline PlatformInputMonitor* GetInputMonitor() { return m_inputMonitor.get(); }
 };
 
-std::unique_ptr<PlatformWindow> CreatePlatformWindow(int width, int height, const char* title);
+std::unique_ptr<PlatformWindow> CreatePlatformWindow(PlatformWindowSetting setting);
 }

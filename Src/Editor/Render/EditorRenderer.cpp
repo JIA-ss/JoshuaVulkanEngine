@@ -1,44 +1,37 @@
-#include "SimpleModelRenderer.h"
-#include "Runtime/Platform/PlatformInputMonitor.h"
-#include "Runtime/Render/Camera.h"
-#include "Runtime/VulkanRHI/Graphic/Model.h"
-#include "Runtime/VulkanRHI/Graphic/Vertex.h"
-#include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
-#include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
-#include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
-#include "Runtime/VulkanRHI/VulkanRHI.h"
-#include "Runtime/VulkanRHI/VulkanRenderPass.h"
+#include "EditorRenderer.h"
+#include "Editor/Editor.h"
+#include "Editor/Window/EditorWindow.h"
+#include "Runtime/VulkanRHI/Graphic/ModelPresets.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
-#include "Runtime/VulkanRHI/VulkanShaderSet.h"
-#include "vulkan/vulkan_enums.hpp"
-#include <Util/Modelutil.h>
-#include <Util/Fileutil.h>
-#include <Util/Mathutil.h>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/quaternion_transform.hpp>
+#include "Util/Fileutil.h"
+#include "vulkan/vulkan.hpp"
+#include <glm/gtx/string_cast.hpp>
 #include <iostream>
-#include <stdint.h>
-using namespace Render;
+#include <memory>
 
-SimpleModelRenderer::SimpleModelRenderer(const RHI::VulkanInstance::Config& instanceConfig,
-   const RHI::VulkanPhysicalDevice::Config& physicalConfig)
-   : RendererBase(instanceConfig, physicalConfig)
+EDITOR_NAMESPACE_USING
+
+EditorRenderer::EditorRenderer(
+    Render::RendererBase* runtime_renderer,
+    const RHI::VulkanInstance::Config& instanceConfig,
+    const RHI::VulkanPhysicalDevice::Config& physicalConfig)
+    : RendererBase(instanceConfig, physicalConfig)
+    , m_runtimeRenderer(runtime_renderer)
 {
 
 }
 
-SimpleModelRenderer::~SimpleModelRenderer()
+EditorRenderer::~EditorRenderer()
 {
-    m_pDevice->GetVkDevice().waitIdle();
-    m_pRenderPass = nullptr;
-    m_pModel.reset();
+    //please implement deconstruct function
+    // assert(false);
 }
 
-void SimpleModelRenderer::prepare()
+void EditorRenderer::prepare()
 {
     // prepare camera
     prepareCamera();
-    // prepare Light
+    // prepare light
     prepareLight();
     // prepare descriptor layout
     prepareModel();
@@ -52,7 +45,7 @@ void SimpleModelRenderer::prepare()
     prepareFrameBuffer();
 }
 
-void SimpleModelRenderer::render()
+void EditorRenderer::render()
 {
 
     // wait for fence
@@ -67,6 +60,7 @@ void SimpleModelRenderer::render()
 
     // acquire image
     vk::Result acquireImageResult;
+    uint32_t m_imageIdx;
     try
     {
         auto res = m_pDevice->GetVkDevice().acquireNextImageKHR(m_pDevice->GetPVulkanSwapchain()->GetSwapchain(), std::numeric_limits<uint64_t>::max(), m_vkSemaphoreImageAvaliables[m_frameIdxInFlight], nullptr);
@@ -95,8 +89,16 @@ void SimpleModelRenderer::render()
         throw std::runtime_error("acquire next image failed");
     }
 
+
     m_pCamera->UpdateUniformBuffer(m_imageIdx);
-    m_pLight->UpdateLightUBO(m_imageIdx);
+    m_pSceneCameraFrustumModel->GetTransformation().SetPosition(m_sceneCamera->GetPosition())
+                .SetRotation(m_sceneCamera->GetVPMatrix().GetRotation());
+
+    for(int i = 0; i < m_pSceneLightFrustumModels.size(); i++)
+    {
+        m_pSceneLightFrustumModels[i]->GetTransformation().SetPosition(m_sceneLights->GetLightTransformation(i).GetPosition())
+                .SetRotation(m_sceneLights->GetLightTransformation(i).GetRotation());
+    }
 
     // reset fence after acquiring the image
     m_pDevice->GetVkDevice().resetFences(m_vkFences[m_frameIdxInFlight]);
@@ -107,7 +109,6 @@ void SimpleModelRenderer::render()
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     m_vkCmds[m_frameIdxInFlight].begin(beginInfo);
     {
-        m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "default");
         std::vector<vk::DescriptorSet> tobinding;
 
         std::vector<vk::ClearValue> clears(2);
@@ -115,11 +116,30 @@ void SimpleModelRenderer::render()
         clears[1] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
         m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{vk::Offset2D{0,0}, m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent}, m_pDevice->GetSwapchainFramebuffer(m_imageIdx));
         {
-            auto& extent = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent;
-            vk::Rect2D rect{{0,0},extent};
-            m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{0,0,(float)extent.width, (float)extent.height,0,1});
-            m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
-            m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+            {
+                // draw scene object
+                m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "default");
+                auto& extent = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent;
+                vk::Rect2D rect{{0,0},extent};
+                m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{0,0,(float)extent.width, (float)extent.height,0,1});
+                m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
+
+                for (auto& modelView : m_sceneModels)
+                {
+                    modelView->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+                }
+            }
+
+            {
+                // draw scene camera and light frustum
+                m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "frustum");
+                m_pSceneCameraFrustumModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+                for (auto& lightFrustum : m_pSceneLightFrustumModels)
+                {
+                    lightFrustum->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+                }
+            }
+
         }
         m_pRenderPass->End(m_vkCmds[m_frameIdxInFlight]);
     }
@@ -160,14 +180,36 @@ void SimpleModelRenderer::render()
     }
 }
 
-void SimpleModelRenderer::prepareModel()
-{
-    m_pModel.reset(new RHI::Model(m_pDevice.get(), Util::File::getResourcePath() / "Model/Sponza-master/sponza.obj", m_pSet1SamplerSetLayout.lock().get()));
-    auto& transformation = m_pModel->GetTransformation();
-    transformation.SetPosition(glm::vec3(0.0f, -20.f, -20.f));
-    transformation.SetRotation(glm::vec3(0,90,0));
-    transformation.SetScale(glm::vec3(0.05f));
 
+
+void EditorRenderer::prepareCamera()
+{
+
+    m_sceneCamera = m_runtimeRenderer->GetCamera();
+
+    auto extent = m_pDevice->GetSwapchainExtent();
+    float aspect = extent.width / (float) extent.height;
+    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 5000.f));
+    m_pCamera->GetVPMatrix().SetPosition(glm::vec3(0,0,2));
+
+    m_pCamera->InitUniformBuffer(m_pDevice.get());
+}
+
+void EditorRenderer::prepareLight()
+{
+    m_pLight.reset(new Render::Lights(m_pDevice.get(), 1));
+    m_pLight->GetLightTransformation().SetPosition(glm::vec3(1, 1, -2));
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        m_pLight->UpdateLightUBO(i);
+    }
+
+    m_sceneLights = m_runtimeRenderer->GetLights();
+}
+
+void EditorRenderer::prepareModel()
+{
     std::array<std::vector<RHI::Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT> uboInfos;
     auto camUbo = m_pCamera->GetUboInfo();
     auto lightUbo = m_pLight->GetUboInfo();
@@ -176,48 +218,32 @@ void SimpleModelRenderer::prepareModel()
         uboInfos[frameId].push_back(camUbo[frameId]);
         uboInfos[frameId].push_back(lightUbo[frameId]);
     }
-    m_pModel->InitUniformDescriptorSets(uboInfos);
+
+    auto models = m_runtimeRenderer->GetModels();
+    for (auto& model : models)
+    {
+        m_sceneModels.push_back(std::make_shared<RHI::ModelView>(model, m_pDevice.get(), m_pSet1SamplerSetLayout.lock().get()));
+        m_sceneModels.back()->InitUniformDescriptorSets(uboInfos);
+    }
+
+    m_pSceneCameraFrustumModel = RHI::ModelPresets::CreateFrustumModel(m_pDevice.get(), m_pSet1SamplerSetLayout.lock().get(), m_sceneCamera->GetVPMatrix());
+    m_pSceneCameraFrustumModel->SetColor(glm::vec4(0.5f,1.0f,0,1));
+    m_pSceneCameraFrustumModel->InitUniformDescriptorSets(uboInfos);
+    if (m_sceneLights)
+    {
+        m_pSceneLightFrustumModels.resize(m_sceneLights->GetLightNum());
+        for (int i = 0; i < m_sceneLights->GetLightNum(); i++)
+        {
+            m_pSceneLightFrustumModels[i] = RHI::ModelPresets::CreateFrustumModel(m_pDevice.get(), m_pSet1SamplerSetLayout.lock().get(), m_sceneLights->GetLightTransformation(i));
+            m_pSceneLightFrustumModels[i]->InitUniformDescriptorSets(uboInfos);
+            m_pSceneLightFrustumModels[i]->SetColor(glm::vec4(1,1,0,1));
+        }
+    }
 }
 
-void SimpleModelRenderer::prepareCamera()
-{
-    auto extent = m_pDevice->GetSwapchainExtent();
-    float aspect = extent.width / (float) extent.height;
-    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 500.f));
-    m_pCamera->GetVPMatrix().SetPosition(glm::vec3(0,0,2));
-
-    m_pCamera->InitUniformBuffer(m_pDevice.get());
-}
-
-void SimpleModelRenderer::prepareLight()
-{
-    m_pLight.reset(new Lights(m_pDevice.get(), 1));
-    m_pLight->GetLightTransformation().SetPosition(glm::vec3(1, 1, -2));
-}
-
-void SimpleModelRenderer::prepareInputCallback()
+void EditorRenderer::prepareInputCallback()
 {
     auto inputMonitor = m_pPhysicalDevice->GetPWindow()->GetInputMonitor();
-    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::W, [&](){
-        glm::vec3 dir = m_pCamera->GetDirection();
-        m_pCamera->GetVPMatrix().Translate(dir * 0.1f);
-    });
-
-    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::S, [&](){
-        glm::vec3 dir = m_pCamera->GetDirection();
-        m_pCamera->GetVPMatrix().Translate(dir * -0.1f);
-    });
-
-    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::A, [&](){
-        glm::vec3 right = m_pCamera->GetRight();
-        m_pCamera->GetVPMatrix().Translate(right * -0.1f);
-    });
-
-
-    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::D, [&](){
-        glm::vec3 right = m_pCamera->GetRight();
-        m_pCamera->GetVPMatrix().Translate(right * 0.1f);
-    });
 
     inputMonitor->AddScrollCallback([&](double xoffset, double yoffset){
         glm::vec3 dir = m_pCamera->GetDirection();
@@ -228,13 +254,23 @@ void SimpleModelRenderer::prepareInputCallback()
         m_pCamera->GetVPMatrix().Translate(move);
     });
 
+
     inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::SPACE, [&](){
-        m_pCamera->GetVPMatrix().SetPosition(glm::vec3(0,0,2));
-        m_pCamera->GetVPMatrix().SetRotation(glm::vec3(0,0,0));
+        std::cout << "Cam Pos: " << glm::to_string(m_pCamera->GetPosition()) << std::endl;
+        std::cout << "Cam Rot: " << glm::to_string(m_pCamera->GetVPMatrix().GetRotation()) << std::endl;
     });
 
     static bool BtnLeftPressing = false;
     static bool BtnRightPressing = false;
+    static bool LeftShiftPressing = false;
+
+    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::LEFT_SHIFT, [&](){
+        LeftShiftPressing = true;
+    });
+    inputMonitor->AddKeyboardUpCallback(platform::Keyboard::Key::LEFT_SHIFT, [&](){
+        LeftShiftPressing = false;
+    });
+
     inputMonitor->AddMousePressedCallback(platform::Mouse::Button::LEFT, [&](){ BtnLeftPressing = true; });
     inputMonitor->AddMouseUpCallback(platform::Mouse::Button::LEFT, [&](){ BtnLeftPressing = false; });
     inputMonitor->AddMousePressedCallback(platform::Mouse::Button::RIGHT, [&](){ BtnRightPressing = true; });
@@ -250,19 +286,23 @@ void SimpleModelRenderer::prepareInputCallback()
         offset.y = (offset.y - (int)offset.y >=0.5f) ? ((int)offset.y + 1) : (int)offset.y;
         if (BtnLeftPressing)
         {
-            m_pCamera->GetVPMatrix().Rotate(glm::vec3(-offset.y / 30,0,0));
-            m_pCamera->GetVPMatrix().Rotate(glm::vec3(0,-offset.x / 30,0));
+            {
+                m_pCamera->GetVPMatrix().Rotate(glm::vec3(-offset.y / 30,0,0))
+                                        .Rotate(glm::vec3(0,-offset.x / 30,0));
+            }
         }
         else if (BtnRightPressing)
         {
-            glm::vec3 dir = m_pCamera->GetDirection();
-            glm::vec3 move = dir * -offset.y / 100.f;
-            m_pCamera->GetVPMatrix().Translate(move);
+            {
+                glm::vec3 dir = m_pCamera->GetDirection();
+                glm::vec3 move = dir * -offset.y / 100.f;
+                m_pCamera->GetVPMatrix().Translate(move);
+            }
         }
     });
 }
 
-void SimpleModelRenderer::prepareRenderpass()
+void EditorRenderer::prepareRenderpass()
 {
     vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
     vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
@@ -270,7 +310,7 @@ void SimpleModelRenderer::prepareRenderpass()
     m_pRenderPass = std::make_shared<RHI::VulkanRenderPass>(m_pDevice.get(), colorFormat, depthForamt, sampleCount);
 }
 
-void SimpleModelRenderer::preparePipeline()
+void EditorRenderer::preparePipeline()
 {
     std::shared_ptr<RHI::VulkanShaderSet> shaderSet = std::make_shared<RHI::VulkanShaderSet>(m_pDevice.get());
     shaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/shader.vert.spv", vk::ShaderStageFlagBits::eVertex);
@@ -281,9 +321,23 @@ void SimpleModelRenderer::preparePipeline()
                             .SetVulkanPipelineLayout(m_pPipelineLayout)
                             .buildUnique();
     m_pRenderPass->AddGraphicRenderPipeline("default", std::move(pipeline));
+
+
+    std::shared_ptr<RHI::VulkanRasterizationState> rasterization = RHI::VulkanRasterizationStateBuilder()
+                                                                    .SetPolygonMode(vk::PolygonMode::eLine)
+                                                                    .SetLineWidth(3.0f)
+                                                                    .SetCullMode(vk::CullModeFlagBits::eNone)
+                                                                    .build();
+    auto rawLinePipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
+                        .SetVulkanRasterizationState(rasterization)
+                        .SetVulkanPipelineLayout(m_pPipelineLayout)
+                        .SetshaderSet(shaderSet)
+                        .SetVulkanRenderPass(m_pRenderPass)
+                        .buildUnique();
+    m_pRenderPass->AddGraphicRenderPipeline("frustum", std::move(rawLinePipeline));
 }
 
-void SimpleModelRenderer::prepareFrameBuffer()
+void EditorRenderer::prepareFrameBuffer()
 {
     m_pDevice->CreateSwapchainFramebuffer(m_pRenderPass.get());
 }

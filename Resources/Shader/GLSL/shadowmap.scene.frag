@@ -26,6 +26,8 @@ layout(location = 15) in vec4 lightColor[5];
 layout(location = 20) in vec2 lightNearFar[5];
 layout(location = 25) in vec4 lightDirection[5];
 
+layout(location = 30) in vec4 modelColor;
+
 layout(location = 0) out vec4 outColor;
 
 vec4 sampleShadowmap(int lightIdx, vec2 uv)
@@ -134,8 +136,8 @@ void main() {
     }
     inShadowAvg /= lightNum;
 
-    vec3 finalColor = getColorInshadow(diffuseColor, inShadowAvg) + specularColor;
-    vec3 gammaOutput = pow(finalColor, vec3(1.0/2.2));
+    vec3 finalColor = (getColorInshadow(diffuseColor, inShadowAvg) + specularColor);
+    vec3 gammaOutput = pow(finalColor, vec3(1.0/2.2)) * modelColor.rgb;
 
 
     outColor = vec4(gammaOutput, 1.0);

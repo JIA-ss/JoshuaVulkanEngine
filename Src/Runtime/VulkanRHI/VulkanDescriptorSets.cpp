@@ -23,6 +23,7 @@ VulkanDescriptorSets::VulkanDescriptorSets(
     )
     : m_vulkanDevice(device)
     , m_vulkanDescLayout(layout)
+    , m_pVulkanUniformBuffers(uniformBuffers)
     , m_binding(binding)
     , m_vkDescPool(descPool)
 {
@@ -79,6 +80,7 @@ VulkanDescriptorSets::VulkanDescriptorSets(
     : m_vulkanDevice(device)
     , m_vulkanDescLayout(layout)
     , m_binding(binding)
+    , m_pVulkanImageSamplers(imageSamplers)
     , m_vkDescPool(descPool)
 {
 

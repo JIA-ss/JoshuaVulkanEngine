@@ -267,7 +267,7 @@ void ShadowMapRenderPass::initDepthSamplerDescriptor()
             samplers.push_back(m_pDepthSamplers[frameId][bindingId < m_num ? bindingId : m_num - 1].get());
             binding.push_back(bindingId);
         }
-        m_pDepthSamplerDescriptorSets[frameId] = m_pDescriptorPool->AllocSamplerDescriptorSet(VulkanDescriptorSetLayoutPresets::SHADOWMAP.get(), samplers, binding, vk::ImageLayout::eDepthStencilReadOnlyOptimal, 1);
+        m_pDepthSamplerDescriptorSets[frameId] = m_pDescriptorPool->AllocSamplerDescriptorSet(m_pDevice->GetDescLayoutPresets().SHADOWMAP.get(), samplers, binding, vk::ImageLayout::eDepthStencilReadOnlyOptimal, 1);
     }
 }
 
@@ -291,7 +291,7 @@ void ShadowMapRenderPass::initPipelines()
     std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> setLayouts =
     {
         // SET0 MVP UNIFORM
-        VulkanDescriptorSetLayoutPresets::UBO
+        m_pDevice->GetDescLayoutPresets().UBO
     };
     m_pPipelineLayout.reset(new VulkanPipelineLayout(m_pDevice, setLayouts));
 

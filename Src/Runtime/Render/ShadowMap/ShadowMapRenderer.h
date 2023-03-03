@@ -20,6 +20,10 @@ public:
                 const RHI::VulkanPhysicalDevice::Config& physicalConfig);
     ~ShadowMapRenderer() override;
 
+    std::vector<RHI::Model*> GetModels() override { return {m_pModel.get(), m_pCubeModel.get()}; }
+    Camera* GetCamera() override { return m_pCamera.get(); }
+    Lights* GetLights() override { return m_pLights.get(); }
+
 protected:
     void prepare() override;
     virtual void prepareModel();

@@ -8,6 +8,7 @@
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
+#include "Runtime/VulkanRHI/Graphic/ModelPresets.h"
 #include "Util/Fileutil.h"
 #include "Util/Mathutil.h"
 #include "vulkan/vulkan_enums.hpp"
@@ -67,17 +68,34 @@ void ShadowMapRenderer::render()
     }
 
     // acquire image
-    auto res = m_pDevice->GetVkDevice().acquireNextImageKHR(m_pDevice->GetPVulkanSwapchain()->GetSwapchain(), std::numeric_limits<uint64_t>::max(), m_vkSemaphoreImageAvaliables[m_frameIdxInFlight], nullptr);
-    if (res.result == vk::Result::eErrorOutOfDateKHR)
+    vk::Result acquireImageResult;
+    try
     {
+        auto res = m_pDevice->GetVkDevice().acquireNextImageKHR(m_pDevice->GetPVulkanSwapchain()->GetSwapchain(), std::numeric_limits<uint64_t>::max(), m_vkSemaphoreImageAvaliables[m_frameIdxInFlight], nullptr);
+        acquireImageResult = res.result;
+        m_imageIdx = res.value;
+        if (res.result == vk::Result::eErrorOutOfDateKHR)
+        {
+            recreateSwapchain();
+            return;
+        }
+    }
+    catch(vk::OutOfDateKHRError)
+    {
+        m_frameBufferSizeChanged = true;
+    }
+
+    if (m_frameBufferSizeChanged || acquireImageResult == vk::Result::eErrorOutOfDateKHR)
+    {
+        m_frameBufferSizeChanged = false;
         recreateSwapchain();
         return;
     }
-    if (res.result != vk::Result::eSuccess && res.result != vk::Result::eSuboptimalKHR)
+
+    if (acquireImageResult != vk::Result::eSuccess && acquireImageResult != vk::Result::eSuboptimalKHR)
     {
         throw std::runtime_error("acquire next image failed");
     }
-    m_imageIdx = res.value;
 
     m_pLights->UpdateLightUBO(m_imageIdx);
 
@@ -175,9 +193,9 @@ void ShadowMapRenderer::prepareLights()
     std::vector<Util::Math::VPMatrix> lightTransformations =
     {
         Util::Math::VPMatrix{
-            45.f, 1.f, 5.f, 70.f,
-            glm::vec3(-35.833206, 4.366684, 0.000000),
-            glm::vec3(0.675352, 19.794977, 14.088803)
+            45.f, 1.f, 5.f, 2500.f,
+            glm::vec3(-19.833334, 82.633369, 0.000000),
+            glm::vec3(1046.567017, 291.498260, -40.762074)
         }
     };
     m_pLights.reset(new Lights(m_pDevice.get(), lightTransformations, true));
@@ -196,7 +214,7 @@ void ShadowMapRenderer::prepareModel()
         uboInfos[frameId].push_back(lightUbo[frameId]);
     }
 
-    m_pModel.reset(new RHI::Model(m_pDevice.get(), Util::File::getResourcePath() / "Model/nanosuit/nanosuit.obj", m_pSet1SamplerSetLayout.lock().get()));
+    m_pModel.reset(new RHI::Model(m_pDevice.get(), Util::File::getResourcePath() / "Model/Sponza-master/sponza.obj", m_pSet1SamplerSetLayout.lock().get()));
     auto& transformation = m_pModel->GetTransformation();
     transformation.SetPosition(glm::vec3(0.0f, 0.f, 0.f));
     transformation.SetRotation(glm::vec3(0,0,0));
@@ -204,13 +222,13 @@ void ShadowMapRenderer::prepareModel()
     m_pShadwomapPass->InitModelShadowDescriptor(m_pModel.get());
 
 
-    m_pCubeModel = RHI::Model::CreateCubeModel(m_pDevice.get(), m_pSet1SamplerSetLayout.lock().get());
+    m_pCubeModel = RHI::ModelPresets::CreateCubeModel(m_pDevice.get(), m_pSet1SamplerSetLayout.lock().get());
     m_pCubeModel->GetTransformation().SetScale(glm::vec3(100,1,100));
     m_pCubeModel->GetTransformation().SetPosition(glm::vec3(-50.f, -1.f, 50.f));
     m_pCubeModel->InitUniformDescriptorSets(uboInfos);
     m_pShadwomapPass->InitModelShadowDescriptor(m_pCubeModel.get());
 
-    m_pDebugShadowMapQuadModel = RHI::Model::CreatePlaneModel(m_pDevice.get(), m_pSet1SamplerSetLayout.lock().get());
+    m_pDebugShadowMapQuadModel = RHI::ModelPresets::CreatePlaneModel(m_pDevice.get(), m_pSet1SamplerSetLayout.lock().get());
     m_pDebugShadowMapQuadModel->GetTransformation().SetScale(glm::vec3(0.33f, 0.33f, 0.0f));
     m_pDebugShadowMapQuadModel->GetTransformation().SetPosition(glm::vec3(-1.f, -1.f, 0.0f));
     m_pDebugShadowMapQuadModel->InitUniformDescriptorSets(uboInfos);
@@ -222,24 +240,40 @@ void ShadowMapRenderer::prepareCamera()
 {
     auto extent = m_pDevice->GetSwapchainExtent();
     float aspect = extent.width / (float) extent.height;
-    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 100.f));
-    m_pCamera->GetVPMatrix().SetPosition(glm::vec3(8.080724, 18.735529, 16.494471));
-    m_pCamera->GetVPMatrix().SetRotation(glm::vec3(-27.466455, 18.066822, 0.000000));
+    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 3000.f));
+    // m_pCamera->GetVPMatrix().SetPosition(glm::vec3(8.080724, 18.735529, 16.494471));
+    // m_pCamera->GetVPMatrix().SetRotation(glm::vec3(-27.466455, 18.066822, 0.000000));
 
     m_pCamera->InitUniformBuffer(m_pDevice.get());
 }
 
 void ShadowMapRenderer::prepareInputCallback()
 {
+    static bool BtnLeftPressing = false;
+    static bool BtnRightPressing = false;
+    static bool LeftShiftPressing = false;
+
     auto inputMonitor = m_pPhysicalDevice->GetPWindow()->GetInputMonitor();
 
     inputMonitor->AddScrollCallback([&](double xoffset, double yoffset){
-        glm::vec3 dir = m_pCamera->GetDirection();
-        glm::vec3 right = m_pCamera->GetRight();
-        glm::vec3 move = dir * (float)yoffset;
-        xoffset = -xoffset;
-        move += right * (float)xoffset;
-        m_pCamera->GetVPMatrix().Translate(move);
+        if (LeftShiftPressing)
+        {
+            glm::vec3 dir = m_pLights->GetLightTransformation().GetFrontDir();
+            glm::vec3 right = glm::normalize(glm::cross(dir, glm::vec3(0,1,0)));
+            glm::vec3 move = dir * (float)yoffset;
+            xoffset = -xoffset;
+            move += right * (float)xoffset;
+            m_pLights->GetLightTransformation().Translate(move);
+        }
+        else
+        {
+            glm::vec3 dir = m_pCamera->GetDirection();
+            glm::vec3 right = m_pCamera->GetRight();
+            glm::vec3 move = dir * (float)yoffset;
+            xoffset = -xoffset;
+            move += right * (float)xoffset;
+            m_pCamera->GetVPMatrix().Translate(move);
+        }
     });
 
     inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::W, [&](){
@@ -271,9 +305,6 @@ void ShadowMapRenderer::prepareInputCallback()
         std::cout << "Light Rot: " << glm::to_string(m_pLights->GetLightTransformation(0).GetRotation()) << std::endl;
     });
 
-    static bool BtnLeftPressing = false;
-    static bool BtnRightPressing = false;
-    static bool LeftShiftPressing = false;
 
     inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::LEFT_SHIFT, [&](){
         LeftShiftPressing = true;

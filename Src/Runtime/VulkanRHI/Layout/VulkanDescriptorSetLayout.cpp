@@ -51,9 +51,7 @@ VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout()
     m_vkDescriptorSetLayout= nullptr;
 }
 
-std::shared_ptr<VulkanDescriptorSetLayout> VulkanDescriptorSetLayoutPresets::UBO = nullptr;
-std::shared_ptr<VulkanDescriptorSetLayout> VulkanDescriptorSetLayoutPresets::CUSTOM5SAMPLER = nullptr;
-std::shared_ptr<VulkanDescriptorSetLayout> VulkanDescriptorSetLayoutPresets::SHADOWMAP = nullptr;
+
 void VulkanDescriptorSetLayoutPresets::Init(VulkanDevice* device)
 {
     UBO = std::make_shared<VulkanUBODescriptorSetLayout>(device);

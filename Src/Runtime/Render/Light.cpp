@@ -10,6 +10,7 @@ Lights::Lights(RHI::VulkanDevice* device,  int lightNum, bool useShadowPass)
     , m_lightNum(lightNum)
 {
     initLightUBO();
+    m_transformation.resize(lightNum);
     if (useShadowPass)
     {
         m_shadowmapPass.reset(new RHI::ShadowMapRenderPass(device, m_lightNum));

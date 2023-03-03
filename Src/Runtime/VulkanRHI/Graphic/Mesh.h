@@ -7,9 +7,11 @@
 #include <vulkan/vulkan.hpp>
 RHI_NAMESPACE_BEGIN
 
+class MeshView;
 class Mesh final
 {
     friend class Model;
+    friend class MeshView;
 private:
     VulkanDevice* m_pVulkanDevice;
     Util::Model::MeshData m_meshData;
@@ -23,6 +25,22 @@ public:
     void DrawIndexed(vk::CommandBuffer& cmd);
 private:
 
+};
+
+class MeshView
+{
+private:
+    Mesh* m_mesh;
+    VulkanDevice* m_pVulkanDevice;
+
+    std::unique_ptr<VulkanVertexBuffer> m_pVulkanVertexBuffer;
+    std::unique_ptr<VulkanVertexIndexBuffer> m_pVulkanVertexIndexBuffer;
+public:
+    explicit MeshView(Mesh* mesh, VulkanDevice* device);
+    ~MeshView();
+
+    void Bind(vk::CommandBuffer& cmd);
+    void DrawIndexed(vk::CommandBuffer& cmd);
 };
 
 RHI_NAMESPACE_END

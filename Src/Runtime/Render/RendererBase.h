@@ -1,4 +1,8 @@
 #pragma once
+#include "Runtime/Platform/PlatformWindow.h"
+#include "Runtime/Render/Camera.h"
+#include "Runtime/Render/Light.h"
+#include "Runtime/VulkanRHI/Graphic/Model.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorPool.h"
@@ -6,6 +10,8 @@
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "vulkan/vulkan_handles.hpp"
+#include <functional>
+#include <list>
 #include <memory>
 #include <Runtime/VulkanRHI/VulkanInstance.h>
 #include <Runtime/VulkanRHI/VulkanPhysicalDevice.h>
@@ -41,12 +47,38 @@ protected:
     std::size_t m_frameNum = 0;
     bool m_frameBufferSizeChanged = false;
 
+    bool m_skipRender = false;
+private:
+    std::vector<std::function<void()>> m_enterRenderLoopCallbacks;
+    std::vector<std::function<void()>> m_quiteRenderLoopCallbacks;
+
+    std::vector<std::function<void()>> m_preRenderFrameCallbacks;
+    std::vector<std::function<void()>> m_postRenderFrameCallbacks;
+
+
 public:
     explicit RendererBase(const RHI::VulkanInstance::Config& instanceConfig,
                 const RHI::VulkanPhysicalDevice::Config& physicalConfig);
     virtual ~RendererBase();
 
+    void PreRenderLoop();
+    void PostRenderLoop();
+    void RenderFrame();
     void RenderLoop();
+
+    void AddEnterRenderLoopCallback(std::function<void()> cb) { m_enterRenderLoopCallbacks.push_back(cb); }
+    void AddQuiteRenderLoopCallback(std::function<void()> cb) { m_quiteRenderLoopCallbacks.push_back(cb); }
+    void AddPreRenderFrameCallback(std::function<void()> cb) { m_preRenderFrameCallbacks.push_back(cb); }
+    void AddPostRenderFrameCallback(std::function<void()> cb) { m_postRenderFrameCallbacks.push_back(cb); }
+
+    void StartRender() { m_skipRender = false; }
+    void StopRender() { m_skipRender = true; }
+    bool IsRendering() { return !m_skipRender; }
+    platform::PlatformWindow* GetPWindow() { return m_pPhysicalDevice->GetConfig().window; }
+
+    virtual std::vector<RHI::Model*> GetModels() = 0;
+    virtual Camera* GetCamera() = 0;
+    virtual Lights* GetLights() { return nullptr; }
 
     static std::shared_ptr<RendererBase> StartUpRenderer(const std::string& demoName, const RHI::VulkanInstance::Config& instanceConfig, const RHI::VulkanPhysicalDevice::Config& physicalConfig);
 protected:
@@ -72,5 +104,17 @@ private:
     void outputFrameRate();
 };
 
+class RendererList
+{
+private:
+    std::list<RendererBase*> m_renderers;
+public:
+    explicit RendererList(const std::vector<RendererBase*>& renderers);
+    void RenderLoop();
+private:
+    void renderFrame();
+    void prepareRenderLoop();
+
+};
 
 }
