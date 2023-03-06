@@ -16,6 +16,8 @@ namespace ModelPresets
     std::unique_ptr<Model> CreateFrustumModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout, const Util::Math::VPMatrix& matrix);
 
 
+    // pbr gun
+    std::unique_ptr<Model> CreateCerberusPBRModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout);
 }
 
 RHI_NAMESPACE_END

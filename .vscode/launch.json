@@ -43,5 +43,18 @@
             ],
             "preLaunchTask": "compile glsl shaders"
         },
+        {
+            "type": "cppvsdbg",
+            "console": "integratedTerminal",
+            "request": "launch",
+            "name": "Launch PBR Demo",
+            "program": "${workspaceFolder}/build/Debug/VulkanRHI.exe",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "${workspaceFolder}/Resources",
+                "PBR"
+            ],
+            "preLaunchTask": "compile glsl shaders"
+        },
     ]
 }

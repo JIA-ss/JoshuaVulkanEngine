@@ -6,6 +6,7 @@
 #include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/Render/ShadowMap/ShadowMapRenderer.h"
+#include "Runtime/Render/PBR/PBRRenderer.h"
 #include "vulkan/vulkan_enums.hpp"
 #include <Runtime/VulkanRHI/VulkanShaderSet.h>
 #include <iostream>
@@ -24,6 +25,7 @@ std::shared_ptr<RendererBase> RendererBase::StartUpRenderer(const std::string& d
     MAKE_SHARED_WITH_NAME(SimpleModel)
     MAKE_SHARED_WITH_NAME(MultiPipeline)
     MAKE_SHARED_WITH_NAME(ShadowMap)
+    MAKE_SHARED_WITH_NAME(PBR)
 
     std::cout << "!!!!arg error!!!!" << std::endl
                 << "please input arg as the following demo name: " << std::endl;

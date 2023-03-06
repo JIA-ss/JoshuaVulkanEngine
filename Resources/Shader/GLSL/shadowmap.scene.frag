@@ -103,6 +103,20 @@ vec3 getColorInshadow(vec3 color, float isInshadow)
     return color * coeffi;
 }
 
+vec3 getLightColor(int lightId)
+{
+    vec3 color = lightColor[lightId].rgb;
+    vec3 invDir = fragPosition.xyz / fragPosition.w - lightPosition[lightId].xyz;
+    float dist = length(invDir);
+
+    if (dot(invDir, lightDirection[lightId].xyz) < 0 || dist > lightNearFar[lightId].y)
+    {
+        return vec3(0,0,0);
+    }
+
+    return color * lightNearFar[lightId].y / (dist + 0.0001);
+}
+
 void main() {
 
     vec3 diffuseColor = texture(diffuse, fragTexCoord).rgb;
@@ -130,7 +144,7 @@ void main() {
             vec3 lightDir = normalize(lightPosition[lightIdx].xyz - vec3(fragPosition.xyz) / fragPosition.w);
             vec3 reflectDir = reflect(-lightDir, normal);
             float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-            specularColor += specularCoeffi * spec * specularTex;
+            specularColor += specularCoeffi * spec * specularTex * getLightColor(lightIdx);
         }
         inShadowAvg += inShadow;
     }

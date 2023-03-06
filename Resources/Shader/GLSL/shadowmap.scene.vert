@@ -24,8 +24,8 @@ layout(binding = 2) uniform ModelUniformBufferObject
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inTexCoord;
 layout(location = 2) in vec3 inNormal;
-// layout(location = 3) in vec3 inTangent;
-// layout(location = 4) in vec3 inBittangent;
+layout(location = 3) in vec3 inTangent;
+layout(location = 4) in vec3 inBittangent;
 
 layout(location = 0) out vec4 fragPosition;
 layout(location = 1) out vec2 fragTexCoord;
@@ -40,6 +40,8 @@ layout(location = 20) out vec2 lightNearFar[5];
 layout(location = 25) out vec4 lightDirection[5];
 
 layout(location = 30) out vec4 modelColor;
+
+layout(location = 31) out mat3 TBNMatrix;
 
 // ????
 const mat4 biasMat = mat4(
@@ -63,6 +65,14 @@ void main() {
 
     camPos = camUbo.camPos.xyz;
     lightNum = lightUbo.lightNum;
+
+
+    mat3 normalMatrix = transpose(inverse(mat3(modelUbo.model)));
+    vec3 T = normalize(normalMatrix * inTangent);
+    vec3 B = normalize(normalMatrix * inBittangent);
+    vec3 N = normalize(normalMatrix * inNormal);
+    TBNMatrix = transpose(mat3(T, B, N));
+
     for (int lightIdx = 0; lightIdx < lightNum; lightIdx++)
     {
         shadowCoord[lightIdx] = biasMat * lightUbo.viewProjMatrix[lightIdx] * worldPos;
@@ -72,7 +82,6 @@ void main() {
         lightDirection[lightIdx] = lightUbo.direction[lightIdx];
     }
 
-
-    worldNormal = mat3(transpose(inverse(modelUbo.model))) * inNormal;
+    worldNormal = N;
     modelColor = modelUbo.color;
 }

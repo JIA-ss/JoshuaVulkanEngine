@@ -136,7 +136,7 @@ void Util::Model::AssimpObj::fillMeshData(Util::Model::MeshData& meshData, aiMes
 
 void Util::Model::AssimpObj::fillTextureData(std::vector<Util::Model::TextureData>& textureDatas, aiMesh* mesh, aiMaterial* material, const boost::filesystem::path& textureFolderPath)
 {
-    for (size_t aiType = aiTextureType_DIFFUSE; aiType < aiTextureType_UNKNOWN; aiType++)
+    for (size_t aiType = aiTextureType_DIFFUSE; aiType <= AI_TEXTURE_TYPE_MAX; aiType++)
     {
         int maxTextureCount = material->GetTextureCount((aiTextureType)aiType);
         for (size_t texIdx = 0; texIdx < maxTextureCount; texIdx++)

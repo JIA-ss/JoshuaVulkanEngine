@@ -11,6 +11,7 @@ Lights::Lights(RHI::VulkanDevice* device,  int lightNum, bool useShadowPass)
 {
     initLightUBO();
     m_transformation.resize(lightNum);
+    m_color.resize(lightNum, glm::vec4(1.0f));
     if (useShadowPass)
     {
         m_shadowmapPass.reset(new RHI::ShadowMapRenderPass(device, m_lightNum));
@@ -23,6 +24,7 @@ Lights::Lights(RHI::VulkanDevice* device, const std::vector<Util::Math::VPMatrix
     , m_transformation(transformation)
 {
     initLightUBO();
+    m_color.resize(m_lightNum, glm::vec4(1.0f));
     if (useShadowPass)
     {
         m_shadowmapPass.reset(new RHI::ShadowMapRenderPass(device, m_lightNum));
