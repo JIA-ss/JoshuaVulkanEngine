@@ -26,7 +26,7 @@ public:
     void InitUniformBuffer(RHI::VulkanDevice* device);
     void UpdateUniformBuffer(int frameId);
     void SetUniformBufferObject(int frameId, RHI::CameraUniformBufferObject* ubo);
-
+    glm::mat4 GetModelMatrix();
     std::array<RHI::Model::UBOLayoutInfo, MAX_FRAMES_IN_FLIGHT> GetUboInfo();
 private:
     Util::Math::VPMatrix m_vpMatrix;

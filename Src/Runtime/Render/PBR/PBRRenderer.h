@@ -1,5 +1,6 @@
 #pragma once
 #include "Runtime/Render/Light.h"
+#include "Runtime/VulkanRHI/Graphic/Model.h"
 #include <vulkan/vulkan.hpp>
 #include <Runtime/Render/RendererBase.h>
 
@@ -10,6 +11,7 @@ class PBRRenderer : public RendererBase
 
 protected:
     std::unique_ptr<RHI::Model> m_pModel;
+    std::unique_ptr<RHI::Model> m_pSkyboxModel;
     std::unique_ptr<Camera> m_pCamera;
     std::unique_ptr<Lights> m_pLight;
     uint32_t m_imageIdx = 0;

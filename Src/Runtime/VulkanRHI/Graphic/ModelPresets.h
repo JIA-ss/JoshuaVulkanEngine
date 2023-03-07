@@ -18,6 +18,10 @@ namespace ModelPresets
 
     // pbr gun
     std::unique_ptr<Model> CreateCerberusPBRModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout);
+
+    // skybox
+    std::unique_ptr<Model> CreateSkyboxModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout);
+
 }
 
 RHI_NAMESPACE_END

@@ -9,10 +9,36 @@
 #include <memory>
 #include <stdexcept>
 #include <stdint.h>
+#include <vector>
 #include <vulkan/vulkan.hpp>
 
 RHI_NAMESPACE_USING
 
+
+VulkanImageResource::Config VulkanImageResource::Config::CubeMap(uint32_t width, uint32_t height, uint32_t miplevels, uint32_t faceCount/* = 6 */)
+{
+    Config config;
+    config.extent = vk::Extent3D{width, height, 1};
+    config.arrayLayer = faceCount;
+    config.flags = vk::ImageCreateFlagBits::eCubeCompatible;
+    config.miplevel = miplevels;
+    config.subresourceRange.setBaseMipLevel(0)
+                            .setLevelCount(miplevels)
+                            .setLayerCount(faceCount);
+
+    config.imageViewType = vk::ImageViewType::eCube;
+    return config;
+}
+
+VulkanImageSampler::Config VulkanImageSampler::Config::CubeMap(uint32_t miplevel)
+{
+    VulkanImageSampler::Config config;
+    config.uAddressMode = vk::SamplerAddressMode::eClampToEdge;
+    config.compareOp = vk::CompareOp::eNever;
+    config.maxLod = miplevel;
+    config.borderColor = vk::BorderColor::eFloatOpaqueWhite;
+    return config;
+}
 
 VulkanImageResource::VulkanImageResource(
     VulkanDevice* device,
@@ -104,6 +130,7 @@ void VulkanImageResource::createImage()
                 .setUsage(m_config.imageUsage)
                 .setSamples(m_config.sampleCount)
                 .setSharingMode(m_config.sharingMode)
+                .setFlags(m_config.flags)
                 ;
     m_vkImage = m_vulkanDevice->GetVkDevice().createImage(createInfo);
 }
@@ -165,18 +192,29 @@ void VulkanImageSampler::copyBufferToImage()
     vk::CommandBuffer cmd =
     cmdPool->BeginSingleTimeCommand();
     {
-        auto region = vk::BufferImageCopy()
-                .setBufferImageHeight(0)
-                .setBufferOffset(0)
-                .setBufferRowLength(0)
-                .setImageSubresource(vk::ImageSubresourceLayers{
-                    vk::ImageAspectFlagBits::eColor,
-                    0,0,1
-                    })
-                .setImageOffset(vk::Offset3D{0,0,0})
-                .setImageExtent(vk::Extent3D{(uint32_t)m_pRawData->GetWidth(), (uint32_t)m_pRawData->GetHeight(), 1})
-                ;
-        cmd.copyBufferToImage(*m_pVulkanStagingBuffer->GetPVkBuf(), m_pVulkanImageResource->GetVkImage(), vk::ImageLayout::eTransferDstOptimal, region);
+        std::vector<vk::BufferImageCopy> regions;
+        for (uint32_t face = 0; face < m_pVulkanImageResource->GetConfig().arrayLayer; face++)
+        {
+            for (uint32_t level = 0; level < m_pVulkanImageResource->GetConfig().miplevel; level++)
+            {
+                size_t offset = m_pRawData->GetLevelOffset(level, face);
+                uint32_t width = (uint32_t)m_pRawData->GetWidth() >> level;
+                uint32_t height = (uint32_t)m_pRawData->GetHeight() >> level;
+                auto region = vk::BufferImageCopy()
+                        .setBufferOffset(offset)
+                        .setImageExtent(vk::Extent3D{width, height, 1})
+                        .setImageSubresource(vk::ImageSubresourceLayers{
+                            vk::ImageAspectFlagBits::eColor,
+                            level,face,1
+                            })
+                        .setBufferImageHeight(0)
+                        .setBufferRowLength(0)
+                        .setImageOffset(vk::Offset3D{0,0,0})
+                        ;
+                regions.emplace_back(region);
+            }
+        }
+        cmd.copyBufferToImage(*m_pVulkanStagingBuffer->GetPVkBuf(), m_pVulkanImageResource->GetVkImage(), vk::ImageLayout::eTransferDstOptimal, regions);
     }
     cmdPool->EndSingleTimeCommand(cmd, m_vulkanDevice->GetVkGraphicQueue());
 }

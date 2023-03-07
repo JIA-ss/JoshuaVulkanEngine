@@ -1,8 +1,10 @@
 #include "Fileutil.h"
+#include <algorithm>
 #include <boost/filesystem/directory.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/system/detail/error_code.hpp>
 
+#include <cctype>
 #include <fstream>
 #include <ios>
 #include <sstream>
@@ -269,4 +271,11 @@ bool File::writeFile(const boost::filesystem::path& path, const unsigned char* f
     return false;
 }
 
+
+std::string File::getLowerExtension(const boost::filesystem::path& path)
+{
+    std::string extension = path.extension().string();
+    std::transform(extension.begin(), extension.end(), extension.begin(), [](char c) { return std::tolower(c); });
+    return extension;
+}
 }

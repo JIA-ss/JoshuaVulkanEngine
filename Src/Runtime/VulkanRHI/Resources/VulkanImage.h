@@ -25,11 +25,14 @@ public:
         vk::ImageViewType           imageViewType = vk::ImageViewType::e2D;
         vk::ImageLayout             initialLayout = vk::ImageLayout::eUndefined;
         vk::SampleCountFlagBits     sampleCount = vk::SampleCountFlagBits::e1;
-        vk::Format                  format = vk::Format::eR8G8B8A8Srgb;
+        vk::Format                  format = vk::Format::eR8G8B8A8Unorm;
         vk::ImageTiling             imageTiling = vk::ImageTiling::eOptimal;
         vk::SharingMode             sharingMode = vk::SharingMode::eExclusive;
+        vk::ImageCreateFlags        flags = {};
         uint32_t                    miplevel = 1;
         uint32_t                    arrayLayer = 1;
+
+        static Config CubeMap(uint32_t width, uint32_t height, uint32_t miplevels, uint32_t faceCount = 6);
     };
 protected:
     VulkanDevice* m_vulkanDevice;
@@ -79,6 +82,8 @@ public:
         float                   mipLodBias = 0.0f;
         float                   minLod = 0.0f;
         float                   maxLod = 0.0f;
+
+        static Config CubeMap(uint32_t miplevel);
     };
 protected:
     VulkanDevice* m_vulkanDevice;
@@ -114,15 +119,4 @@ private:
     void copyBufferToImage();
 };
 
-
-class VulkanDepthImage
-{
-private:
-    VulkanDevice* m_vulkanDevice;
-
-    std::unique_ptr<VulkanImageResource> m_pVulkanImageResource;
-public:
-    explicit VulkanDepthImage(VulkanDevice* device);
-    ~VulkanDepthImage();
-};
 RHI_NAMESPACE_END

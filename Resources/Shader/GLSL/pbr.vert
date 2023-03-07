@@ -3,6 +3,7 @@
 layout(binding = 0) uniform CameraUniformBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 model;
     vec4 camPos;
 } camUbo;
 

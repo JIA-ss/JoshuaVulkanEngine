@@ -3,11 +3,13 @@
 #include "Util/Fileutil.h"
 #include "Util/Modelutil.h"
 #include "Util/Textureutil.h"
+#include "vulkan/vulkan_enums.hpp"
 #include <assimp/material.h>
 #include <boost/filesystem/path.hpp>
 #include <glm/trigonometric.hpp>
 #include <memory>
 #include <stdint.h>
+#include <string>
 
 RHI_NAMESPACE_USING
 
@@ -47,6 +49,83 @@ static const std::vector<Util::Model::VertexData> RightPlaneVertex =
     Util::Model::VertexData { glm::vec4(1,0,-1,1), glm::vec4(0,1,0,0) },
 };
 
+
+
+static Util::Model::MeshData cubeMeshData =
+{
+    "cube",
+    std::vector<Util::Model::VertexData>
+    {
+        Util::Model::VertexData { glm::vec4(-0.5,-0.5,0.5,1), glm::vec4(0,0,0,0) },
+        Util::Model::VertexData { glm::vec4(-0.5,0.5,0.5,1), glm::vec4(0,1,0,0) },
+        Util::Model::VertexData { glm::vec4(0.5,0.5,0.5,1), glm::vec4(1,1,0,0) },
+        Util::Model::VertexData { glm::vec4(0.5,-0.5,0.5,1), glm::vec4(1,0,0,0) },
+
+        Util::Model::VertexData { glm::vec4(-0.5,-0.5,-0.5,1), glm::vec4(1,1,0,0) },
+        Util::Model::VertexData { glm::vec4(-0.5,0.5,-0.5,1), glm::vec4(1,0,0,0) },
+        Util::Model::VertexData { glm::vec4(0.5,0.5,-0.5,1), glm::vec4(0,0,0,0) },
+        Util::Model::VertexData { glm::vec4(0.5,-0.5,-0.5,1), glm::vec4(0,1,0,0) },
+    },
+    std::vector<uint32_t> {
+        0,1,2,2,3,0,
+        4,5,1,1,0,4,
+        7,6,5,5,4,7,
+        3,2,6,6,7,3,
+        1,5,6,6,2,1,
+        4,0,3,3,7,4
+    }
+};
+
+Util::Model::MeshData GenerateSphereMeshData(unsigned int X_SEGMENTS = 64, unsigned int Y_SEGMENTS = 64)
+{
+    constexpr const float PI = 3.14159265359f;
+    Util::Model::MeshData meshdata;
+    meshdata.vertices.reserve((X_SEGMENTS + 1) * (Y_SEGMENTS + 1));
+    meshdata.indices.reserve((X_SEGMENTS + 1) * (Y_SEGMENTS + 1));
+    meshdata.name = "Sphere X(" + std::to_string(X_SEGMENTS) + ") Y(" + std::to_string(Y_SEGMENTS) +")";
+
+    for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+    {
+        for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+        {
+            float xSegment = (float)x / (float)X_SEGMENTS;
+            float ySegment = (float)y / (float)Y_SEGMENTS;
+            float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+            float yPos = std::cos(ySegment * PI);
+            float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+            auto pos = glm::vec4(xPos, yPos, zPos, 1);
+            auto uv = glm::vec4(xSegment, ySegment,0 ,0);
+            auto normal = glm::vec4(xPos, yPos, zPos, 1);
+
+            meshdata.vertices.emplace_back(Util::Model::VertexData{pos, uv, normal});
+        }
+    }
+
+    bool oddRow = true;
+    for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
+    {
+        if (!oddRow) // even rows: y == 0, y == 2; and so on
+        {
+            for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+            {
+                meshdata.indices.push_back(y       * (X_SEGMENTS + 1) + x);
+                meshdata.indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+            }
+        }
+        else
+        {
+            for (int x = X_SEGMENTS; x >= 0; --x)
+            {
+                meshdata.indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+                meshdata.indices.push_back(y       * (X_SEGMENTS + 1) + x);
+            }
+        }
+        oddRow = !oddRow;
+    }
+
+    return meshdata;
+}
 
 
 std::unique_ptr<Model> ModelPresets::CreatePlaneModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout)
@@ -94,32 +173,6 @@ std::unique_ptr<Model> ModelPresets::CreatePlaneModel(VulkanDevice* device, Vulk
 
 std::unique_ptr<Model> ModelPresets::CreateCubeModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout)
 {
-
-    static Util::Model::MeshData cubeMeshData =
-    {
-        "cube",
-        std::vector<Util::Model::VertexData>
-        {
-            Util::Model::VertexData { glm::vec4(0,0,0,1), glm::vec4(0,0,0,0) },
-            Util::Model::VertexData { glm::vec4(0,1,0,1), glm::vec4(0,1,0,0) },
-            Util::Model::VertexData { glm::vec4(1,1,0,1), glm::vec4(1,1,0,0) },
-            Util::Model::VertexData { glm::vec4(1,0,0,1), glm::vec4(1,0,0,0) },
-
-            Util::Model::VertexData { glm::vec4(0,0,-1,1), glm::vec4(1,0,0,0) },
-            Util::Model::VertexData { glm::vec4(0,1,-1,1), glm::vec4(1,1,0,0) },
-            Util::Model::VertexData { glm::vec4(1,1,-1,1), glm::vec4(0,0,0,0) },
-            Util::Model::VertexData { glm::vec4(1,0,-1,1), glm::vec4(0,1,0,0) },
-        },
-        std::vector<uint32_t> {
-            0,1,2,2,3,0,
-            4,5,1,1,0,4,
-            7,6,5,5,4,7,
-            3,2,6,6,7,3,
-            1,5,6,6,2,1,
-            4,0,3,3,7,4
-        }
-    };
-
     static Util::Model::MaterialData cubeMaterialData =
     {
         "cube",
@@ -302,4 +355,34 @@ std::unique_ptr<Model> ModelPresets::CreateCerberusPBRModel(VulkanDevice* device
     });
     std::unique_ptr<Model> model = std::make_unique<Model>(device, std::move(modelData), layout);
     return model;
+}
+
+
+std::unique_ptr<Model> ModelPresets::CreateSkyboxModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout)
+{
+
+    Util::Model::MaterialData skyboxMaterialData =
+    {
+        "skybox",
+        std::vector<Util::Model::TextureData>
+        {
+            Util::Model::TextureData
+            {
+                "cube", aiTextureType_DIFFUSE, aiTextureMapMode_Clamp, aiTextureMapMode_Clamp,
+                Util::Texture::RawData::Load(
+                    Util::File::getResourcePath() / "Texture/cubemap_yokohama_rgba.ktx",
+                    Util::Texture::RawData::Format::eRgbAlpha, true,
+                    vk::Format::eR8G8B8A8Unorm
+                    // vk::Format::eR16G16B16A16Sfloat // hdr
+                )
+            }
+        }
+    };
+
+    Util::Model::ModelData cubeModelData =
+    {
+        {cubeMeshData},{skyboxMaterialData},{0}
+    };
+
+    return std::make_unique<Model>(device, std::move(cubeModelData), layout);
 }

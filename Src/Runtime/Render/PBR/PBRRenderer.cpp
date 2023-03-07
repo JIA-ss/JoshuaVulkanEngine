@@ -6,11 +6,14 @@
 #include "Runtime/VulkanRHI/Graphic/Vertex.h"
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
+#include "Runtime/VulkanRHI/PipelineStates/VulkanDepthStencilState.h"
+#include "Runtime/VulkanRHI/PipelineStates/VulkanRasterizationState.h"
 #include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
+#include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_enums.hpp"
 #include <Util/Modelutil.h>
 #include <Util/Fileutil.h>
@@ -109,7 +112,6 @@ void PBRRenderer::render()
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     m_vkCmds[m_frameIdxInFlight].begin(beginInfo);
     {
-        m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "default");
         std::vector<vk::DescriptorSet> tobinding;
 
         std::vector<vk::ClearValue> clears(2);
@@ -121,7 +123,13 @@ void PBRRenderer::render()
             vk::Rect2D rect{{0,0},extent};
             m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{0,0,(float)extent.width, (float)extent.height,0,1});
             m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
+
+            m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "skybox");
+            m_pSkyboxModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+
+            m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "default");
             m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+
         }
         m_pRenderPass->End(m_vkCmds[m_frameIdxInFlight]);
     }
@@ -167,6 +175,7 @@ void PBRRenderer::prepareModel()
     m_pModel = RHI::ModelPresets::CreateCerberusPBRModel(m_pDevice.get(), m_pSet1SamplerSetLayout.lock().get());
     auto& transformation = m_pModel->GetTransformation();
     transformation.SetRotation(glm::vec3(0,90,90));
+    m_pSkyboxModel = RHI::ModelPresets::CreateSkyboxModel(m_pDevice.get(), m_pSet1SamplerSetLayout.lock().get());
 
     std::array<std::vector<RHI::Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT> uboInfos;
     auto camUbo = m_pCamera->GetUboInfo();
@@ -177,6 +186,7 @@ void PBRRenderer::prepareModel()
         uboInfos[frameId].push_back(lightUbo[frameId]);
     }
     m_pModel->InitUniformDescriptorSets(uboInfos);
+    m_pSkyboxModel->InitUniformDescriptorSets(uboInfos);
 }
 
 void PBRRenderer::prepareCamera()
@@ -347,6 +357,32 @@ void PBRRenderer::preparePipeline()
                             .SetVulkanPipelineLayout(m_pPipelineLayout)
                             .buildUnique();
     m_pRenderPass->AddGraphicRenderPipeline("default", std::move(pipeline));
+
+
+    std::shared_ptr<RHI::VulkanShaderSet> skyboxShaderSet = std::make_shared<RHI::VulkanShaderSet>(m_pDevice.get());
+    skyboxShaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/skybox.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    skyboxShaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/skybox.frag.spv", vk::ShaderStageFlagBits::eFragment);
+
+    {
+        RHI::VulkanDepthStencilState::Config depthConfig;
+        depthConfig.DepthWriteEnable = VK_FALSE;
+        depthConfig.DepthTestEnable = VK_FALSE;
+        depthConfig.DepthCompareOp = vk::CompareOp::eLessOrEqual;
+        auto depthStencilState = std::make_shared<RHI::VulkanDepthStencilState>(depthConfig);
+
+        auto raster = RHI::VulkanRasterizationStateBuilder()
+                    .SetCullMode(vk::CullModeFlagBits::eNone)
+                    .build();
+
+        pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
+                    .SetVulkanDepthStencilState(depthStencilState)
+                    .SetVulkanRasterizationState(raster)
+                    .SetVulkanRenderPass(m_pRenderPass)
+                    .SetshaderSet(skyboxShaderSet)
+                    .SetVulkanPipelineLayout(m_pPipelineLayout)
+                    .buildUnique();
+    }
+    m_pRenderPass->AddGraphicRenderPipeline("skybox", std::move(pipeline));
 }
 
 void PBRRenderer::prepareFrameBuffer()

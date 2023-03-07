@@ -191,6 +191,12 @@ void Model::initMatrials(const std::vector<Util::Model::MaterialData>& materialD
                 if (texData.rawData)
                 {
                     imageResourceConfig.extent = vk::Extent3D{(uint32_t)texData.rawData->GetWidth(), (uint32_t)texData.rawData->GetHeight(), 1};
+                    if (texData.rawData->IsCubeMap())
+                    {
+                        imageSamplerConfig = VulkanImageSampler::Config::CubeMap(texData.rawData->GetMipLevels());
+                        imageResourceConfig = VulkanImageResource::Config::CubeMap(texData.rawData->GetWidth(), texData.rawData->GetHeight(), texData.rawData->GetMipLevels());
+                    }
+                    imageResourceConfig.format = texData.rawData->GetVkFormat();
                     m_vulkanImageSamplers[texData.name] = std::make_shared<VulkanImageSampler>(
                         m_pVulkanDevice,
                         texData.rawData,

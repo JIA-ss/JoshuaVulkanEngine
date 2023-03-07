@@ -48,6 +48,7 @@ find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_path(STB_INCLUDE_DIRS "stb_c_lexer.h")
 find_package(tinyobjloader CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
+find_package(Ktx CONFIG REQUIRED)
 
 add_executable(VulkanRHI ${MAIN_SRC_FILES})
 
@@ -61,6 +62,7 @@ target_link_libraries(VulkanRHI
     ${Boost_LIBRARIES}
     tinyobjloader::tinyobjloader
     assimp::assimp
+    KTX::ktx
 )
 
 
