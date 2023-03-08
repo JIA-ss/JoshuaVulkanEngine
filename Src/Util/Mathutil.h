@@ -129,6 +129,7 @@ public:
     const glm::mat4& GetViewMatrix() { return GetMatrix(); }
 
     glm::vec3 GetFrontDir() const;
+    glm::vec3 GetUpDirection() const;
     float GetNear() const;
     float GetFar() const;
     float GetFovDegree() const { return m_perspMatrix.GetFovDegree(); }

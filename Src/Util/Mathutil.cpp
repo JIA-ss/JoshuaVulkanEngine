@@ -129,6 +129,16 @@ glm::vec3 Math::VPMatrix::GetFrontDir() const
     return glm::normalize(v3front);
 }
 
+
+glm::vec3 Math::VPMatrix::GetUpDirection() const
+{
+    glm::mat4 xrot = glm::rotate(glm::mat4(1.0), glm::radians(m_rotation.x), glm::vec3(1,0,0));
+    glm::mat4 yrot = glm::rotate(glm::mat4(1.0), glm::radians(m_rotation.y), glm::vec3(0,1,0));
+    glm::mat4 zrot = glm::rotate(glm::mat4(1.0), glm::radians(m_rotation.z), glm::vec3(0,0,1));
+    glm::vec4 up = (zrot * yrot * xrot * glm::vec4(m_upDirection, 1));
+    return glm::normalize(glm::vec3(up.x, up.y, up.z));
+}
+
 float Math::VPMatrix::GetNear() const
 {
     if (m_mode == ProjectionMatrix::Mode::kPerspective)
@@ -191,9 +201,7 @@ void Math::VPMatrix::updateMatrix()
     // m_matrix = glm::inverse(v);
 
     glm::vec3 v3front = GetFrontDir();
-    glm::vec3 right = glm::cross(v3front, m_upDirection);
-    m_upDirection = glm::cross(right, v3front);
-    m_matrix = glm::lookAt(m_position, m_position + v3front * 10.f, m_upDirection);
+    m_matrix = glm::lookAt(m_position, m_position + v3front * 10.f, GetUpDirection());
 
     // std::cout << "view: " << glm::to_string(m_matrix) << std::endl;
     m_dirty = false;
