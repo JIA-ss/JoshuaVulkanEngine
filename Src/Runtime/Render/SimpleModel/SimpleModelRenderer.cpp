@@ -36,6 +36,7 @@ SimpleModelRenderer::~SimpleModelRenderer()
 
 void SimpleModelRenderer::prepare()
 {
+    prepareLayout();
     // prepare camera
     prepareCamera();
     // prepare Light
@@ -270,13 +271,23 @@ void SimpleModelRenderer::prepareRenderpass()
     m_pRenderPass = std::make_shared<RHI::VulkanRenderPass>(m_pDevice.get(), colorFormat, depthForamt, sampleCount);
 }
 
+void SimpleModelRenderer::prepareLayout()
+{
+    m_pPipelineLayout.reset(
+        new RHI::VulkanPipelineLayout(
+            m_pDevice.get(),
+            {m_pSet0UniformSetLayout.lock(), m_pSet1SamplerSetLayout.lock(), m_pSet2ShadowmapSamplerLayout.lock()}
+            , {}
+            )
+        );
+}
+
 void SimpleModelRenderer::preparePipeline()
 {
     std::shared_ptr<RHI::VulkanShaderSet> shaderSet = std::make_shared<RHI::VulkanShaderSet>(m_pDevice.get());
     shaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/shader.vert.spv", vk::ShaderStageFlagBits::eVertex);
     shaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
-    auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
-                            .SetVulkanRenderPass(m_pRenderPass)
+    auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                             .SetshaderSet(shaderSet)
                             .SetVulkanPipelineLayout(m_pPipelineLayout)
                             .buildUnique();

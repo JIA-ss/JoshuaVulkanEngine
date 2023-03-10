@@ -29,6 +29,7 @@ EditorRenderer::~EditorRenderer()
 
 void EditorRenderer::prepare()
 {
+    prepareLayout();
     // prepare camera
     prepareCamera();
     // prepare light
@@ -180,7 +181,16 @@ void EditorRenderer::render()
     }
 }
 
-
+void EditorRenderer::prepareLayout()
+{
+    m_pPipelineLayout.reset(
+        new RHI::VulkanPipelineLayout(
+            m_pDevice.get(),
+            {m_pSet0UniformSetLayout.lock(), m_pSet1SamplerSetLayout.lock(), m_pSet2ShadowmapSamplerLayout.lock()}
+            , {}
+            )
+        );
+}
 
 void EditorRenderer::prepareCamera()
 {
@@ -315,8 +325,7 @@ void EditorRenderer::preparePipeline()
     std::shared_ptr<RHI::VulkanShaderSet> shaderSet = std::make_shared<RHI::VulkanShaderSet>(m_pDevice.get());
     shaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/shader.vert.spv", vk::ShaderStageFlagBits::eVertex);
     shaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
-    auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
-                            .SetVulkanRenderPass(m_pRenderPass)
+    auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                             .SetshaderSet(shaderSet)
                             .SetVulkanPipelineLayout(m_pPipelineLayout)
                             .buildUnique();
@@ -328,11 +337,10 @@ void EditorRenderer::preparePipeline()
                                                                     .SetLineWidth(3.0f)
                                                                     .SetCullMode(vk::CullModeFlagBits::eNone)
                                                                     .build();
-    auto rawLinePipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
+    auto rawLinePipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                         .SetVulkanRasterizationState(rasterization)
                         .SetVulkanPipelineLayout(m_pPipelineLayout)
                         .SetshaderSet(shaderSet)
-                        .SetVulkanRenderPass(m_pRenderPass)
                         .buildUnique();
     m_pRenderPass->AddGraphicRenderPipeline("frustum", std::move(rawLinePipeline));
 }

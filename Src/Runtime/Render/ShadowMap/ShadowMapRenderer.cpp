@@ -35,6 +35,7 @@ ShadowMapRenderer::~ShadowMapRenderer()
 
 void ShadowMapRenderer::prepare()
 {
+    prepareLayout();
     // prepare camera
     prepareCamera();
 
@@ -188,6 +189,17 @@ void ShadowMapRenderer::render()
         throw std::runtime_error("present image failed");
     }
 }
+void ShadowMapRenderer::prepareLayout()
+{
+    m_pPipelineLayout.reset(
+        new RHI::VulkanPipelineLayout(
+            m_pDevice.get(),
+            {m_pSet0UniformSetLayout.lock(), m_pSet1SamplerSetLayout.lock(), m_pSet2ShadowmapSamplerLayout.lock()}
+            , {}
+            )
+        );
+}
+
 void ShadowMapRenderer::prepareLights()
 {
     std::vector<Util::Math::VPMatrix> lightTransformations =
@@ -379,8 +391,7 @@ void ShadowMapRenderer::preparePipeline()
 
     std::shared_ptr<RHI::VulkanRasterizationState> raster = RHI::VulkanRasterizationStateBuilder()
                                                                                     .SetCullMode(vk::CullModeFlagBits::eNone).build();
-    auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
-                            .SetVulkanRenderPass(m_pRenderPass)
+    auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                             .SetshaderSet(shaderSet)
                             .SetVulkanPipelineLayout(m_pPipelineLayout)
                             .SetVulkanRasterizationState(raster)
@@ -399,8 +410,7 @@ void ShadowMapRenderer::preparePipeline()
         depthConfig.DepthWriteEnable = VK_FALSE;
 
         std::shared_ptr<RHI::VulkanDepthStencilState> debugDepthState(new RHI::VulkanDepthStencilState(depthConfig));
-        pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
-                    .SetVulkanRenderPass(m_pRenderPass)
+        pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                     .SetshaderSet(debugShaderSet)
                     .SetVulkanPipelineLayout(m_pPipelineLayout)
                     .SetVulkanDepthStencilState(debugDepthState)

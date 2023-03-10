@@ -1,4 +1,5 @@
 #include "MultiPipelineRenderer.h"
+#include "Runtime/Render/SimpleModel/SimpleModelRenderer.h"
 #include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanDynamicState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanRasterizationState.h"
@@ -24,6 +25,7 @@ MultiPipelineRenderer::~MultiPipelineRenderer()
 
 void MultiPipelineRenderer::prepare()
 {
+    SimpleModelRenderer::prepareLayout();
     prepareCamera();
     prepareInputCallback();
     prepareModel();
@@ -156,20 +158,18 @@ void MultiPipelineRenderer::prepareMultiPipelines()
 
     m_Pipelines.resize(2);
     std::shared_ptr<RHI::VulkanViewportState> viewPort;
-    auto normalPipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
+    auto normalPipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                         .SetVulkanPipelineLayout(m_pPipelineLayout)
                         .SetshaderSet(shaderSet)
-                        .SetVulkanRenderPass(m_pRenderPass)
                         .buildUnique();
 
     std::shared_ptr<RHI::VulkanRasterizationState> rasterization = RHI::VulkanRasterizationStateBuilder()
                                                                     .SetPolygonMode(vk::PolygonMode::eLine)
                                                                     .build();
-    auto rawLinePipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), normalPipeline.get())
+    auto rawLinePipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get(), normalPipeline.get())
                         .SetVulkanRasterizationState(rasterization)
                         .SetVulkanPipelineLayout(m_pPipelineLayout)
                         .SetshaderSet(shaderSet)
-                        .SetVulkanRenderPass(m_pRenderPass)
                         .buildUnique();
 
 

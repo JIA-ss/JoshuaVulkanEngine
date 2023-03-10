@@ -3,6 +3,7 @@
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Util/Textureutil.h"
 #include "vulkan/vulkan_enums.hpp"
+#include "vulkan/vulkan_handles.hpp"
 #include "vulkan/vulkan_structs.hpp"
 #include <stdint.h>
 #include <vulkan/vulkan.hpp>
@@ -51,7 +52,22 @@ public:
     ~VulkanImageResource();
     Config GetConfig() { return m_config; }
 public:
-    void TransitionImageLayout(vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+    void TransitionImageLayout(
+        vk::ImageLayout oldLayout,
+        vk::ImageLayout newLayout,
+        vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
+        vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands
+    );
+
+    void TransitionImageLayout(
+        vk::CommandBuffer cmd,
+        vk::ImageLayout oldLayout,
+        vk::ImageLayout newLayout,
+        vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
+        vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands
+    );
+
+    void CopyTo(vk::CommandBuffer cmd, VulkanImageResource* target, vk::ImageCopy copyRegion);
 
 public:
     inline vk::Image& GetVkImage() { return m_vkImage; }

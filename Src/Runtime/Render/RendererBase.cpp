@@ -49,7 +49,7 @@ RendererBase::RendererBase(const RHI::VulkanInstance::Config& instanceConfig,
     initCmd();
     initSyncObj();
     initFrameBufferResizeCallback();
-    prepareLayout();
+    prepareDescriptorLayout();
 
     m_lastframeTimePoint = std::chrono::high_resolution_clock::now();
 }
@@ -211,13 +211,11 @@ void RendererBase::recreateSwapchain()
     m_pDevice->ReCreateSwapchain(m_pRenderPass.get());
 }
 
-void RendererBase::prepareLayout()
+void RendererBase::prepareDescriptorLayout()
 {
     m_pSet0UniformSetLayout = m_pDevice->GetDescLayoutPresets().UBO;
     m_pSet1SamplerSetLayout = m_pDevice->GetDescLayoutPresets().CUSTOM5SAMPLER;
     m_pSet2ShadowmapSamplerLayout = m_pDevice->GetDescLayoutPresets().SHADOWMAP;
-
-    m_pPipelineLayout.reset(new RHI::VulkanPipelineLayout(m_pDevice.get(), {m_pSet0UniformSetLayout.lock(), m_pSet1SamplerSetLayout.lock(), m_pSet2ShadowmapSamplerLayout.lock()}));
 }
 
 

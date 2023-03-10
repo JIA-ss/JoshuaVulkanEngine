@@ -54,11 +54,11 @@ void VulkanContext::Init(
 
     m_pShaderSet->AddShader(Util::File::getResourcePath() / "Shader\\GLSL\\SPIR-V\\shader.vert.spv", vk::ShaderStageFlagBits::eVertex);
     m_pShaderSet->AddShader(Util::File::getResourcePath() / "Shader\\GLSL\\SPIR-V\\shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
-    m_pRenderPipeline = VulkanRenderPipelineBuilder(m_pDevice.get())
+    m_pRenderPipeline = VulkanRenderPipelineBuilder(m_pDevice.get(), nullptr)
                         .SetshaderSet(m_pShaderSet)
                         .AddDescriptorLayout(m_pDescSetLayout)
                         .buildShared();
-    m_pDevice->CreateSwapchainFramebuffer(m_pRenderPipeline->GetVulkanRenderPass().get());
+    m_pDevice->CreateSwapchainFramebuffer(m_pRenderPipeline->GetVulkanRenderPass());
 }
 
 

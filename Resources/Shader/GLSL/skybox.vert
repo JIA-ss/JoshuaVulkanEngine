@@ -22,6 +22,6 @@ void main() {
 	outUVW = inPosition;
 	// Convert cubemap coordinates into Vulkan coordinate space
 	// outUVW.y *= -1.0;
-
-    gl_Position = camUbo.proj * vec4( mat3(camUbo.view) * inPosition, 1.0) ;
+    vec4 pos = camUbo.proj * vec4( mat3(camUbo.view) * inPosition, 1.0);
+    gl_Position = vec4(pos.xy / 1.2, pos.ww);
 }

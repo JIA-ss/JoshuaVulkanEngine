@@ -64,57 +64,141 @@ VulkanImageResource::~VulkanImageResource()
     m_pVulkanDeviceMemory.reset();
 }
 
-void VulkanImageResource::TransitionImageLayout(vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+void VulkanImageResource::TransitionImageLayout(
+    vk::ImageLayout oldLayout,
+    vk::ImageLayout newLayout,
+    vk::PipelineStageFlags srcStage,
+    vk::PipelineStageFlags dstStage
+)
 {
     VulkanCommandPool* cmdPool = m_vulkanDevice->GetPVulkanCmdPool();
     vk::CommandBuffer cmd =
     cmdPool->BeginSingleTimeCommand();
     {
-        vk::ImageMemoryBarrier barrier = vk::ImageMemoryBarrier()
-                                .setImage(m_vkImage)
-                                .setOldLayout(oldLayout)
-                                .setNewLayout(newLayout)
-                                .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                                .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                                .setSubresourceRange(m_config.subresourceRange)
-                                ;
-        vk::PipelineStageFlags srcStage, dstStage;
-        if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal)
-        {
-            barrier.setSrcAccessMask(vk::AccessFlagBits(0))
-                    .setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
-            srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
-            dstStage = vk::PipelineStageFlagBits::eTransfer;
-        }
-        else if (oldLayout == vk::ImageLayout::eTransferDstOptimal && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
-        {
-            barrier.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-                    .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
-            srcStage = vk::PipelineStageFlagBits::eTransfer;
-            dstStage = vk::PipelineStageFlagBits::eFragmentShader;
-        }
-        else if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
-        {
-            barrier.setSrcAccessMask(vk::AccessFlagBits(0))
-                    .setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
-                    ;
-            srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
-            dstStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
-        }
-        else if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eDepthStencilReadOnlyOptimal)
-        {
-            barrier.setSrcAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite)
-                    .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
-            srcStage = vk::PipelineStageFlagBits::eLateFragmentTests;
-            dstStage = vk::PipelineStageFlagBits::eFragmentShader;
-        }
-        else
-        {
-            throw std::invalid_argument("unsupported layout transition!");
-        }
-        cmd.pipelineBarrier(srcStage, dstStage, vk::DependencyFlagBits(0), {}, {}, {barrier});
+        TransitionImageLayout(cmd, oldLayout, newLayout, srcStage, dstStage);
     }
     cmdPool->EndSingleTimeCommand(cmd, m_vulkanDevice->GetVkGraphicQueue());
+}
+
+void VulkanImageResource::TransitionImageLayout(
+        vk::CommandBuffer cmd,
+        vk::ImageLayout oldLayout,
+        vk::ImageLayout newLayout,
+        vk::PipelineStageFlags srcStage,
+        vk::PipelineStageFlags dstStage
+)
+{
+    vk::ImageMemoryBarrier imageMemoryBarrier = vk::ImageMemoryBarrier()
+                            .setImage(m_vkImage)
+                            .setOldLayout(oldLayout)
+                            .setNewLayout(newLayout)
+                            .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .setSubresourceRange(m_config.subresourceRange)
+                            ;
+    // Source layouts (old)
+    // Source access mask controls actions that have to be finished on the old layout
+    // before it will be transitioned to the new layout
+    switch (oldLayout)
+    {
+    case vk::ImageLayout::eUndefined:
+        // Image layout is undefined (or does not matter)
+        // Only valid as initial layout
+        // No flags required, listed only for completeness
+        imageMemoryBarrier.setSrcAccessMask(vk::AccessFlags(0));
+        break;
+
+    case vk::ImageLayout::ePreinitialized:
+        // Image is preinitialized
+        // Only valid as initial layout for linear images, preserves memory contents
+        // Make sure host writes have been finished
+        imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eHostWrite);
+        break;
+
+    case vk::ImageLayout::eColorAttachmentOptimal:
+        // Image is a color attachment
+        // Make sure any writes to the color buffer have been finished
+        imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+        break;
+
+    case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+        // Image is a depth/stencil attachment
+        // Make sure any writes to the depth/stencil buffer have been finished
+        imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite);
+        break;
+
+    case vk::ImageLayout::eTransferSrcOptimal:
+        // Image is a transfer source
+        // Make sure any reads from the image have been finished
+        imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eTransferRead);
+        break;
+
+    case vk::ImageLayout::eTransferDstOptimal:
+        // Image is a transfer destination
+        // Make sure any writes to the image have been finished
+        imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite);
+        break;
+
+    case vk::ImageLayout::eShaderReadOnlyOptimal:
+        // Image is read by a shader
+        // Make sure any shader reads from the image have been finished
+        imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eShaderRead);
+        break;
+    default:
+        // Other source layouts aren't handled (yet)
+        assert(false);
+        break;
+    }
+
+    // Target layouts (new)
+    // Destination access mask controls the dependency for the new image layout
+    switch (newLayout)
+    {
+    case vk::ImageLayout::eTransferDstOptimal:
+        // Image will be used as a transfer destination
+        // Make sure any writes to the image have been finished
+        imageMemoryBarrier.setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
+        break;
+
+    case vk::ImageLayout::eTransferSrcOptimal:
+        // Image will be used as a transfer source
+        // Make sure any reads from the image have been finished
+        imageMemoryBarrier.setDstAccessMask(vk::AccessFlagBits::eTransferRead);
+        break;
+
+    case vk::ImageLayout::eColorAttachmentOptimal:
+        // Image will be used as a color attachment
+        // Make sure any writes to the color buffer have been finished
+        imageMemoryBarrier.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+        break;
+
+    case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+        // Image layout will be used as a depth/stencil attachment
+        // Make sure any writes to depth/stencil buffer have been finished
+        imageMemoryBarrier.setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite | imageMemoryBarrier.dstAccessMask);
+        break;
+
+    case vk::ImageLayout::eShaderReadOnlyOptimal:
+        // Image will be read in a shader (sampler, input attachment)
+        // Make sure any writes to the image have been finished
+        if (imageMemoryBarrier.srcAccessMask == vk::AccessFlags(0))
+        {
+            imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eHostWrite | vk::AccessFlagBits::eTransferWrite);
+        }
+        imageMemoryBarrier.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+        break;
+    default:
+        // Other source layouts aren't handled (yet)
+        assert(false);
+        break;
+    }
+
+    cmd.pipelineBarrier(srcStage, dstStage, vk::DependencyFlagBits(0), {}, {}, {imageMemoryBarrier});
+}
+
+void VulkanImageResource::CopyTo(vk::CommandBuffer cmd, VulkanImageResource* target, vk::ImageCopy copyRegion)
+{
+    cmd.copyImage(m_vkImage, vk::ImageLayout::eTransferSrcOptimal, target->m_vkImage, vk::ImageLayout::eTransferDstOptimal, copyRegion);
 }
 
 void VulkanImageResource::createImage()

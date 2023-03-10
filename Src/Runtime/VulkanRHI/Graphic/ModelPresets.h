@@ -3,6 +3,7 @@
 #include "Model.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Util/Mathutil.h"
+#include "Util/Modelutil.h"
 
 
 RHI_NAMESPACE_BEGIN
@@ -10,6 +11,9 @@ RHI_NAMESPACE_BEGIN
 
 namespace ModelPresets
 {
+
+    Util::Model::MeshData GetCubeMeshData();
+    Util::Model::MaterialData GetSkyboxMaterialData();
 
     std::unique_ptr<Model> CreatePlaneModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout);
     std::unique_ptr<Model> CreateCubeModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout);

@@ -13,9 +13,10 @@ RHI_NAMESPACE_USING
 
 
 
-VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice* device, std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> descLayouts)
+VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice* device, std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> descLayouts, const std::map<int, vk::PushConstantRange>& pushConstant)
     : m_vulkanDevice(device)
     , m_vulkanDescSetLayouts(descLayouts)
+    , m_vkPushConstRanges(pushConstant)
 {
     std::vector<vk::DescriptorSetLayout> vkLayouts;
     m_DescriptorSetLayoutNames.resize(descLayouts.size());
@@ -31,12 +32,16 @@ VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice* device, std::vector<std
         vkLayouts.emplace_back(vkLayout);
     }
 
+    std::vector<vk::PushConstantRange> pushConstantRanges;
+    bool constantValid = checkPushContantRangeValid(pushConstantRanges);
+    assert(constantValid);
+
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     pipelineLayoutCreateInfo.setSetLayouts(vkLayouts)
-                            ; //.setPushConstantRanges(m_vkPushConstRanges);
+                            .setPushConstantRanges(pushConstantRanges)
+                            ;
 
     m_vkPipelineLayout = m_vulkanDevice->GetVkDevice().createPipelineLayout(pipelineLayoutCreateInfo);
-
 }
 
 
@@ -68,4 +73,39 @@ int VulkanPipelineLayout::GetDescriptorSetId(VulkanDescriptorSets* desc)
 {
     assert(desc);
     return GetDescriptorSetId(desc->GetPDescriptorSetLayout());
+}
+
+void VulkanPipelineLayout::PushConstant(vk::CommandBuffer cmd, uint32_t offset, uint32_t size, void* data, vk::ShaderStageFlags stage)
+{
+    auto it = m_vkPushConstRanges.find(offset);
+    assert(it != m_vkPushConstRanges.end());
+    assert(it->second.size >= size);
+    assert(data != nullptr);
+    cmd.pushConstants(m_vkPipelineLayout, stage, offset, size, data);
+}
+
+bool VulkanPipelineLayout::checkPushContantRangeValid(std::vector<vk::PushConstantRange>& validRanges)
+{
+    validRanges.clear();
+    validRanges.reserve(m_vkPushConstRanges.size());
+
+    for (auto& [offset, range] : m_vkPushConstRanges)
+    {
+        validRanges.emplace_back(range);
+    }
+
+    if (validRanges.empty())
+    {
+        return true;
+    }
+
+    for (int i = 0; i < validRanges.size() - 1; i++)
+    {
+        if (validRanges[i].offset + validRanges[i].size > validRanges[i + 1].offset)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }

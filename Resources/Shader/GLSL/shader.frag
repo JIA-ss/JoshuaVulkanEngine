@@ -30,8 +30,8 @@ void main() {
     vec3 specularColor = specularCoeffi * spec * specularTex;
 
     vec3 finalColor = (diffuseColor + specularColor);
-    vec3 gammaOutput = pow(finalColor, vec3(1.0/2.2)) * modelColor.rgb;
+    // finalColor = pow(finalColor, vec3(1.0/2.2)) * modelColor.rgb;
 
-    outColor = vec4(gammaOutput, 1.0);
+    outColor = vec4(finalColor, 1.0);
     // outColor = vec4(fragColor, 1.0);
 }

@@ -39,8 +39,6 @@ layout(location = 16) out float lightNum;
 layout(location = 17) out vec4 lightPosition[5];
 layout(location = 22) out vec4 lightColor[5];
 
-layout(location = 27) out vec4 modelColor;
-
 // ????
 const mat4 biasMat = mat4(
     // 1 column
@@ -65,11 +63,6 @@ void main() {
     lightNum = lightUbo.lightNum;
 
 
-    vec3 T = normalize(vec3(modelUbo.model * vec4(inTangent,   0.0)));
-    vec3 B = normalize(vec3(modelUbo.model * vec4(inBittangent, 0.0)));
-    vec3 N = normalize(vec3(modelUbo.model * vec4(inNormal,    0.0)));
-    TBN = mat3(T, B, N);
-
     for (int lightIdx = 0; lightIdx < lightNum; lightIdx++)
     {
         lightPosition[lightIdx] = lightUbo.position[lightIdx];
@@ -77,5 +70,4 @@ void main() {
     }
 
     modelNormal = mat3(modelUbo.model) * inNormal.xyz;
-    modelColor = modelUbo.color;
 }

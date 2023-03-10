@@ -56,14 +56,14 @@ VulkanRenderPipeline* VulkanRenderPipelineBuilder::build()
     if (!m_VulkanMultisampleState) m_VulkanMultisampleState.reset(new VulkanMultisampleState(sampleCount));
     if (!m_VulkanDepthStencilState) m_VulkanDepthStencilState.reset(new VulkanDepthStencilState());
     if (!m_VulkanColorBlendState) m_VulkanColorBlendState.reset(new VulkanColorBlendState());
-    assert(m_VulkanRenderPass); // m_VulkanRenderPass.reset(new VulkanRenderPass(m_vulkanDevice, m_vulkanDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, sampleCount));
+    assert(m_renderpass); // m_VulkanRenderPass.reset(new VulkanRenderPass(m_vulkanDevice, m_vulkanDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format, depthForamt, sampleCount));
     if (!m_VulkanPipelineLayout) m_VulkanPipelineLayout.reset(new VulkanPipelineLayout(m_vulkanDevice, m_descriptorSetLayouts));
 
     return new VulkanRenderPipeline(
         m_vulkanDevice,
         m_shaderSet,
         m_parent,
-        m_VulkanRenderPass,
+        m_renderpass,
         m_VulkanDynamicState,
         m_VulkanInputAssemblyState,
         m_VulkanVertexInputState,
@@ -93,7 +93,7 @@ VulkanRenderPipeline::VulkanRenderPipeline(
     VulkanDevice* device,
     std::shared_ptr<VulkanShaderSet> shaderset,
     VulkanRenderPipeline* input,
-    std::shared_ptr<VulkanRenderPass> renderpass,
+    VulkanRenderPass* renderpass,
     std::shared_ptr<VulkanDynamicState> dynamicState,
     std::shared_ptr<VulkanInputAssemblyState> inputAssemblyState,
     std::shared_ptr<VulkanVertextInputState> vertexInputState,
@@ -153,7 +153,7 @@ VulkanRenderPipeline::VulkanRenderPipeline(
                 // layout
                 .setLayout(m_pVulkanPipelineLayout->GetVkPieplineLayout())
                 // render pass
-                .setRenderPass(m_pVulkanRenderPass.lock()->GetVkRenderPass());
+                .setRenderPass(m_pVulkanRenderPass->GetVkRenderPass());
     if (m_parent)
     {
         createInfo.setFlags(vk::PipelineCreateFlagBits::eDerivative)

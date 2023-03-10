@@ -38,6 +38,7 @@ protected:
     void render() override;
 
 protected:
+    void prepareLayout() override;
     void preparePipeline();
     void prepareFrameBuffer();
     void prepareCamera();

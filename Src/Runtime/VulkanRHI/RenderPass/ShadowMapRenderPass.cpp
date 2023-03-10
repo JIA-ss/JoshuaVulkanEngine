@@ -313,11 +313,10 @@ void ShadowMapRenderPass::initPipelines()
     for (int i = 0; i < m_num; i++)
     {
         std::unique_ptr<VulkanRenderPipeline> pipeline =
-            VulkanRenderPipelineBuilder(m_pDevice)
+            VulkanRenderPipelineBuilder(m_pDevice, m_pRenderPasses[i].get())
                 .SetVulkanPipelineLayout(m_pPipelineLayout)
                 .SetshaderSet(shaderSet)
                 .SetVulkanRasterizationState(rasterization)
-                .SetVulkanRenderPass(m_pRenderPasses[i])
                 .SetVulkanDynamicState(dynamic_state)
                 .buildUnique();
         m_pRenderPasses[i]->AddGraphicRenderPipeline("shadowmap", std::move(pipeline));

@@ -29,9 +29,9 @@ public:
 protected:
     VulkanDevice* m_vulkanDevice = nullptr;
     VulkanRenderPipeline* m_parent;
+    VulkanRenderPass* m_pVulkanRenderPass;
 
     std::shared_ptr<VulkanShaderSet> m_vulkanShaderSet = nullptr;
-
     std::shared_ptr<VulkanDynamicState> m_pVulkanDynamicState;
     std::shared_ptr<VulkanInputAssemblyState> m_pVulkanInputAssemblyState;
     std::shared_ptr<VulkanVertextInputState> m_pVulkanVertexInputState;
@@ -40,7 +40,7 @@ protected:
     std::shared_ptr<VulkanMultisampleState> m_pVulkanMultisampleState;
     std::shared_ptr<VulkanDepthStencilState> m_pVulkanDepthStencilState;
     std::shared_ptr<VulkanColorBlendState> m_pVulkanColorBlendState;
-    std::weak_ptr<VulkanRenderPass> m_pVulkanRenderPass;
+
     std::shared_ptr<VulkanPipelineLayout> m_pVulkanPipelineLayout;
 
     vk::Pipeline m_vkPipeline;
@@ -51,7 +51,7 @@ public:
         VulkanDevice* device,
         std::shared_ptr<VulkanShaderSet> shaderset,
         VulkanRenderPipeline* input = nullptr,
-        std::shared_ptr<VulkanRenderPass> renderpass = nullptr,
+        VulkanRenderPass* renderpass = nullptr,
         std::shared_ptr<VulkanDynamicState> dynamicState= nullptr,
         std::shared_ptr<VulkanInputAssemblyState> inputAssemblyState= nullptr,
         std::shared_ptr<VulkanVertextInputState> vertexInputState= nullptr,
@@ -67,9 +67,9 @@ public:
     inline std::shared_ptr<VulkanPipelineLayout> GetVulkanPipelineLayout() { return m_pVulkanPipelineLayout; }
     inline VulkanDynamicState* GetPVulkanDynamicState() { return m_pVulkanDynamicState.get(); }
     inline VulkanDevice* GetPVulkanDevice() { return m_vulkanDevice; }
-    inline std::shared_ptr<VulkanRenderPass> GetVulkanRenderPass() { return m_pVulkanRenderPass.lock(); }
+    inline VulkanRenderPass* GetVulkanRenderPass() { return m_pVulkanRenderPass; }
     inline vk::Pipeline& GetVkPipeline() { return m_vkPipeline; }
-    inline vk::RenderPass& GetVkRenderPass() { return m_pVulkanRenderPass.lock()->GetVkRenderPass(); }
+    inline vk::RenderPass& GetVkRenderPass() { return m_pVulkanRenderPass->GetVkRenderPass(); }
     inline vk::PipelineLayout& GetVkPipelineLayout() { return m_pVulkanPipelineLayout->GetVkPieplineLayout(); }
 };
 
@@ -80,6 +80,7 @@ class VulkanRenderPipelineBuilder
 protected:
     VulkanDevice* m_vulkanDevice = nullptr;
     VulkanRenderPipeline* m_parent;
+    VulkanRenderPass* m_renderpass;
 
     std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> m_descriptorSetLayouts;
 
@@ -92,12 +93,16 @@ protected:
     BUILDER_SHARED_PTR_SET_FUNC(VulkanRenderPipelineBuilder, VulkanMultisampleState, VulkanMultisampleState)
     BUILDER_SHARED_PTR_SET_FUNC(VulkanRenderPipelineBuilder, VulkanDepthStencilState, VulkanDepthStencilState)
     BUILDER_SHARED_PTR_SET_FUNC(VulkanRenderPipelineBuilder, VulkanColorBlendState, VulkanColorBlendState)
-    BUILDER_SHARED_PTR_SET_FUNC(VulkanRenderPipelineBuilder, VulkanRenderPass, VulkanRenderPass)
+
     BUILDER_SHARED_PTR_SET_FUNC(VulkanRenderPipelineBuilder, VulkanPipelineLayout, VulkanPipelineLayout)
+
 public:
-    explicit VulkanRenderPipelineBuilder(VulkanDevice* device, VulkanRenderPipeline* parent = nullptr)
+
+public:
+    explicit VulkanRenderPipelineBuilder(VulkanDevice* device, VulkanRenderPass* rp, VulkanRenderPipeline* parent = nullptr)
         : m_vulkanDevice(device)
         , m_parent(parent)
+        , m_renderpass(rp)
     {}
 
     VulkanRenderPipelineBuilder& AddDescriptorLayout(std::shared_ptr<VulkanDescriptorSetLayout> layout);

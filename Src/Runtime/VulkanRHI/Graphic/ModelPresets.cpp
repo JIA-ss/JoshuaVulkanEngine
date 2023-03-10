@@ -127,6 +127,31 @@ Util::Model::MeshData GenerateSphereMeshData(unsigned int X_SEGMENTS = 64, unsig
     return meshdata;
 }
 
+Util::Model::MeshData ModelPresets::GetCubeMeshData() { return cubeMeshData; }
+
+Util::Model::MaterialData ModelPresets::GetSkyboxMaterialData()
+{
+    static Util::Model::MaterialData skyMat
+    {
+        "skybox",
+        std::vector<Util::Model::TextureData>
+        {
+            Util::Model::TextureData
+            {
+                "cube", aiTextureType_DIFFUSE, aiTextureMapMode_Clamp, aiTextureMapMode_Clamp,
+                Util::Texture::RawData::Load(
+                    Util::File::getResourcePath() / "Texture/cubemap_yokohama_rgba.ktx",
+                    Util::Texture::RawData::Format::eRgbAlpha, true,
+                    vk::Format::eR8G8B8A8Unorm
+                    // vk::Format::eR16G16B16A16Sfloat // hdr
+                )
+            }
+        }
+    };
+
+    return skyMat;
+}
+
 
 std::unique_ptr<Model> ModelPresets::CreatePlaneModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout)
 {
@@ -361,23 +386,8 @@ std::unique_ptr<Model> ModelPresets::CreateCerberusPBRModel(VulkanDevice* device
 std::unique_ptr<Model> ModelPresets::CreateSkyboxModel(VulkanDevice* device, VulkanDescriptorSetLayout* layout)
 {
 
-    Util::Model::MaterialData skyboxMaterialData =
-    {
-        "skybox",
-        std::vector<Util::Model::TextureData>
-        {
-            Util::Model::TextureData
-            {
-                "cube", aiTextureType_DIFFUSE, aiTextureMapMode_Clamp, aiTextureMapMode_Clamp,
-                Util::Texture::RawData::Load(
-                    Util::File::getResourcePath() / "Texture/cubemap_yokohama_rgba.ktx",
-                    Util::Texture::RawData::Format::eRgbAlpha, true,
-                    vk::Format::eR8G8B8A8Unorm
-                    // vk::Format::eR16G16B16A16Sfloat // hdr
-                )
-            }
-        }
-    };
+    Util::Model::MaterialData skyboxMaterialData = GetSkyboxMaterialData();
+
 
     Util::Model::ModelData cubeModelData =
     {

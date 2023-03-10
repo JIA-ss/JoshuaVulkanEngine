@@ -150,6 +150,5 @@ VulkanRenderPipeline* VulkanRenderPass::GetGraphicRenderPipeline(const std::stri
             return pipeline.pipeline.get();
         }
     }
-    assert(false);
     return nullptr;
 }

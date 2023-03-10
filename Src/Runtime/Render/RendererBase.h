@@ -10,6 +10,7 @@
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "vulkan/vulkan_handles.hpp"
+#include "vulkan/vulkan_structs.hpp"
 #include <functional>
 #include <list>
 #include <memory>
@@ -91,7 +92,8 @@ protected:
 
     void recreateSwapchain();
 
-    virtual void prepareLayout();
+    void prepareDescriptorLayout();
+    virtual void prepareLayout() = 0;
 private:
 
     void initCmd();

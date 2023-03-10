@@ -1,6 +1,8 @@
 #pragma once
 #include "Runtime/Render/Light.h"
+#include "Runtime/Render/Prefilter/Ibl.h"
 #include "Runtime/VulkanRHI/Graphic/Model.h"
+#include "vulkan/vulkan_structs.hpp"
 #include <vulkan/vulkan.hpp>
 #include <Runtime/Render/RendererBase.h>
 
@@ -14,6 +16,7 @@ protected:
     std::unique_ptr<RHI::Model> m_pSkyboxModel;
     std::unique_ptr<Camera> m_pCamera;
     std::unique_ptr<Lights> m_pLight;
+    std::unique_ptr<Prefilter::Ibl> m_pIbl;
     uint32_t m_imageIdx = 0;
 
 public:
@@ -31,13 +34,20 @@ protected:
     void render() override;
 
 protected:
+    void prepareLayout() override;
     void preparePipeline();
     void prepareFrameBuffer();
     void prepareCamera();
     void prepareLight();
     void prepareInputCallback();
-
+    void prepareIbl();
     void updateLightUniformBuf(uint32_t currentFrameIdx);
+private:
+    struct PushConstant
+    {
+        glm::vec4 vec4 = glm::vec4(1.0);
+    };
+    PushConstant m_pushConstant;
 };
 
 }

@@ -25,6 +25,7 @@ protected:
     void prepareRenderpass() override;
     void render() override;
 
+    void prepareLayout() override;
     void prepareCamera();
     void prepareLight();
     void prepareModel();

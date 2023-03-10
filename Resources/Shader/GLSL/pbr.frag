@@ -7,14 +7,12 @@ layout(set = 1, binding = 3) uniform sampler2D roughnessTex;
 layout(set = 1, binding = 4) uniform sampler2D normalTex;
 layout(set = 1, binding = 5) uniform sampler2D aoTex;
 
-// SET2 SHADOWMAP
-layout(set = 2, binding = 1) uniform sampler2D shadowMap1;
-layout(set = 2, binding = 2) uniform sampler2D shadowMap2;
-layout(set = 2, binding = 3) uniform sampler2D shadowMap3;
-layout(set = 2, binding = 4) uniform sampler2D shadowMap4;
-layout(set = 2, binding = 5) uniform sampler2D shadowMap5;
+// SET2 IBL
+layout(set = 2, binding = 1) uniform samplerCube irradianceTex;
+layout(set = 2, binding = 2) uniform samplerCube preFilterTex;
+layout(set = 2, binding = 3) uniform sampler2D brdfLUT;
 
-layout(location = 0) in mat3 TBN;
+
 layout(location = 12) in vec4 fragPosition;
 layout(location = 13) in vec2 fragTexCoord;
 layout(location = 14) in vec3 modelNormal;
@@ -24,11 +22,14 @@ layout(location = 16) in float lightNum;
 layout(location = 17) in vec4 lightPosition[5];
 layout(location = 22) in vec4 lightColor[5];
 
-layout(location = 27) in vec4 modelColor;
+layout (location = 0) out vec4 outColor;
 
 
-layout(location = 0) out vec4 outColor;
 
+
+layout(push_constant) uniform PushConsts {
+	layout (offset = 0) float useIbl;
+} consts;
 /*
 
 Energy:                 Q
@@ -106,7 +107,10 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
-
+vec3 fresnelSchlickR(float cosTheta, vec3 F0, float roughness)
+{
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
 
 
 vec3 getNormalFromMap()
@@ -126,6 +130,30 @@ vec3 getNormalFromMap()
     return normalize(TBN * tangentNormal);
 }
 
+vec3 prefilteredReflection(vec3 R, float roughness)
+{
+	const float MAX_REFLECTION_LOD = 4.0; // todo: param/const
+	float lod = roughness * MAX_REFLECTION_LOD;
+	float lodf = floor(lod);
+	float lodc = ceil(lod);
+	vec3 a = textureLod(preFilterTex, R, lodf).rgb;
+	vec3 b = textureLod(preFilterTex, R, lodc).rgb;
+	return mix(a, b, lod - lodf);
+}
+
+
+// From http://filmicgames.com/archives/75
+vec3 Uncharted2Tonemap(vec3 x)
+{
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
 void main() {
     vec3 albedo = texture(albedoTex, fragTexCoord).rgb;
     // albedo = pow(albedo, vec3(2.2));
@@ -135,6 +163,7 @@ void main() {
 
     vec3 N = getNormalFromMap();
     vec3 V = normalize(camPos - fragPosition.xyz/fragPosition.w);
+    vec3 R = reflect(-V, N);
 
     vec3 Lo = vec3(0.0);
     vec3 F = vec3(0.0);
@@ -186,12 +215,41 @@ void main() {
         Lo += (kD * albedo / PI + specularColor) * /*radiance * */ NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
 
+    vec3 samplerDir = normalize(modelNormal);
+
 
     vec3 ambient = vec3(0.03) * albedo * ao;
-    vec3 color = ambient + Lo;
-    // color = color / (color + vec3(1.0));
 
-    color = pow(color, vec3(1.0/2.2));
+    if (consts.useIbl == 1.0)
+    {
+        vec3 iblIrradianceColor = texture(irradianceTex, samplerDir).rgb / 0.03;
+        vec3 iblPrefilterEnvColor = prefilteredReflection(R, roughness).rgb;
+        vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+
+        vec3 iblDiffuse = iblIrradianceColor * albedo;
+        vec3 iblF = fresnelSchlickR(max(dot(N, V), 0.0), F0, roughness);
+        vec3 iblSpecular = iblPrefilterEnvColor * (iblF * brdf.x + brdf.y);
+        vec3 iblKd = 1.0 - iblF;
+        iblKd *= 1.0 - metallic;
+        vec3 iblAmbient = (iblKd * iblDiffuse + iblSpecular);
+        ambient = iblAmbient * ao;
+    }
+
+    vec3 color = ambient + Lo;
+
+	// Tone mapping
+	color = Uncharted2Tonemap(color * 0.2);
+	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2)));
+	// Gamma correction
+	color = pow(color, vec3(1.0 / 2.2));
+
+	outColor = vec4(color, 1.0);
+
+
+
+    // color = color / (color + vec3(1.0));
+    // color = pow(color, vec3(1.0/2.2));
 
     outColor = vec4(color,1.0);
+    // outColor = vec4(prefilteredReflection(R, roughness), 1.0);
 }

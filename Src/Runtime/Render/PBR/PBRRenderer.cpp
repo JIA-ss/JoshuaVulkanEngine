@@ -1,6 +1,7 @@
 #include "PBRRenderer.h"
 #include "Runtime/Platform/PlatformInputMonitor.h"
 #include "Runtime/Render/Camera.h"
+#include "Runtime/Render/Prefilter/Ibl.h"
 #include "Runtime/VulkanRHI/Graphic/Model.h"
 #include "Runtime/VulkanRHI/Graphic/ModelPresets.h"
 #include "Runtime/VulkanRHI/Graphic/Vertex.h"
@@ -15,6 +16,7 @@
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_enums.hpp"
+#include "vulkan/vulkan_structs.hpp"
 #include <Util/Modelutil.h>
 #include <Util/Fileutil.h>
 #include <Util/Mathutil.h>
@@ -41,6 +43,7 @@ PBRRenderer::~PBRRenderer()
 
 void PBRRenderer::prepare()
 {
+    prepareLayout();
     // prepare camera
     prepareCamera();
     // prepare Light
@@ -49,6 +52,10 @@ void PBRRenderer::prepare()
     prepareModel();
     // prepare callback
     prepareInputCallback();
+
+    // prepareIbl
+    prepareIbl();
+
     // prepare renderpass
     prepareRenderpass();
     // prepare pipeline
@@ -112,7 +119,10 @@ void PBRRenderer::render()
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     m_vkCmds[m_frameIdxInFlight].begin(beginInfo);
     {
+        m_pPipelineLayout->PushConstantT(m_vkCmds[m_frameIdxInFlight], 0, m_pushConstant, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+
         std::vector<vk::DescriptorSet> tobinding;
+        m_pIbl->FillToBindingDescriptorSets(tobinding);
 
         std::vector<vk::ClearValue> clears(2);
         clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
@@ -126,6 +136,7 @@ void PBRRenderer::render()
 
             m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "skybox");
             m_pSkyboxModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+
 
             m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "default");
             m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
@@ -219,6 +230,7 @@ void PBRRenderer::prepareInputCallback()
     static bool BtnLeftPressing = false;
     static bool BtnRightPressing = false;
     static bool LeftShiftPressing = false;
+    static bool LeftControlPressing = false;
 
     auto inputMonitor = m_pPhysicalDevice->GetPWindow()->GetInputMonitor();
 
@@ -234,6 +246,15 @@ void PBRRenderer::prepareInputCallback()
             {
                 m_pLight->GetLightTransformation(i).Translate(move);
             }
+        }
+        else if (LeftControlPressing)
+        {
+            glm::vec3 dir = m_pCamera->GetDirection();
+            glm::vec3 right = m_pCamera->GetRight();
+            glm::vec3 move = dir * (float)yoffset;
+            xoffset = -xoffset;
+            move += right * (float)xoffset;
+            m_pModel->GetTransformation().Translate(move);
         }
         else
         {
@@ -282,11 +303,23 @@ void PBRRenderer::prepareInputCallback()
     });
 
 
+    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::TAB, [&](){
+        m_pushConstant.vec4.x = 1 - m_pushConstant.vec4.x;
+    });
+
+
     inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::LEFT_SHIFT, [&](){
         LeftShiftPressing = true;
     });
     inputMonitor->AddKeyboardUpCallback(platform::Keyboard::Key::LEFT_SHIFT, [&](){
         LeftShiftPressing = false;
+    });
+
+    inputMonitor->AddKeyboardPressedCallback(platform::Keyboard::Key::LEFT_CONTROL, [&](){
+        LeftControlPressing = true;
+    });
+    inputMonitor->AddKeyboardUpCallback(platform::Keyboard::Key::LEFT_CONTROL, [&](){
+        LeftControlPressing = false;
     });
 
     inputMonitor->AddMousePressedCallback(platform::Mouse::Button::LEFT, [&](){ BtnLeftPressing = true; });
@@ -311,6 +344,11 @@ void PBRRenderer::prepareInputCallback()
                                                                 .Rotate(glm::vec3(0,-offset.x / 30,0));
                 }
             }
+            else if (LeftControlPressing)
+            {
+                m_pModel->GetTransformation().Rotate(glm::vec3(-offset.y / 30,0,0))
+                                                                .Rotate(glm::vec3(0,-offset.x / 30,0));
+            }
             else
             {
                 m_pCamera->GetVPMatrix().Rotate(glm::vec3(-offset.y / 30,0,0))
@@ -327,6 +365,12 @@ void PBRRenderer::prepareInputCallback()
                     m_pLight->GetLightTransformation(i).Translate(move);
                 }
             }
+            else if (LeftControlPressing)
+            {
+                glm::vec3 dir = m_pCamera->GetDirection();
+                glm::vec3 move = dir * -offset.y / 100.f;
+                m_pModel->GetTransformation().Translate(move);
+            }
             else
             {
                 glm::vec3 dir = m_pCamera->GetDirection();
@@ -336,7 +380,11 @@ void PBRRenderer::prepareInputCallback()
         }
     });
 }
-
+void PBRRenderer::prepareIbl()
+{
+    m_pIbl.reset(new Prefilter::Ibl(m_pDevice.get()));
+    m_pIbl->Prepare();
+}
 
 void PBRRenderer::prepareRenderpass()
 {
@@ -346,13 +394,38 @@ void PBRRenderer::prepareRenderpass()
     m_pRenderPass = std::make_shared<RHI::VulkanRenderPass>(m_pDevice.get(), colorFormat, depthForamt, sampleCount);
 }
 
+
+void PBRRenderer::prepareLayout()
+{
+    std::map<int, vk::PushConstantRange> pushconstants
+    {
+        {
+            0,
+            vk::PushConstantRange
+            {
+                vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+                0,
+                sizeof(m_pushConstant)
+            }
+        }
+    };
+
+
+    m_pPipelineLayout.reset(
+        new RHI::VulkanPipelineLayout(
+            m_pDevice.get(),
+            {m_pSet0UniformSetLayout.lock(), m_pSet1SamplerSetLayout.lock(), m_pSet2ShadowmapSamplerLayout.lock()}
+            ,pushconstants
+            )
+        );
+}
+
 void PBRRenderer::preparePipeline()
 {
     std::shared_ptr<RHI::VulkanShaderSet> shaderSet = std::make_shared<RHI::VulkanShaderSet>(m_pDevice.get());
     shaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/pbr.vert.spv", vk::ShaderStageFlagBits::eVertex);
     shaderSet->AddShader(Util::File::getResourcePath() / "Shader/GLSL/SPIR-V/pbr.frag.spv", vk::ShaderStageFlagBits::eFragment);
-    auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
-                            .SetVulkanRenderPass(m_pRenderPass)
+    auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                             .SetshaderSet(shaderSet)
                             .SetVulkanPipelineLayout(m_pPipelineLayout)
                             .buildUnique();
@@ -374,10 +447,9 @@ void PBRRenderer::preparePipeline()
                     .SetCullMode(vk::CullModeFlagBits::eNone)
                     .build();
 
-        pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get())
+        pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                     .SetVulkanDepthStencilState(depthStencilState)
                     .SetVulkanRasterizationState(raster)
-                    .SetVulkanRenderPass(m_pRenderPass)
                     .SetshaderSet(skyboxShaderSet)
                     .SetVulkanPipelineLayout(m_pPipelineLayout)
                     .buildUnique();
