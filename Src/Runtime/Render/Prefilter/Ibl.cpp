@@ -198,6 +198,7 @@ void Ibl::generateIrradianceCubeMap()
         auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice, m_pIrradianceRenderPass.get())
                     .SetshaderSet(shader)
                     .SetVulkanPipelineLayout(m_pPipelineLayout)
+                    .SetVulkanMultisampleState(std::make_shared<RHI::VulkanMultisampleState>(vk::SampleCountFlagBits::e1))
                     .buildUnique();
         m_pIrradianceRenderPass->AddGraphicRenderPipeline("irrandiance", std::move(pipeline));
     }
@@ -400,6 +401,7 @@ void Ibl::generatePrefilterEnvCubeMap()
         auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice, m_pPrefilterEnvRenderPass.get())
                     .SetshaderSet(shader)
                     .SetVulkanPipelineLayout(m_pPipelineLayout)
+                    .SetVulkanMultisampleState(std::make_shared<RHI::VulkanMultisampleState>(vk::SampleCountFlagBits::e1))
                     .buildUnique();
         m_pPrefilterEnvRenderPass->AddGraphicRenderPipeline("prefilterEnvironment", std::move(pipeline));
     }

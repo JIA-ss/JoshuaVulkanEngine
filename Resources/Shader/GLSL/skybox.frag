@@ -22,11 +22,11 @@ void main()
 {
     vec3 color;
 
-    if (consts.showIrradiance == 1.0)
-    {
-        color = texture(irradianceTex, inUVW).rgb;
-    }
-    else
+    // if (consts.showIrradiance == 1.0)
+    // {
+    //     color = texture(irradianceTex, inUVW).rgb;
+    // }
+    // else
     {
         color = texture(samplerCubeMap, inUVW).rgb;
     }

@@ -26,7 +26,7 @@ private:
     std::vector<vk::Image> m_vkImages;
     std::vector<vk::ImageView> m_vkImageViews;
     std::unique_ptr<VulkanImageResource> m_pVulkanDepthImage;
-    std::unique_ptr<VulkanImageResource> m_pVulkanResolveColorImage;
+    std::unique_ptr<VulkanImageResource> m_pVulkanSuperSamplerColorImage;
     std::vector<vk::Framebuffer> m_vkFramebuffers;
 
     //VulkanInstance* m_pVulkanInstance;

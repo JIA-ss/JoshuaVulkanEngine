@@ -5,6 +5,7 @@
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Util/Fileutil.h"
 #include "vulkan/vulkan.hpp"
+#include "vulkan/vulkan_enums.hpp"
 #include <glm/gtx/string_cast.hpp>
 #include <iostream>
 #include <memory>
@@ -316,7 +317,7 @@ void EditorRenderer::prepareRenderpass()
 {
     vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
     vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
-    vk::SampleCountFlagBits sampleCount = m_pDevice->GetVulkanPhysicalDevice()->GetSampleCount();
+    vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
     m_pRenderPass = std::make_shared<RHI::VulkanRenderPass>(m_pDevice.get(), colorFormat, depthForamt, sampleCount);
 }
 
@@ -328,6 +329,7 @@ void EditorRenderer::preparePipeline()
     auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                             .SetshaderSet(shaderSet)
                             .SetVulkanPipelineLayout(m_pPipelineLayout)
+                            .SetVulkanMultisampleState(std::make_shared<RHI::VulkanMultisampleState>(vk::SampleCountFlagBits::e1))
                             .buildUnique();
     m_pRenderPass->AddGraphicRenderPipeline("default", std::move(pipeline));
 
@@ -341,6 +343,7 @@ void EditorRenderer::preparePipeline()
                         .SetVulkanRasterizationState(rasterization)
                         .SetVulkanPipelineLayout(m_pPipelineLayout)
                         .SetshaderSet(shaderSet)
+                        .SetVulkanMultisampleState(std::make_shared<RHI::VulkanMultisampleState>(vk::SampleCountFlagBits::e1))
                         .buildUnique();
     m_pRenderPass->AddGraphicRenderPipeline("frustum", std::move(rawLinePipeline));
 }

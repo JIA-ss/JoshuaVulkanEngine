@@ -56,7 +56,7 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice* device)
 VulkanSwapchain::~VulkanSwapchain()
 {
     m_pVulkanDepthImage.reset();
-    m_pVulkanResolveColorImage.reset();
+    m_pVulkanSuperSamplerColorImage.reset();
     for (auto& imgView : m_vkImageViews)
     {
         m_pVulkanDevice->GetVkDevice().destroyImageView(imgView);
@@ -155,8 +155,8 @@ void VulkanSwapchain::createDepthAndResolveColorImage()
         config.format = m_swapchainInfo.format.format;
         config.imageUsage = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
         config.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
-        m_pVulkanResolveColorImage.reset(new VulkanImageResource(m_pVulkanDevice, vk::MemoryPropertyFlagBits::eDeviceLocal, config));
-        // m_pVulkanResolveColorImage->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
+        m_pVulkanSuperSamplerColorImage.reset(new VulkanImageResource(m_pVulkanDevice, vk::MemoryPropertyFlagBits::eDeviceLocal, config));
+        // m_pVulkanSuperSamplerColorImage->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
     }
 }
 
@@ -172,14 +172,17 @@ void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPass* renderpass)
         vk::FramebufferCreateInfo createInfo;
         std::vector<vk::ImageView> attachments;
         attachments.reserve(4);
-
-        attachments.push_back(m_vkImageViews[i]);
-        attachments.push_back(m_pVulkanDepthImage->GetVkImageView());
-        if (m_pVulkanResolveColorImage)
+        if (m_pVulkanSuperSamplerColorImage)
         {
-            attachments.push_back(m_pVulkanResolveColorImage->GetVkImageView());
+            attachments.push_back(m_pVulkanSuperSamplerColorImage->GetVkImageView());
+            attachments.push_back(m_pVulkanDepthImage->GetVkImageView());
+            attachments.push_back(m_vkImageViews[i]);
         }
-
+        else
+        {
+            attachments.push_back(m_vkImageViews[i]);
+            attachments.push_back(m_pVulkanDepthImage->GetVkImageView());
+        }
 
         createInfo.setAttachments(attachments)
                     .setWidth(windowWidth)
