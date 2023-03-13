@@ -222,7 +222,7 @@ void main() {
 
     if (consts.useIbl == 1.0)
     {
-        vec3 iblIrradianceColor = texture(irradianceTex, samplerDir).rgb / 0.03;
+        vec3 iblIrradianceColor = texture(irradianceTex, samplerDir).rgb;
         vec3 iblPrefilterEnvColor = prefilteredReflection(R, roughness).rgb;
         vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
 
@@ -230,7 +230,7 @@ void main() {
         vec3 iblF = fresnelSchlickR(max(dot(N, V), 0.0), F0, roughness);
         vec3 iblSpecular = iblPrefilterEnvColor * (iblF * brdf.x + brdf.y);
         vec3 iblKd = 1.0 - iblF;
-        iblKd *= 1.0 - metallic;
+        // iblKd *= 1.0 - metallic;
         vec3 iblAmbient = (iblKd * iblDiffuse + iblSpecular);
         ambient = iblAmbient * ao;
     }
@@ -238,8 +238,10 @@ void main() {
     vec3 color = ambient + Lo;
 
 	// Tone mapping
-	color = Uncharted2Tonemap(color * 0.2);
-	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2)));
+	// color = Uncharted2Tonemap(color * 0.2);
+	// color = color * (1.0f / Uncharted2Tonemap(vec3(11.2)));
+
+    color = vec3(1.0) - exp(-color * 1.0);
 	// Gamma correction
 	color = pow(color, vec3(1.0 / 2.2));
 
