@@ -44,6 +44,11 @@ PBRRenderer::~PBRRenderer()
 void PBRRenderer::prepare()
 {
     prepareLayout();
+    preparePresentFramebufferAttachments();
+    prepareRenderpass();
+    preparePresentFramebuffer();
+    preparePipeline();
+
     // prepare camera
     prepareCamera();
     // prepare Light
@@ -56,12 +61,7 @@ void PBRRenderer::prepare()
     // prepareIbl
     prepareIbl();
 
-    // prepare renderpass
-    prepareRenderpass();
-    // prepare pipeline
-    preparePipeline();
-    // prepare framebuffer
-    prepareFrameBuffer();
+
 }
 
 void PBRRenderer::render()
@@ -127,6 +127,10 @@ void PBRRenderer::render()
         std::vector<vk::ClearValue> clears(2);
         clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
         clears[1] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
+        if (m_pPhysicalDevice->IsUsingMSAA())
+        {
+            clears.push_back(clears[0]);
+        }
         m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{vk::Offset2D{0,0}, m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent}, m_pDevice->GetVulkanPresentFramebuffer(m_imageIdx)->GetVkFramebuffer());
         {
             auto& extent = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent;
@@ -386,14 +390,6 @@ void PBRRenderer::prepareIbl()
     m_pIbl->Prepare();
 }
 
-void PBRRenderer::prepareRenderpass()
-{
-    vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
-    vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
-    vk::SampleCountFlagBits sampleCount = m_pDevice->GetVulkanPhysicalDevice()->GetSampleCount();
-    m_pRenderPass = std::make_shared<RHI::VulkanRenderPass>(m_pDevice.get(), colorFormat, depthForamt, sampleCount);
-}
-
 
 void PBRRenderer::prepareLayout()
 {
@@ -455,9 +451,4 @@ void PBRRenderer::preparePipeline()
                     .buildUnique();
     }
     m_pRenderPass->AddGraphicRenderPipeline("skybox", std::move(pipeline));
-}
-
-void PBRRenderer::prepareFrameBuffer()
-{
-    // m_pDevice->CreatePresentFramebuffer(m_pRenderPass.get());
 }
