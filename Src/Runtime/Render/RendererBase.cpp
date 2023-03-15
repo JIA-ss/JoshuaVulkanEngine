@@ -208,7 +208,7 @@ void RendererBase::recreateSwapchain()
         return;
     }
 
-    m_pDevice->ReCreateSwapchain(m_pRenderPass.get());
+    m_pDevice->ReCreateSwapchain(m_pRenderPass.get(), windowSetting.width, windowSetting.height, 1, m_VulkanPresentFramebufferAttachments, getPresentImageAttachmentId());
 }
 
 void RendererBase::prepareDescriptorLayout()

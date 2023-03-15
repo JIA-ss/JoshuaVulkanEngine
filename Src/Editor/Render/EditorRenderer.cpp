@@ -2,6 +2,7 @@
 #include "Editor/Editor.h"
 #include "Editor/Window/EditorWindow.h"
 #include "Runtime/VulkanRHI/Graphic/ModelPresets.h"
+#include "Runtime/VulkanRHI/PipelineStates/VulkanDynamicState.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Util/Fileutil.h"
 #include "vulkan/vulkan.hpp"
@@ -31,6 +32,11 @@ EditorRenderer::~EditorRenderer()
 void EditorRenderer::prepare()
 {
     prepareLayout();
+    preparePresentFramebufferAttachments();
+    prepareRenderpass();
+    preparePresentFramebuffer();
+    preparePipeline();
+
     // prepare camera
     prepareCamera();
     // prepare light
@@ -39,12 +45,6 @@ void EditorRenderer::prepare()
     prepareModel();
     // prepare callback
     prepareInputCallback();
-    // prepare renderpass
-    prepareRenderpass();
-    // prepare pipeline
-    preparePipeline();
-    // prepare framebuffer
-    prepareFrameBuffer();
 }
 
 void EditorRenderer::render()
@@ -92,7 +92,7 @@ void EditorRenderer::render()
     }
 
 
-    m_pCamera->UpdateUniformBuffer(m_imageIdx);
+    m_pCamera->UpdateUniformBuffer(m_frameIdxInFlight);
     m_pSceneCameraFrustumModel->GetTransformation().SetPosition(m_sceneCamera->GetPosition())
                 .SetRotation(m_sceneCamera->GetVPMatrix().GetRotation());
 
@@ -116,7 +116,7 @@ void EditorRenderer::render()
         std::vector<vk::ClearValue> clears(2);
         clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
         clears[1] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
-        m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{vk::Offset2D{0,0}, m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent}, m_pDevice->GetSwapchainFramebuffer(m_imageIdx));
+        m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{vk::Offset2D{0,0}, m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent}, m_pDevice->GetVulkanPresentFramebuffer(m_imageIdx)->GetVkFramebuffer());
         {
             {
                 // draw scene object
@@ -191,6 +191,50 @@ void EditorRenderer::prepareLayout()
             , {}
             )
         );
+}
+
+void EditorRenderer::preparePresentFramebufferAttachments()
+{
+    vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
+    vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
+
+    RHI::VulkanImageResource::Config imageConfig;
+    imageConfig.extent = vk::Extent3D{ m_pDevice->GetSwapchainExtent(), 1};
+    imageConfig.sampleCount = vk::SampleCountFlagBits::e1;
+
+    // present
+    {
+    }
+
+    // depth
+    {
+        imageConfig.format = m_pPhysicalDevice->QuerySupportedDepthFormat();
+        imageConfig.imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+        if (m_pPhysicalDevice->HasStencilComponent(imageConfig.format))
+        {
+            imageConfig.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+        }
+        else
+        {
+            imageConfig.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+        }
+        m_attachmentResources.depthVulkanImageResource.reset(new RHI::VulkanImageResource(m_pDevice.get(), vk::MemoryPropertyFlagBits::eDeviceLocal, imageConfig));
+    }
+
+
+    m_VulkanPresentFramebufferAttachments.resize( 2);
+    // present
+    m_VulkanPresentFramebufferAttachments[0].type = RHI::VulkanFramebuffer::kColor;
+    m_VulkanPresentFramebufferAttachments[0].resourceFinalLayout = vk::ImageLayout::ePresentSrcKHR;
+    m_VulkanPresentFramebufferAttachments[0].attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    m_VulkanPresentFramebufferAttachments[0].resourceFormat = colorFormat;
+
+    // depth
+    m_VulkanPresentFramebufferAttachments[1].type = RHI::VulkanFramebuffer::kDepthStencil;
+    m_VulkanPresentFramebufferAttachments[1].attachmentLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+    m_VulkanPresentFramebufferAttachments[1].resourceFinalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+    m_VulkanPresentFramebufferAttachments[1].resource = m_attachmentResources.depthVulkanImageResource->GetNative();
+    m_VulkanPresentFramebufferAttachments[1].resourceFormat = depthForamt;
 }
 
 void EditorRenderer::prepareCamera()
@@ -315,10 +359,21 @@ void EditorRenderer::prepareInputCallback()
 
 void EditorRenderer::prepareRenderpass()
 {
-    vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
-    vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
-    vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
-    m_pRenderPass = std::make_shared<RHI::VulkanRenderPass>(m_pDevice.get(), colorFormat, depthForamt, sampleCount);
+    m_pRenderPass = RHI::VulkanRenderPassBuilder(m_pDevice.get())
+                            .SetAttachments(m_VulkanPresentFramebufferAttachments)
+                            .buildUnique();
+}
+
+void EditorRenderer::preparePresentFramebuffer()
+{
+    m_pDevice->CreateVulkanPresentFramebuffer(
+        m_pRenderPass.get(),
+        m_pDevice->GetSwapchainExtent().width,
+        m_pDevice->GetSwapchainExtent().height,
+        1,
+        m_VulkanPresentFramebufferAttachments,
+        getPresentImageAttachmentId()
+    );
 }
 
 void EditorRenderer::preparePipeline()
@@ -339,16 +394,15 @@ void EditorRenderer::preparePipeline()
                                                                     .SetLineWidth(3.0f)
                                                                     .SetCullMode(vk::CullModeFlagBits::eNone)
                                                                     .build();
+    auto dynamicstate = std::make_shared<RHI::VulkanDynamicState>(std::vector<vk::DynamicState>{
+        vk::DynamicState::eViewport, vk::DynamicState::eScissor, vk::DynamicState::eLineWidth
+    });
     auto rawLinePipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                         .SetVulkanRasterizationState(rasterization)
                         .SetVulkanPipelineLayout(m_pPipelineLayout)
                         .SetshaderSet(shaderSet)
+                        .SetVulkanDynamicState(dynamicstate)
                         .SetVulkanMultisampleState(std::make_shared<RHI::VulkanMultisampleState>(vk::SampleCountFlagBits::e1))
                         .buildUnique();
     m_pRenderPass->AddGraphicRenderPipeline("frustum", std::move(rawLinePipeline));
-}
-
-void EditorRenderer::prepareFrameBuffer()
-{
-    m_pDevice->CreateSwapchainFramebuffer(m_pRenderPass.get());
 }

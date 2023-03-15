@@ -10,6 +10,15 @@ EDITOR_NAMESPACE_BEGIN
 
 class EditorRenderer : public Render::RendererBase
 {
+private:
+private:
+    struct AttachmentResource
+    {
+        // 0. present color
+        // 1. depth
+        std::unique_ptr<RHI::VulkanImageResource> depthVulkanImageResource;
+    };
+    AttachmentResource m_attachmentResources;
 public:
     explicit EditorRenderer(
                 Render::RendererBase* runtime_renderer,
@@ -22,17 +31,22 @@ public:
 
 protected:
     void prepare() override;
-    void prepareRenderpass() override;
+
     void render() override;
 
+
     void prepareLayout() override;
+    void preparePresentFramebufferAttachments() override;
+    void prepareRenderpass() override;
+    void preparePresentFramebuffer() override;
+    void preparePipeline() override;
+    int getPresentImageAttachmentId() override { return 0; }
+
     void prepareCamera();
     void prepareLight();
     void prepareModel();
     void prepareInputCallback();
 
-    void preparePipeline();
-    void prepareFrameBuffer();
 
 
     void updateLightUniformBuf(uint32_t currentFrameIdx);

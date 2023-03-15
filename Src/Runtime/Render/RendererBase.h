@@ -5,6 +5,7 @@
 #include "Runtime/VulkanRHI/Graphic/Model.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
+#include "Runtime/VulkanRHI/Resources/VulkanFramebuffer.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorPool.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorSets.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
@@ -41,6 +42,7 @@ protected:
     std::array<vk::Semaphore, MAX_FRAMES_IN_FLIGHT> m_vkSemaphoreImageAvaliables;
     std::array<vk::Semaphore, MAX_FRAMES_IN_FLIGHT> m_vkSemaphoreRenderFinisheds;
 
+    std::vector<RHI::VulkanFramebuffer::Attachment> m_VulkanPresentFramebufferAttachments;
 
     uint32_t m_frameIdxInFlight = 0;
 
@@ -84,16 +86,27 @@ public:
     static std::shared_ptr<RendererBase> StartUpRenderer(const std::string& demoName, const RHI::VulkanInstance::Config& instanceConfig, const RHI::VulkanPhysicalDevice::Config& physicalConfig);
 protected:
     virtual void prepare() = 0;
-    virtual void prepareRenderpass() = 0;
-    virtual void render() = 0;
 
+    // 1. layout
+    virtual void prepareLayout() = 0;
+    // 2. attachments
+    virtual void preparePresentFramebufferAttachments() = 0;
+    // 3. renderpass
+    virtual void prepareRenderpass() = 0;
+    // 4. framebuffer
+    virtual void preparePresentFramebuffer() = 0;
+    // 5. pipeline
+    virtual void preparePipeline() = 0;
+
+    // for recreate swapchain, need fill present vkImageView into the attachments
+    virtual int getPresentImageAttachmentId() = 0;
+
+    virtual void render() = 0;
     vk::CommandBuffer& beginCommand();
     void endCommand(vk::CommandBuffer& cmd);
 
     void recreateSwapchain();
-
     void prepareDescriptorLayout();
-    virtual void prepareLayout() = 0;
 private:
 
     void initCmd();

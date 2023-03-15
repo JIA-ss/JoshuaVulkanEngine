@@ -57,15 +57,23 @@ VulkanSwapchain::~VulkanSwapchain()
 {
     m_pVulkanDepthImage.reset();
     m_pVulkanSuperSamplerColorImage.reset();
-    for (auto& imgView : m_vkImageViews)
+    for (auto& imgNativef : m_nativePresentImages)
     {
-        m_pVulkanDevice->GetVkDevice().destroyImageView(imgView);
+        if (imgNativef.vkImageView)
+        {
+            m_pVulkanDevice->GetVkDevice().destroyImageView(imgNativef.vkImageView.value());
+        }
     }
-    for (auto& framebuffer: m_vkFramebuffers)
-    {
-        m_pVulkanDevice->GetVkDevice().destroyFramebuffer(framebuffer);
-    }
+
     m_pVulkanDevice->GetVkDevice().destroySwapchainKHR(m_vkSwapchain);
+}
+
+
+void VulkanSwapchain::GetVulkanPresentColorAttachment(int idx, VulkanFramebuffer::Attachment& attachment) const
+{
+    attachment.resource = m_nativePresentImages[idx];
+    attachment.resourceFinalLayout = vk::ImageLayout::ePresentSrcKHR;
+    attachment.attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
 }
 
 void VulkanSwapchain::queryInfo()
@@ -104,29 +112,40 @@ void VulkanSwapchain::queryInfo()
 
 void VulkanSwapchain::getImages()
 {
-    m_vkImages = m_pVulkanDevice->GetVkDevice().getSwapchainImagesKHR(m_vkSwapchain);
+    auto vkImages = m_pVulkanDevice->GetVkDevice().getSwapchainImagesKHR(m_vkSwapchain);
+    m_nativePresentImages.resize(vkImages.size());
+    for (int i = 0; i < vkImages.size(); i++)
+    {
+        m_nativePresentImages[i].vkImage = vkImages[i];
+    }
 }
 
 void VulkanSwapchain::createImageViews()
 {
-    m_vkImageViews.resize(m_vkImages.size());
-    for(int i = 0; i < m_vkImages.size(); i++)
+
+    VulkanImageResource::Config config;
+    config.subresourceRange
+            .setBaseMipLevel(0)
+            .setLevelCount(1)
+            .setBaseArrayLayer(0)
+            .setLayerCount(1)
+            .setAspectMask(vk::ImageAspectFlagBits::eColor)
+            ;
+    config.imageViewType = vk::ImageViewType::e2D;
+    config.format = m_swapchainInfo.format.format;
+
+    for(int i = 0; i < m_nativePresentImages.size(); i++)
     {
         vk::ImageViewCreateInfo createInfo;
         vk::ComponentMapping mapping;
-        vk::ImageSubresourceRange range;
-        range.setBaseMipLevel(0)
-                .setLevelCount(1)
-                .setBaseArrayLayer(0)
-                .setLayerCount(1)
-                .setAspectMask(vk::ImageAspectFlagBits::eColor);
 
-        createInfo.setImage(m_vkImages[i])
-                    .setViewType(vk::ImageViewType::e2D)
+        createInfo.setImage(m_nativePresentImages[i].vkImage.value())
+                    .setViewType(config.imageViewType)
                     .setComponents(mapping)
-                    .setFormat(m_swapchainInfo.format.format)
-                    .setSubresourceRange(range);
-        m_vkImageViews[i] = m_pVulkanDevice->GetVkDevice().createImageView(createInfo);
+                    .setFormat(config.format)
+                    .setSubresourceRange(config.subresourceRange);
+        m_nativePresentImages[i].vkImageView = m_pVulkanDevice->GetVkDevice().createImageView(createInfo);
+        m_nativePresentImages[i].config = config;
     }
 }
 
@@ -160,37 +179,4 @@ void VulkanSwapchain::createDepthAndResolveColorImage()
     }
 }
 
-void VulkanSwapchain::CreateFrameBuffers(VulkanRenderPass* renderpass)
-{
-    int windowWidth = m_pVulkanDevice->GetVulkanPhysicalDevice()->GetWindowWidth();
-    int windowHeight = m_pVulkanDevice->GetVulkanPhysicalDevice()->GetWindowHeight();
 
-    m_vkFramebuffers.resize(m_vkImageViews.size());
-    std::vector<vk::FramebufferCreateInfo> createInfos;
-    for (int i = 0; i < m_vkImageViews.size(); i++)
-    {
-        vk::FramebufferCreateInfo createInfo;
-        std::vector<vk::ImageView> attachments;
-        attachments.reserve(4);
-        if (m_pVulkanSuperSamplerColorImage)
-        {
-            attachments.push_back(m_pVulkanSuperSamplerColorImage->GetVkImageView());
-            attachments.push_back(m_pVulkanDepthImage->GetVkImageView());
-            attachments.push_back(m_vkImageViews[i]);
-        }
-        else
-        {
-            attachments.push_back(m_vkImageViews[i]);
-            attachments.push_back(m_pVulkanDepthImage->GetVkImageView());
-        }
-
-        createInfo.setAttachments(attachments)
-                    .setWidth(windowWidth)
-                    .setHeight(windowHeight)
-                    .setRenderPass(renderpass->GetVkRenderPass())
-                    .setLayers(1)
-                    ;
-        m_vkFramebuffers[i] = m_pVulkanDevice->GetVkDevice().createFramebuffer(createInfo);
-    }
-    //m_vkFramebuffers = m_pVulkanDevice->GetVkDevice().createFramebuffer(createInfos);
-}

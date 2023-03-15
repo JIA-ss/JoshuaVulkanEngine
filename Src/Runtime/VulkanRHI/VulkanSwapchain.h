@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include "Runtime/VulkanRHI/Resources/VulkanFramebuffer.h"
 #include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanInstance.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
@@ -23,11 +24,11 @@ public:
         vk::PresentModeKHR present = vk::PresentModeKHR::eFifo;
     };
 private:
-    std::vector<vk::Image> m_vkImages;
-    std::vector<vk::ImageView> m_vkImageViews;
+    std::vector<VulkanImageResource::Native> m_nativePresentImages;
+    std::vector<std::unique_ptr<VulkanFramebuffer>> m_pPresentFramebuffers;
+
     std::unique_ptr<VulkanImageResource> m_pVulkanDepthImage;
     std::unique_ptr<VulkanImageResource> m_pVulkanSuperSamplerColorImage;
-    std::vector<vk::Framebuffer> m_vkFramebuffers;
 
     //VulkanInstance* m_pVulkanInstance;
     //VulkanPhysicalDevice* m_pVulkanPhysicalDevice;
@@ -38,12 +39,12 @@ private:
 public:
     VulkanSwapchain(VulkanDevice* device);
     ~VulkanSwapchain();
-    inline const SwapchainInfo& GetSwapchainInfo() { return m_swapchainInfo; }
-    inline vk::SwapchainKHR& GetSwapchain() { return m_vkSwapchain; }
-    inline std::vector<vk::Framebuffer>& GetFramebuffers() { return m_vkFramebuffers; }
-    inline vk::Framebuffer& GetFramebuffer(int index) { assert(index >= 0 && index < m_vkFramebuffers.size()); return m_vkFramebuffers[index]; }
+    inline const SwapchainInfo& GetSwapchainInfo() const { return m_swapchainInfo; }
+    inline const vk::SwapchainKHR& GetSwapchain() const { return m_vkSwapchain; }
 
-    void CreateFrameBuffers(VulkanRenderPass* renderpass);
+    void GetVulkanPresentColorAttachment(int idx, VulkanFramebuffer::Attachment& attachment) const;
+    inline const VulkanImageResource::Native& GetVulkanPresentImage(int idx) const { return m_nativePresentImages[idx]; }
+    inline const std::vector<VulkanImageResource::Native>& GetVulkanPresentImages() const { return m_nativePresentImages; }
 private:
     void queryInfo();
     void getImages();

@@ -1,23 +1,15 @@
-#include "CppDemo/03_shader/shader.h"
-#include "CppDemo/04_renderprocess/renderprocess.h"
-#include "CppDemo/05_render/renderer.h"
-#include "Demo/01_createwindow/createwindow.h"
-#include "Demo/02_createVulkanInstance/createVulkanInstance.h"
-#include "Demo/03_physicalDeviceAndQueue/physicalDeviceAndQueue.h"
 
-#include "CppDemo/01_context/context.h"
 #include "Editor/Editor.h"
 #include "Runtime/Platform/PlatformWindow.h"
 #include "Runtime/Render/MultiPipelines/MultiPipelineRenderer.h"
-#include "Runtime/Render/Renderer.h"
 #include "Runtime/Render/RendererBase.h"
 #include "Runtime/Render/SimpleModel/SimpleModelRenderer.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Util/Fileutil.h"
 #include <GLFW/glfw3.h>
 #include <boost/filesystem/path.hpp>
+#include <iostream>
 
-#include "Runtime/VulkanRHI/VulkanContext.h"
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_enums.hpp"
 
@@ -40,7 +32,7 @@ void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::pa
     render = Render::RendererBase::StartUpRenderer(
         demoName,
         RHI::VulkanInstance::Config { true, "RHI", "RHI", VK_API_VERSION_1_2, extensions },
-        RHI::VulkanPhysicalDevice::Config { window.get(), feature, {}, vk::SampleCountFlagBits::e1 }
+        RHI::VulkanPhysicalDevice::Config { window.get(), feature, {}, vk::SampleCountFlagBits::e4 }
     );
 
 

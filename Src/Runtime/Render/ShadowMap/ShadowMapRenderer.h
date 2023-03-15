@@ -27,13 +27,18 @@ public:
 protected:
     void prepare() override;
     virtual void prepareModel();
-    void prepareRenderpass() override;
+
     void render() override;
 
 protected:
     void prepareLayout() override;
+    void preparePresentFramebufferAttachments() override {}
+    void prepareRenderpass() override;
+    void preparePresentFramebuffer() override {}
+    void preparePipeline() override;
+    int getPresentImageAttachmentId() override { return 0; }
+
     void prepareLights();
-    void preparePipeline();
     void prepareFrameBuffer();
     void prepareCamera();
     void prepareInputCallback();

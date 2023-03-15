@@ -5,6 +5,8 @@
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_handles.hpp"
 #include "vulkan/vulkan_structs.hpp"
+#include <memory>
+#include <optional>
 #include <stdint.h>
 #include <vulkan/vulkan.hpp>
 
@@ -35,13 +37,18 @@ public:
 
         static Config CubeMap(uint32_t width, uint32_t height, uint32_t miplevels, uint32_t faceCount = 6);
     };
+
+    struct Native
+    {
+        std::optional<vk::Image> vkImage;
+        std::optional<vk::ImageView> vkImageView;
+        std::optional<Config> config;
+    };
 protected:
     VulkanDevice* m_vulkanDevice;
     std::unique_ptr<VulkanDeviceMemory> m_pVulkanDeviceMemory;
-    vk::Image m_vkImage;
-    vk::ImageView m_vkImageView;
 
-    Config m_config;
+    Native m_native;
 public:
     explicit VulkanImageResource(
         VulkanDevice* device,
@@ -49,8 +56,12 @@ public:
         Config config
     );
 
+    explicit VulkanImageResource(
+        VulkanDevice* device,
+        Native native
+    );
     ~VulkanImageResource();
-    Config GetConfig() { return m_config; }
+    Config GetConfig() { return m_native.config.value(); }
 public:
     void TransitionImageLayout(
         vk::ImageLayout oldLayout,
@@ -70,9 +81,9 @@ public:
     void CopyTo(vk::CommandBuffer cmd, VulkanImageResource* target, vk::ImageCopy copyRegion);
 
 public:
-    inline vk::Image& GetVkImage() { return m_vkImage; }
-    inline vk::ImageView& GetVkImageView() { return m_vkImageView; }
-
+    inline vk::Image& GetVkImage() { return m_native.vkImage.value(); }
+    inline vk::ImageView& GetVkImageView() { return m_native.vkImageView.value(); }
+    inline const Native& GetNative() { return m_native; }
 private:
     void createImage();
     void createImageView();

@@ -5,7 +5,9 @@
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
+#include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorSets.h"
+#include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "Runtime/VulkanRHI/VulkanSwapchain.h"
@@ -17,7 +19,16 @@ namespace Render {
 
 class SimpleModelRenderer : public RendererBase
 {
-
+private:
+    struct AttachmentResource
+    {
+        // 0. present color
+        // 1. depth
+        std::unique_ptr<RHI::VulkanImageResource> depthVulkanImageResource;
+        // 2. supersample
+        std::unique_ptr<RHI::VulkanImageResource> superSampleVulkanImageResource;
+    };
+    AttachmentResource m_attachmentResources;
 protected:
     std::unique_ptr<RHI::Model> m_pModel;
     std::unique_ptr<Camera> m_pCamera;
@@ -34,13 +45,17 @@ public:
 protected:
     void prepare() override;
     virtual void prepareModel();
-    void prepareRenderpass() override;
+
     void render() override;
 
-protected:
     void prepareLayout() override;
-    void preparePipeline();
-    void prepareFrameBuffer();
+
+    void preparePresentFramebufferAttachments() override;
+    void prepareRenderpass() override;
+    void preparePresentFramebuffer() override;
+    void preparePipeline() override;
+    int getPresentImageAttachmentId() override { return 0; };
+
     void prepareCamera();
     void prepareLight();
     void prepareInputCallback();

@@ -31,7 +31,7 @@ void MultiPipelineRenderer::prepare()
     prepareModel();
     prepareRenderpass();
     prepareMultiPipelines();
-    prepareFrameBuffer();
+    // prepareFrameBuffer();
 }
 
 void MultiPipelineRenderer::render()
@@ -92,7 +92,7 @@ void MultiPipelineRenderer::render()
         clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
         clears[1] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
         auto& extent = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent;
-        auto vkFramebuffer = m_pDevice->GetSwapchainFramebuffer(m_imageIdx);
+        auto vkFramebuffer = m_pDevice->GetVulkanPresentFramebuffer(m_imageIdx)->GetVkFramebuffer();
 
         m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{{0,0},extent}, vkFramebuffer);
         {

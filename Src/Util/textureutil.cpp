@@ -2,6 +2,7 @@
 #include "Util/Fileutil.h"
 #include "vulkan/vulkan_enums.hpp"
 #include <assimp/material.h>
+#include <iostream>
 #include <memory>
 #include <ktx.h>
 
@@ -79,8 +80,8 @@ std::shared_ptr<Util::Texture::RawData> Util::Texture::RawData::Load(const boost
     rawData->vkFormat = fmt;
     if (!Util::File::fileExist(texturePath))
     {
-        assert(false);
-        return rawData;
+        std::cout << "load texture failed, file not exist: " + texturePath.string() << std::endl;
+        return nullptr;
     }
 
     std::string extension = Util::File::getLowerExtension(texturePath);

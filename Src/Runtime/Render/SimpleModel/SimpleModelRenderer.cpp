@@ -6,11 +6,13 @@
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/Resources/VulkanFramebuffer.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanRenderPass.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
 #include "Runtime/VulkanRHI/VulkanShaderSet.h"
 #include "vulkan/vulkan_enums.hpp"
+#include "vulkan/vulkan_structs.hpp"
 #include <Util/Modelutil.h>
 #include <Util/Fileutil.h>
 #include <Util/Mathutil.h>
@@ -30,6 +32,8 @@ SimpleModelRenderer::SimpleModelRenderer(const RHI::VulkanInstance::Config& inst
 SimpleModelRenderer::~SimpleModelRenderer()
 {
     m_pDevice->GetVkDevice().waitIdle();
+    m_attachmentResources.depthVulkanImageResource.reset();
+    m_attachmentResources.superSampleVulkanImageResource.reset();
     m_pRenderPass = nullptr;
     m_pModel.reset();
 }
@@ -37,6 +41,11 @@ SimpleModelRenderer::~SimpleModelRenderer()
 void SimpleModelRenderer::prepare()
 {
     prepareLayout();
+    preparePresentFramebufferAttachments();
+    prepareRenderpass();
+    preparePresentFramebuffer();
+    preparePipeline();
+
     // prepare camera
     prepareCamera();
     // prepare Light
@@ -45,12 +54,6 @@ void SimpleModelRenderer::prepare()
     prepareModel();
     // prepare callback
     prepareInputCallback();
-    // prepare renderpass
-    prepareRenderpass();
-    // prepare pipeline
-    preparePipeline();
-    // prepare framebuffer
-    prepareFrameBuffer();
 }
 
 void SimpleModelRenderer::render()
@@ -96,8 +99,8 @@ void SimpleModelRenderer::render()
         throw std::runtime_error("acquire next image failed");
     }
 
-    m_pCamera->UpdateUniformBuffer(m_imageIdx);
-    m_pLight->UpdateLightUBO(m_imageIdx);
+    m_pCamera->UpdateUniformBuffer(m_frameIdxInFlight);
+    m_pLight->UpdateLightUBO(m_frameIdxInFlight);
 
     // reset fence after acquiring the image
     m_pDevice->GetVkDevice().resetFences(m_vkFences[m_frameIdxInFlight]);
@@ -114,7 +117,11 @@ void SimpleModelRenderer::render()
         std::vector<vk::ClearValue> clears(2);
         clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
         clears[1] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
-        m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{vk::Offset2D{0,0}, m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent}, m_pDevice->GetSwapchainFramebuffer(m_imageIdx));
+        if (m_pPhysicalDevice->IsUsingMSAA())
+        {
+            clears.push_back(clears[0]);
+        }
+        m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{vk::Offset2D{0,0}, m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent}, m_pDevice->GetVulkanPresentFramebuffer(m_imageIdx)->GetVkFramebuffer());
         {
             auto& extent = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent;
             vk::Rect2D rect{{0,0},extent};
@@ -265,10 +272,21 @@ void SimpleModelRenderer::prepareInputCallback()
 
 void SimpleModelRenderer::prepareRenderpass()
 {
-    vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
-    vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
-    vk::SampleCountFlagBits sampleCount = m_pDevice->GetVulkanPhysicalDevice()->GetSampleCount();
-    m_pRenderPass = std::make_shared<RHI::VulkanRenderPass>(m_pDevice.get(), colorFormat, depthForamt, sampleCount);
+    m_pRenderPass = RHI::VulkanRenderPassBuilder(m_pDevice.get())
+                            .SetAttachments(m_VulkanPresentFramebufferAttachments)
+                            .buildUnique();
+}
+
+void SimpleModelRenderer::preparePresentFramebuffer()
+{
+    m_pDevice->CreateVulkanPresentFramebuffer(
+        m_pRenderPass.get(),
+        m_pDevice->GetSwapchainExtent().width,
+        m_pDevice->GetSwapchainExtent().height,
+        1,
+        m_VulkanPresentFramebufferAttachments,
+        getPresentImageAttachmentId()
+    );
 }
 
 void SimpleModelRenderer::prepareLayout()
@@ -282,6 +300,75 @@ void SimpleModelRenderer::prepareLayout()
         );
 }
 
+void SimpleModelRenderer::preparePresentFramebufferAttachments()
+{
+    vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
+    vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
+
+    auto sampleCount = m_pPhysicalDevice->GetSampleCount();
+    RHI::VulkanImageResource::Config imageConfig;
+    imageConfig.extent = vk::Extent3D{ m_pDevice->GetSwapchainExtent(), 1};
+    imageConfig.sampleCount = sampleCount;
+
+    // present
+    {
+    }
+
+    // depth
+    {
+        imageConfig.format = m_pPhysicalDevice->QuerySupportedDepthFormat();
+        imageConfig.imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+        if (m_pPhysicalDevice->HasStencilComponent(imageConfig.format))
+        {
+            imageConfig.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+        }
+        else
+        {
+            imageConfig.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+        }
+        m_attachmentResources.depthVulkanImageResource.reset(new RHI::VulkanImageResource(m_pDevice.get(), vk::MemoryPropertyFlagBits::eDeviceLocal, imageConfig));
+    }
+
+    // supersample color
+    if (m_pPhysicalDevice->IsUsingMSAA())
+    {
+        imageConfig.format = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
+        imageConfig.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
+        imageConfig.subresourceRange
+                        .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                        ;
+        m_attachmentResources.superSampleVulkanImageResource.reset(new RHI::VulkanImageResource(m_pDevice.get(), vk::MemoryPropertyFlagBits::eDeviceLocal, imageConfig));
+    }
+
+    m_VulkanPresentFramebufferAttachments.resize(m_pPhysicalDevice->IsUsingMSAA() ? 3 : 2);
+    // present
+    m_VulkanPresentFramebufferAttachments[0].type = m_pPhysicalDevice->IsUsingMSAA() ? RHI::VulkanFramebuffer::kResolve : RHI::VulkanFramebuffer::kColor;
+    m_VulkanPresentFramebufferAttachments[0].samples = vk::SampleCountFlagBits::e1;
+    m_VulkanPresentFramebufferAttachments[0].resourceFinalLayout = vk::ImageLayout::ePresentSrcKHR;
+    m_VulkanPresentFramebufferAttachments[0].attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    m_VulkanPresentFramebufferAttachments[0].resourceFormat = colorFormat;
+
+    // depth
+    m_VulkanPresentFramebufferAttachments[1].type = RHI::VulkanFramebuffer::kDepthStencil;
+    m_VulkanPresentFramebufferAttachments[1].samples = sampleCount;
+    m_VulkanPresentFramebufferAttachments[1].attachmentLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+    m_VulkanPresentFramebufferAttachments[1].resourceFinalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+    m_VulkanPresentFramebufferAttachments[1].resource = m_attachmentResources.depthVulkanImageResource->GetNative();
+    m_VulkanPresentFramebufferAttachments[1].resourceFormat = depthForamt;
+
+    // superSample
+    if (m_pPhysicalDevice->IsUsingMSAA())
+    {
+        m_VulkanPresentFramebufferAttachments[2].type = RHI::VulkanFramebuffer::kColor;
+        m_VulkanPresentFramebufferAttachments[2].samples = sampleCount;
+        m_VulkanPresentFramebufferAttachments[2].attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+        m_VulkanPresentFramebufferAttachments[2].resourceFinalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+        m_VulkanPresentFramebufferAttachments[2].resource = m_attachmentResources.superSampleVulkanImageResource->GetNative();
+        m_VulkanPresentFramebufferAttachments[2].resourceFormat = colorFormat;
+    }
+
+}
+
 void SimpleModelRenderer::preparePipeline()
 {
     std::shared_ptr<RHI::VulkanShaderSet> shaderSet = std::make_shared<RHI::VulkanShaderSet>(m_pDevice.get());
@@ -292,9 +379,4 @@ void SimpleModelRenderer::preparePipeline()
                             .SetVulkanPipelineLayout(m_pPipelineLayout)
                             .buildUnique();
     m_pRenderPass->AddGraphicRenderPipeline("default", std::move(pipeline));
-}
-
-void SimpleModelRenderer::prepareFrameBuffer()
-{
-    m_pDevice->CreateSwapchainFramebuffer(m_pRenderPass.get());
 }

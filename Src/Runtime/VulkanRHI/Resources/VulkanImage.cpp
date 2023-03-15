@@ -46,11 +46,11 @@ VulkanImageResource::VulkanImageResource(
     Config config
 )
     : m_vulkanDevice(device)
-    , m_config(config)
 {
+    m_native.config = config;
     createImage();
 
-    vk::MemoryRequirements requirements = m_vulkanDevice->GetVkDevice().getImageMemoryRequirements(m_vkImage);
+    vk::MemoryRequirements requirements = m_vulkanDevice->GetVkDevice().getImageMemoryRequirements(m_native.vkImage.value());
     m_pVulkanDeviceMemory.reset(new VulkanDeviceMemory(m_vulkanDevice, requirements, memProps));
     m_pVulkanDeviceMemory->Bind(this);
 
@@ -59,8 +59,14 @@ VulkanImageResource::VulkanImageResource(
 
 VulkanImageResource::~VulkanImageResource()
 {
-    m_vulkanDevice->GetVkDevice().destroyImageView(m_vkImageView);
-    m_vulkanDevice->GetVkDevice().destroyImage(m_vkImage);
+    if (m_native.vkImageView)
+    {
+        m_vulkanDevice->GetVkDevice().destroyImageView(m_native.vkImageView.value());
+    }
+    if (m_native.vkImage)
+    {
+        m_vulkanDevice->GetVkDevice().destroyImage(m_native.vkImage.value());
+    }
     m_pVulkanDeviceMemory.reset();
 }
 
@@ -89,12 +95,12 @@ void VulkanImageResource::TransitionImageLayout(
 )
 {
     vk::ImageMemoryBarrier imageMemoryBarrier = vk::ImageMemoryBarrier()
-                            .setImage(m_vkImage)
+                            .setImage(m_native.vkImage.value())
                             .setOldLayout(oldLayout)
                             .setNewLayout(newLayout)
                             .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                             .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                            .setSubresourceRange(m_config.subresourceRange)
+                            .setSubresourceRange(m_native.config.value().subresourceRange)
                             ;
     // Source layouts (old)
     // Source access mask controls actions that have to be finished on the old layout
@@ -198,36 +204,36 @@ void VulkanImageResource::TransitionImageLayout(
 
 void VulkanImageResource::CopyTo(vk::CommandBuffer cmd, VulkanImageResource* target, vk::ImageCopy copyRegion)
 {
-    cmd.copyImage(m_vkImage, vk::ImageLayout::eTransferSrcOptimal, target->m_vkImage, vk::ImageLayout::eTransferDstOptimal, copyRegion);
+    cmd.copyImage(m_native.vkImage.value(), vk::ImageLayout::eTransferSrcOptimal, target->m_native.vkImage.value(), vk::ImageLayout::eTransferDstOptimal, copyRegion);
 }
 
 void VulkanImageResource::createImage()
 {
     auto createInfo = vk::ImageCreateInfo()
-                .setImageType(m_config.imageType)
-                .setExtent(m_config.extent)
-                .setMipLevels(m_config.miplevel)
-                .setArrayLayers(m_config.arrayLayer)
-                .setFormat(m_config.format)
-                .setTiling(m_config.imageTiling)
-                .setInitialLayout(m_config.initialLayout)
-                .setUsage(m_config.imageUsage)
-                .setSamples(m_config.sampleCount)
-                .setSharingMode(m_config.sharingMode)
-                .setFlags(m_config.flags)
+                .setImageType(m_native.config.value().imageType)
+                .setExtent(m_native.config.value().extent)
+                .setMipLevels(m_native.config.value().miplevel)
+                .setArrayLayers(m_native.config.value().arrayLayer)
+                .setFormat(m_native.config.value().format)
+                .setTiling(m_native.config.value().imageTiling)
+                .setInitialLayout(m_native.config.value().initialLayout)
+                .setUsage(m_native.config.value().imageUsage)
+                .setSamples(m_native.config.value().sampleCount)
+                .setSharingMode(m_native.config.value().sharingMode)
+                .setFlags(m_native.config.value().flags)
                 ;
-    m_vkImage = m_vulkanDevice->GetVkDevice().createImage(createInfo);
+    m_native.vkImage = m_vulkanDevice->GetVkDevice().createImage(createInfo);
 }
 
 void VulkanImageResource::createImageView()
 {
     auto viewInfo = vk::ImageViewCreateInfo()
-                .setImage(m_vkImage)
-                .setViewType(m_config.imageViewType)
-                .setFormat(m_config.format)
-                .setSubresourceRange(m_config.subresourceRange)
+                .setImage(m_native.vkImage.value())
+                .setViewType(m_native.config.value().imageViewType)
+                .setFormat(m_native.config.value().format)
+                .setSubresourceRange(m_native.config.value().subresourceRange)
                 ;
-    m_vkImageView = m_vulkanDevice->GetVkDevice().createImageView(viewInfo);
+    m_native.vkImageView = m_vulkanDevice->GetVkDevice().createImageView(viewInfo);
 }
 
 VulkanImageSampler::VulkanImageSampler(
@@ -346,7 +352,7 @@ void VulkanImageSampler::createSampler()
 std::shared_ptr<VulkanImageSampler> VulkanImageSampler::ConvertDevice(VulkanDevice* device)
 {
     std::shared_ptr<VulkanImageSampler> sampler(
-        new VulkanImageSampler(device, m_pRawData, m_memProps, m_config, m_pVulkanImageResource->m_config)
+        new VulkanImageSampler(device, m_pRawData, m_memProps, m_config, m_pVulkanImageResource->m_native.config.value())
     );
     return sampler;
 }

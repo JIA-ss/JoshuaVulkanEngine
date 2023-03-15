@@ -1,10 +1,10 @@
 #include "VulkanDevice.h"
+#include "Runtime/VulkanRHI/Resources/VulkanFramebuffer.h"
 #include "Runtime/VulkanRHI/VulkanCommandPool.h"
 #include "Runtime/VulkanRHI/VulkanPipelineCache.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/VulkanRHI/VulkanSwapchain.h"
 #include "Runtime/VulkanRHI/VulkanRenderPipeline.h"
-#include "Runtime/VulkanRHI/VulkanContext.h"
 #include "Util/Fileutil.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
@@ -12,6 +12,7 @@
 #include <GLFW/glfw3native.h>
 #include <algorithm>
 #include <iostream>
+#include <memory>
 #include <string.h>
 
 RHI_NAMESPACE_USING
@@ -51,6 +52,11 @@ VulkanDevice::VulkanDevice(VulkanPhysicalDevice* physicalDevice) : m_vulkanPhysi
 VulkanDevice::~VulkanDevice()
 {
     m_vkDevice.waitIdle();
+    m_pVulkanFramebuffers.clear();
+    for (auto& presentFramebuffer : m_pPresentVulkanFramebuffers)
+    {
+        presentFramebuffer.reset();
+    }
     m_VulkanDescriptorSetLayoutPresets.UnInit();
     m_pVulkanPipelineCache.reset();
     m_pVulkanSwapchain.reset();
@@ -141,17 +147,63 @@ std::vector<vk::PresentModeKHR> VulkanDevice::GetSurfacePresentMode()
     return m_vulkanPhysicalDevice->GetVkPhysicalDevice().getSurfacePresentModesKHR(*m_vkSurfaceKHR);;
 }
 
-void VulkanDevice::CreateSwapchainFramebuffer(VulkanRenderPass* renderPass)
+VulkanFramebuffer* VulkanDevice::CreateVulkanFramebuffer(const char* name, VulkanRenderPass* renderpass,
+        uint32_t width, uint32_t height, uint32_t layer,
+        const std::vector<VulkanFramebuffer::Attachment>& attachments
+)
 {
-    m_pVulkanSwapchain->CreateFrameBuffers(renderPass);
+    assert(m_pVulkanFramebuffers.find(name) == m_pVulkanFramebuffers.end());
+    m_pVulkanFramebuffers[name].reset(new VulkanFramebuffer(this, renderpass, width, height, layer, attachments));
+    return m_pVulkanFramebuffers[name].get();
 }
-vk::Framebuffer VulkanDevice::GetSwapchainFramebuffer(int index)
+
+void VulkanDevice::DestroyVulkanFramebuffer(const char* name)
 {
-    return m_pVulkanSwapchain->GetFramebuffer(index);
+    m_pVulkanFramebuffers.erase(name);
 }
-void VulkanDevice::ReCreateSwapchain(VulkanRenderPass* renderPass)
+
+VulkanFramebuffer* VulkanDevice::GetVulkanFramebuffer(const char* name)
 {
+    auto it = m_pVulkanFramebuffers.find(name);
+    if (it != m_pVulkanFramebuffers.end())
+    {
+        return it->second.get();
+    }
+    assert(false);
+    return nullptr;
+}
+
+void VulkanDevice::CreateVulkanPresentFramebuffer(VulkanRenderPass* renderpass,
+        uint32_t width, uint32_t height, uint32_t layer,
+        const std::vector<VulkanFramebuffer::Attachment>& attachments,
+        int presentImageIdx
+)
+{
+    auto attachmentsCopy = attachments;
+    auto presentImages = m_pVulkanSwapchain->GetVulkanPresentImages();
+    m_pPresentVulkanFramebuffers.resize(presentImages.size());
+    for (int i = 0; i < m_pPresentVulkanFramebuffers.size(); i++)
+    {
+        m_pVulkanSwapchain->GetVulkanPresentColorAttachment(i, attachmentsCopy[presentImageIdx]);
+        assert(
+            attachmentsCopy[presentImageIdx].resource.vkImageView
+            && attachmentsCopy[presentImageIdx].resource.vkImageView.value() == m_pVulkanSwapchain->GetVulkanPresentImage(i).vkImageView.value()
+        );
+        m_pPresentVulkanFramebuffers[i].reset(new VulkanFramebuffer(this, renderpass, width, height, layer, attachmentsCopy));
+    }
+}
+
+
+
+void VulkanDevice::ReCreateSwapchain(VulkanRenderPass* renderPass,
+        uint32_t width, uint32_t height, uint32_t layer,
+        std::vector<VulkanFramebuffer::Attachment>& attachments,
+        int presentImageIdx)
+{
+    assert(presentImageIdx < attachments.size());
     m_pVulkanSwapchain.reset();
     m_pVulkanSwapchain.reset(new VulkanSwapchain(this));
-    CreateSwapchainFramebuffer(renderPass);
+
+    m_pVulkanSwapchain->GetVulkanPresentColorAttachment(0, attachments[presentImageIdx]);
+    CreateVulkanPresentFramebuffer(renderPass, width, height, layer, attachments);
 }

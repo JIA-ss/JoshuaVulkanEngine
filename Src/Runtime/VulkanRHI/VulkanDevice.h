@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
+#include "Runtime/VulkanRHI/Resources/VulkanFramebuffer.h"
 #include "Runtime/VulkanRHI/VulkanCommandPool.h"
 #include "Runtime/VulkanRHI/VulkanPhysicalDevice.h"
 #include "Runtime/VulkanRHI/VulkanPipelineCache.h"
@@ -13,7 +14,6 @@ RHI_NAMESPACE_BEGIN
 class VulkanRenderPipeline;
 class VulkanDevice
 {
-public:
 
 private:
     VulkanPhysicalDevice* m_vulkanPhysicalDevice = nullptr;
@@ -28,6 +28,9 @@ private:
     std::unique_ptr<VulkanCommandPool> m_pVulkanCmdPool;
     std::unique_ptr<VulkanPipelineCache> m_pVulkanPipelineCache;
     VulkanDescriptorSetLayoutPresets m_VulkanDescriptorSetLayoutPresets;
+
+    std::map<std::string, std::unique_ptr<VulkanFramebuffer>> m_pVulkanFramebuffers;
+    std::vector<std::unique_ptr<VulkanFramebuffer>> m_pPresentVulkanFramebuffers;
 public:
     explicit VulkanDevice(VulkanPhysicalDevice* physicalDevice);
     ~VulkanDevice();
@@ -36,9 +39,22 @@ public:
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormat();
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities();
 
-    void CreateSwapchainFramebuffer(VulkanRenderPass* renderPass);
-    vk::Framebuffer GetSwapchainFramebuffer(int index);
-    void ReCreateSwapchain(VulkanRenderPass* renderPass);
+    VulkanFramebuffer* CreateVulkanFramebuffer(const char* name, VulkanRenderPass* renderpass,
+        uint32_t width, uint32_t height, uint32_t layer = 1,
+        const std::vector<VulkanFramebuffer::Attachment>& attachments = {}
+    );
+    void DestroyVulkanFramebuffer(const char* name);
+    VulkanFramebuffer* GetVulkanFramebuffer(const char* name);
+
+    void CreateVulkanPresentFramebuffer(VulkanRenderPass* renderpass,
+        uint32_t width, uint32_t height, uint32_t layer = 1,
+        const std::vector<VulkanFramebuffer::Attachment>& attachments = {}, int presentImageIdx = 0
+    );
+    inline VulkanFramebuffer* GetVulkanPresentFramebuffer(int idx) { return m_pPresentVulkanFramebuffers[idx].get(); }
+
+    void ReCreateSwapchain(VulkanRenderPass* renderPass,
+        uint32_t width, uint32_t height, uint32_t layer,
+        std::vector<VulkanFramebuffer::Attachment>& attachments, int presentImageIdx);
     VulkanDescriptorSetLayoutPresets& GetDescLayoutPresets() { return m_VulkanDescriptorSetLayoutPresets; }
 
     inline vk::Extent2D GetSwapchainExtent() { return m_pVulkanSwapchain->GetSwapchainInfo().imageExtent; }
