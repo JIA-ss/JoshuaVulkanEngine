@@ -32,14 +32,11 @@ protected:
 
 protected:
     void prepareLayout() override;
-    void preparePresentFramebufferAttachments() override {}
-    void prepareRenderpass() override;
-    void preparePresentFramebuffer() override {}
     void preparePipeline() override;
-    int getPresentImageAttachmentId() override { return 0; }
+
 
     void prepareLights();
-    void prepareFrameBuffer();
+
     void prepareCamera();
     void prepareInputCallback();
     void prepareShadowMapPass();

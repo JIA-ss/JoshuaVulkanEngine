@@ -148,8 +148,8 @@ void Model::Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, s
 {
     // bind model ubo
     {
-        updateModelUniformBuffer(frameId);
-        m_uniformSets[frameId]->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
+        updateModelUniformBuffer(0);
+        m_uniformSets[0]->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
     }
 
     for (int meshIdx = 0; meshIdx < m_meshes.size(); meshIdx++)

@@ -25,6 +25,16 @@ namespace Render {
 class RendererBase
 {
 protected:
+    struct PresentFramebufferAttachmentResource
+    {
+        // 0. present color
+        // 1. depth
+        std::unique_ptr<RHI::VulkanImageResource> depthVulkanImageResource;
+        // 2. supersample
+        std::unique_ptr<RHI::VulkanImageResource> superSampleVulkanImageResource;
+    };
+    PresentFramebufferAttachmentResource m_presentFramebufferAttachResource;
+protected:
     std::unique_ptr<RHI::VulkanInstance> m_pInstance;
     std::unique_ptr<RHI::VulkanPhysicalDevice> m_pPhysicalDevice;
     std::unique_ptr<RHI::VulkanDevice> m_pDevice;
@@ -90,16 +100,16 @@ protected:
     // 1. layout
     virtual void prepareLayout() = 0;
     // 2. attachments
-    virtual void preparePresentFramebufferAttachments() = 0;
+    virtual void preparePresentFramebufferAttachments();
     // 3. renderpass
-    virtual void prepareRenderpass() = 0;
+    virtual void prepareRenderpass();
     // 4. framebuffer
-    virtual void preparePresentFramebuffer() = 0;
+    virtual void preparePresentFramebuffer();
     // 5. pipeline
     virtual void preparePipeline() = 0;
 
     // for recreate swapchain, need fill present vkImageView into the attachments
-    virtual int getPresentImageAttachmentId() = 0;
+    virtual int getPresentImageAttachmentId() { return 0; };
 
     virtual void render() = 0;
     vk::CommandBuffer& beginCommand();

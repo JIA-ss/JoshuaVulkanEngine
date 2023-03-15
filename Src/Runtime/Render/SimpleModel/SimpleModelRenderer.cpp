@@ -32,8 +32,6 @@ SimpleModelRenderer::SimpleModelRenderer(const RHI::VulkanInstance::Config& inst
 SimpleModelRenderer::~SimpleModelRenderer()
 {
     m_pDevice->GetVkDevice().waitIdle();
-    m_attachmentResources.depthVulkanImageResource.reset();
-    m_attachmentResources.superSampleVulkanImageResource.reset();
     m_pRenderPass = nullptr;
     m_pModel.reset();
 }
@@ -270,24 +268,7 @@ void SimpleModelRenderer::prepareInputCallback()
     });
 }
 
-void SimpleModelRenderer::prepareRenderpass()
-{
-    m_pRenderPass = RHI::VulkanRenderPassBuilder(m_pDevice.get())
-                            .SetAttachments(m_VulkanPresentFramebufferAttachments)
-                            .buildUnique();
-}
 
-void SimpleModelRenderer::preparePresentFramebuffer()
-{
-    m_pDevice->CreateVulkanPresentFramebuffer(
-        m_pRenderPass.get(),
-        m_pDevice->GetSwapchainExtent().width,
-        m_pDevice->GetSwapchainExtent().height,
-        1,
-        m_VulkanPresentFramebufferAttachments,
-        getPresentImageAttachmentId()
-    );
-}
 
 void SimpleModelRenderer::prepareLayout()
 {
@@ -300,74 +281,6 @@ void SimpleModelRenderer::prepareLayout()
         );
 }
 
-void SimpleModelRenderer::preparePresentFramebufferAttachments()
-{
-    vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
-    vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
-
-    auto sampleCount = m_pPhysicalDevice->GetSampleCount();
-    RHI::VulkanImageResource::Config imageConfig;
-    imageConfig.extent = vk::Extent3D{ m_pDevice->GetSwapchainExtent(), 1};
-    imageConfig.sampleCount = sampleCount;
-
-    // present
-    {
-    }
-
-    // depth
-    {
-        imageConfig.format = m_pPhysicalDevice->QuerySupportedDepthFormat();
-        imageConfig.imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-        if (m_pPhysicalDevice->HasStencilComponent(imageConfig.format))
-        {
-            imageConfig.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
-        }
-        else
-        {
-            imageConfig.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
-        }
-        m_attachmentResources.depthVulkanImageResource.reset(new RHI::VulkanImageResource(m_pDevice.get(), vk::MemoryPropertyFlagBits::eDeviceLocal, imageConfig));
-    }
-
-    // supersample color
-    if (m_pPhysicalDevice->IsUsingMSAA())
-    {
-        imageConfig.format = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
-        imageConfig.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
-        imageConfig.subresourceRange
-                        .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                        ;
-        m_attachmentResources.superSampleVulkanImageResource.reset(new RHI::VulkanImageResource(m_pDevice.get(), vk::MemoryPropertyFlagBits::eDeviceLocal, imageConfig));
-    }
-
-    m_VulkanPresentFramebufferAttachments.resize(m_pPhysicalDevice->IsUsingMSAA() ? 3 : 2);
-    // present
-    m_VulkanPresentFramebufferAttachments[0].type = m_pPhysicalDevice->IsUsingMSAA() ? RHI::VulkanFramebuffer::kResolve : RHI::VulkanFramebuffer::kColor;
-    m_VulkanPresentFramebufferAttachments[0].samples = vk::SampleCountFlagBits::e1;
-    m_VulkanPresentFramebufferAttachments[0].resourceFinalLayout = vk::ImageLayout::ePresentSrcKHR;
-    m_VulkanPresentFramebufferAttachments[0].attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
-    m_VulkanPresentFramebufferAttachments[0].resourceFormat = colorFormat;
-
-    // depth
-    m_VulkanPresentFramebufferAttachments[1].type = RHI::VulkanFramebuffer::kDepthStencil;
-    m_VulkanPresentFramebufferAttachments[1].samples = sampleCount;
-    m_VulkanPresentFramebufferAttachments[1].attachmentLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-    m_VulkanPresentFramebufferAttachments[1].resourceFinalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-    m_VulkanPresentFramebufferAttachments[1].resource = m_attachmentResources.depthVulkanImageResource->GetNative();
-    m_VulkanPresentFramebufferAttachments[1].resourceFormat = depthForamt;
-
-    // superSample
-    if (m_pPhysicalDevice->IsUsingMSAA())
-    {
-        m_VulkanPresentFramebufferAttachments[2].type = RHI::VulkanFramebuffer::kColor;
-        m_VulkanPresentFramebufferAttachments[2].samples = sampleCount;
-        m_VulkanPresentFramebufferAttachments[2].attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
-        m_VulkanPresentFramebufferAttachments[2].resourceFinalLayout = vk::ImageLayout::eColorAttachmentOptimal;
-        m_VulkanPresentFramebufferAttachments[2].resource = m_attachmentResources.superSampleVulkanImageResource->GetNative();
-        m_VulkanPresentFramebufferAttachments[2].resourceFormat = colorFormat;
-    }
-
-}
 
 void SimpleModelRenderer::preparePipeline()
 {

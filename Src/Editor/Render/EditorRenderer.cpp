@@ -226,12 +226,12 @@ void EditorRenderer::preparePresentFramebufferAttachments()
     // present
     m_VulkanPresentFramebufferAttachments[0].type = RHI::VulkanFramebuffer::kColor;
     m_VulkanPresentFramebufferAttachments[0].resourceFinalLayout = vk::ImageLayout::ePresentSrcKHR;
-    m_VulkanPresentFramebufferAttachments[0].attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    m_VulkanPresentFramebufferAttachments[0].attachmentReferenceLayout = vk::ImageLayout::eColorAttachmentOptimal;
     m_VulkanPresentFramebufferAttachments[0].resourceFormat = colorFormat;
 
     // depth
     m_VulkanPresentFramebufferAttachments[1].type = RHI::VulkanFramebuffer::kDepthStencil;
-    m_VulkanPresentFramebufferAttachments[1].attachmentLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+    m_VulkanPresentFramebufferAttachments[1].attachmentReferenceLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
     m_VulkanPresentFramebufferAttachments[1].resourceFinalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
     m_VulkanPresentFramebufferAttachments[1].resource = m_attachmentResources.depthVulkanImageResource->GetNative();
     m_VulkanPresentFramebufferAttachments[1].resourceFormat = depthForamt;

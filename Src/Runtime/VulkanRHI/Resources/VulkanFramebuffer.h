@@ -28,7 +28,7 @@ public:
         vk::AttachmentStoreOp stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
         vk::ImageLayout resourceInitialLayout = vk::ImageLayout::eUndefined;
         vk::ImageLayout resourceFinalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-        vk::ImageLayout attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+        vk::ImageLayout attachmentReferenceLayout = vk::ImageLayout::eColorAttachmentOptimal;
 
         AttachmentType type = AttachmentType::kUndefined;
         vk::Format resourceFormat = vk::Format::eR8G8B8A8Unorm;

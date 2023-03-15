@@ -26,7 +26,7 @@ vk::AttachmentDescription VulkanFramebuffer::Attachment::GetVkAttachmentDescript
 
 vk::AttachmentReference VulkanFramebuffer::Attachment::GetVkAttachmentReference(uint32_t attachmentId) const
 {
-    return vk::AttachmentReference{attachmentId, attachmentLayout};
+    return vk::AttachmentReference{attachmentId, attachmentReferenceLayout};
 }
 
 VulkanFramebuffer::VulkanFramebuffer(VulkanDevice* device,

@@ -73,7 +73,7 @@ void VulkanSwapchain::GetVulkanPresentColorAttachment(int idx, VulkanFramebuffer
 {
     attachment.resource = m_nativePresentImages[idx];
     attachment.resourceFinalLayout = vk::ImageLayout::ePresentSrcKHR;
-    attachment.attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    attachment.attachmentReferenceLayout = vk::ImageLayout::eColorAttachmentOptimal;
 }
 
 void VulkanSwapchain::queryInfo()

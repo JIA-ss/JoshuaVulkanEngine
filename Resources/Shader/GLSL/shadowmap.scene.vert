@@ -42,7 +42,6 @@ layout(location = 25) out vec4 lightDirection[5];
 
 layout(location = 30) out vec4 modelColor;
 
-layout(location = 31) out mat3 TBNMatrix;
 
 // ????
 const mat4 biasMat = mat4(
@@ -69,10 +68,9 @@ void main() {
 
 
     mat3 normalMatrix = transpose(inverse(mat3(modelUbo.model)));
-    vec3 T = normalize(normalMatrix * inTangent);
-    vec3 B = normalize(normalMatrix * inBittangent);
+    // vec3 T = normalize(normalMatrix * inTangent);
+    // vec3 B = normalize(normalMatrix * inBittangent);
     vec3 N = normalize(normalMatrix * inNormal);
-    TBNMatrix = transpose(mat3(T, B, N));
 
     for (int lightIdx = 0; lightIdx < lightNum; lightIdx++)
     {

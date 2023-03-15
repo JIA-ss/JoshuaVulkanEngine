@@ -9,8 +9,10 @@
 #include "Runtime/VulkanRHI/PipelineStates/VulkanColorBlendState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanDepthStencilState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanDynamicState.h"
+#include "Runtime/VulkanRHI/PipelineStates/VulkanMultisampleState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanRasterizationState.h"
 #include "Runtime/VulkanRHI/Resources/VulkanBuffer.h"
+#include "Runtime/VulkanRHI/Resources/VulkanFramebuffer.h"
 #include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorPool.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
@@ -31,14 +33,12 @@ ShadowMapRenderPass::ShadowMapRenderPass(VulkanDevice* device, int num, uint32_t
     , m_pDevice(device)
 {
     m_vkDepthFormat = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
-
-    // No.Renderpass <==> (FRAMES) * No.Event
-    initSyncPrimitive();
+    // No.Light <==> (FRAMES) * No.Framebuffer <==> No.DepthSampler
+    initDepthSampler();
 
     // No.Light <==> No.RenderPass
     initRenderPass();
-    // No.Light <==> (FRAMES) * No.Framebuffer <==> No.DepthSampler
-    initDepthSampler();
+
     initFramebuffer();
 
     // ALL.DepthSampler <==> (1)DepthSamplerDescriptorSets
@@ -51,13 +51,12 @@ ShadowMapRenderPass::ShadowMapRenderPass(VulkanDevice* device, int num, uint32_t
 
 ShadowMapRenderPass::~ShadowMapRenderPass()
 {
-    m_pDepthSamplerDescriptorSets.fill(nullptr);
-    for (int frameId = 0; frameId < MAX_FRAMES_IN_FLIGHT; frameId++)
-    {
-        m_pDepthSamplers[frameId].clear();
-        m_vkFramebuffers[frameId].clear();
-        m_uniformBuffers[frameId].clear();
-    }
+    m_pDepthSamplerDescriptorSets = nullptr;
+
+    m_pDepthSamplers.clear();
+    m_pVulkanFramebuffers.clear();
+    m_uniformBuffers.clear();
+
     m_pDescriptorPool.reset();
     m_pRenderPasses.clear();
 }
@@ -72,7 +71,7 @@ void ShadowMapRenderPass::InitModelShadowDescriptor(Model* model)
         {
             uboInfos[frameId].emplace_back(RHI::Model::UBOLayoutInfo
             {
-                m_uniformBuffers[frameId][lightId].get(), VulkanDescriptorSetLayout::DESCRIPTOR_CAMVPUBO_BINDING_ID, sizeof(CameraUniformBufferObject)
+                m_uniformBuffers[lightId].get(), VulkanDescriptorSetLayout::DESCRIPTOR_CAMVPUBO_BINDING_ID, sizeof(CameraUniformBufferObject)
             });
         }
         model->InitShadowPassUniforDescriptorSets(uboInfos, lightId);
@@ -81,12 +80,12 @@ void ShadowMapRenderPass::InitModelShadowDescriptor(Model* model)
 
 void ShadowMapRenderPass::SetShadowPassLightVPUBO(CameraUniformBufferObject& ubo, int frameId, int lightIdx)
 {
-    m_uniformBuffers[frameId][lightIdx]->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
+    m_uniformBuffers[lightIdx]->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
 }
 
 void ShadowMapRenderPass::FillDepthSamplerToBindedDescriptorSetsVector(std::vector<vk::DescriptorSet>& descList, VulkanPipelineLayout* pipelineLayout, int frameId)
 {
-    m_pDepthSamplerDescriptorSets[frameId]->FillToBindedDescriptorSetsVector(descList, pipelineLayout);
+    m_pDepthSamplerDescriptorSets->FillToBindedDescriptorSetsVector(descList, pipelineLayout);
 }
 
 void ShadowMapRenderPass::Render(vk::CommandBuffer cmd, std::vector<Model*> models, int frameId)
@@ -96,7 +95,7 @@ void ShadowMapRenderPass::Render(vk::CommandBuffer cmd, std::vector<Model*> mode
     vk::Extent2D extent = vk::Extent2D{m_width, m_height};
     for (int lightIdx = 0; lightIdx < m_num; lightIdx++)
     {
-        m_pRenderPasses[lightIdx]->Begin(cmd, clears, vk::Rect2D{vk::Offset2D{0,0}, extent}, m_vkFramebuffers[frameId][lightIdx]);
+        m_pRenderPasses[lightIdx]->Begin(cmd, clears, vk::Rect2D{vk::Offset2D{0,0}, extent}, m_pVulkanFramebuffers[lightIdx]->GetVkFramebuffer());
         {
             m_pRenderPasses[lightIdx]->BindGraphicPipeline(cmd, "shadowmap");
             // cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pPipelineLayout->GetVkPieplineLayout(), 0, tobinding, {});
@@ -119,20 +118,6 @@ void ShadowMapRenderPass::Render(vk::CommandBuffer cmd, std::vector<Model*> mode
 
 }
 
-// No.Renderpass <==> (FRAMES) * No.Event
-void ShadowMapRenderPass::initSyncPrimitive()
-{
-    for (int frameId = 0; frameId < MAX_FRAMES_IN_FLIGHT; ++frameId)
-    {
-        m_vkEvents[frameId].resize(m_num);
-        for (int lightId = 0; lightId < m_num; lightId++)
-        {
-            vk::EventCreateInfo eventInfo;
-            eventInfo.setFlags(vk::EventCreateFlagBits::eDeviceOnlyKHR);
-            m_vkEvents[frameId][lightId] = m_pDevice->GetVkDevice().createEvent(eventInfo);
-        }
-    }
-}
 
 // No.Framebuffer <==> No.DepthSampler
 void ShadowMapRenderPass::initDepthSampler()
@@ -158,20 +143,18 @@ void ShadowMapRenderPass::initDepthSampler()
     samplerConfig.borderColor = vk::BorderColor::eFloatOpaqueWhite;
     samplerConfig.imageLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
 
-    for (int frameId = 0; frameId < m_pDepthSamplers.size(); frameId++)
+    m_pDepthSamplers.resize(m_num);
+    for (int lightIdx = 0; lightIdx < m_num; lightIdx++)
     {
-        m_pDepthSamplers[frameId].resize(m_num);
-        for (int lightIdx = 0; lightIdx < m_num; lightIdx++)
-        {
-            m_pDepthSamplers[frameId][lightIdx].reset(new VulkanImageSampler(
-                m_pDevice, nullptr,
-                vk::MemoryPropertyFlagBits::eDeviceLocal,
-                samplerConfig,
-                imageConfig)
-            );
-            // m_pDepthSamplers[frameId]->GetPImageResource()->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilReadOnlyOptimal);
-        }
+        m_pDepthSamplers[lightIdx].reset(new VulkanImageSampler(
+            m_pDevice, nullptr,
+            vk::MemoryPropertyFlagBits::eDeviceLocal,
+            samplerConfig,
+            imageConfig)
+        );
+        // m_pDepthSamplers[frameId]->GetPImageResource()->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilReadOnlyOptimal);
     }
+
 }
 
 // No.Light <==> No.RenderPass
@@ -180,70 +163,53 @@ void ShadowMapRenderPass::initRenderPass()
     m_pRenderPasses.resize(m_num);
     for (int i = 0; i < m_num; i++)
     {
-        std::vector<vk::AttachmentDescription> attachments(1);
-        std::vector<vk::SubpassDescription> subpasses(1);
-        std::vector<vk::SubpassDependency> subpassDependencies(2);
-        std::vector<vk::AttachmentReference> attachRef(1);
+        std::vector<VulkanFramebuffer::Attachment> fbAttachments(1);
+        fbAttachments[0].resourceFormat = m_vkDepthFormat;
+        fbAttachments[0].samples = vk::SampleCountFlagBits::e1;
+        fbAttachments[0].type = VulkanFramebuffer::kDepthStencil;
+        fbAttachments[0].attachmentReferenceLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+        fbAttachments[0].resourceFinalLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+        fbAttachments[0].resource = m_pDepthSamplers[i]->GetPImageResource()->GetNative();
 
-        attachments[0]
-                    .setFormat(m_vkDepthFormat)
-                    .setSamples(vk::SampleCountFlagBits::e1)
-                    .setLoadOp(vk::AttachmentLoadOp::eClear)
-                    .setStoreOp(vk::AttachmentStoreOp::eStore)
-                    .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-                    .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-                    .setInitialLayout(vk::ImageLayout::eUndefined)
-                    .setFinalLayout(vk::ImageLayout::eDepthStencilReadOnlyOptimal);
-
-        attachRef[0]
-                    .setAttachment(0)
-                    .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-        subpasses[0]
-                    .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-                    .setColorAttachmentCount(0)
-                    .setPDepthStencilAttachment(&attachRef[0]);
-
-        subpassDependencies[0]
-                    .setSrcSubpass(VK_SUBPASS_EXTERNAL)
-                    .setDstSubpass(0)
-                    .setSrcStageMask(vk::PipelineStageFlagBits::eFragmentShader)
-                    .setDstStageMask(vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests)
-                    .setSrcAccessMask(vk::AccessFlagBits::eShaderRead)
-                    .setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite)
-                    .setDependencyFlags(vk::DependencyFlagBits::eByRegion);
-        subpassDependencies[1]
-                    .setSrcSubpass(0)
-                    .setDstSubpass(VK_SUBPASS_EXTERNAL)
-                    .setSrcStageMask(vk::PipelineStageFlagBits::eLateFragmentTests)
-                    .setDstStageMask(vk::PipelineStageFlagBits::eFragmentShader)
-                    .setSrcAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite)
-                    .setDstAccessMask(vk::AccessFlagBits::eShaderRead)
-                    .setDependencyFlags(vk::DependencyFlagBits::eByRegion);
-        vk::RenderPassCreateInfo renderPassCreateInfo;
-        renderPassCreateInfo.setAttachments(attachments)
-                    .setSubpasses(subpasses)
-                    .setDependencies(subpassDependencies);
-        m_pRenderPasses[i].reset(new VulkanRenderPass(m_pDevice, m_pDevice->GetVkDevice().createRenderPass(renderPassCreateInfo)));
+        m_pRenderPasses[i] = VulkanRenderPassBuilder(m_pDevice)
+                                .SetAttachments(fbAttachments)
+                                .SetDefaultSubpass()
+                                .AddSubpassDependency(
+                                    vk::SubpassDependency()
+                                                .setSrcSubpass(VK_SUBPASS_EXTERNAL)
+                                                .setDstSubpass(0)
+                                                .setSrcStageMask(vk::PipelineStageFlagBits::eFragmentShader)
+                                                .setDstStageMask(vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests)
+                                                .setSrcAccessMask(vk::AccessFlagBits::eShaderRead)
+                                                .setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+                                                .setDependencyFlags(vk::DependencyFlagBits::eByRegion))
+                                .AddSubpassDependency(
+                                    vk::SubpassDependency()
+                                                .setSrcSubpass(0)
+                                                .setDstSubpass(VK_SUBPASS_EXTERNAL)
+                                                .setSrcStageMask(vk::PipelineStageFlagBits::eLateFragmentTests)
+                                                .setDstStageMask(vk::PipelineStageFlagBits::eFragmentShader)
+                                                .setSrcAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+                                                .setDstAccessMask(vk::AccessFlagBits::eShaderRead)
+                                                .setDependencyFlags(vk::DependencyFlagBits::eByRegion))
+                                .buildUnique();
     }
 }
 
 // No.Light <==> (FRAMES) * No.Framebuffer
 void ShadowMapRenderPass::initFramebuffer()
 {
-    for (int frameId = 0; frameId < m_vkFramebuffers.size(); frameId++)
+    m_pVulkanFramebuffers.resize(m_num);
+    for (int lightId = 0; lightId < m_num; lightId++)
     {
-        m_vkFramebuffers[frameId].resize(m_num);
-        for (int lightId = 0; lightId < m_num; lightId++)
-        {
-            auto createInfo = vk::FramebufferCreateInfo()
-                        .setRenderPass(m_pRenderPasses[lightId]->GetVkRenderPass())
-                        .setAttachments(*m_pDepthSamplers[frameId][lightId]->GetPVkImageView())
-                        .setWidth((uint32_t)m_width)
-                        .setHeight((uint32_t)m_height)
-                        .setLayers(1);
-            m_vkFramebuffers[frameId][lightId] = m_pDevice->GetVkDevice().createFramebuffer(createInfo);
-        }
+        std::vector<VulkanFramebuffer::Attachment> fbAttachments(1);
+        fbAttachments[0].resourceFormat = m_vkDepthFormat;
+        fbAttachments[0].samples = vk::SampleCountFlagBits::e1;
+        fbAttachments[0].attachmentReferenceLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+        fbAttachments[0].resourceFinalLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+        fbAttachments[0].resource = m_pDepthSamplers[lightId]->GetPImageResource()->GetNative();
+
+        m_pVulkanFramebuffers[lightId].reset(new VulkanFramebuffer(m_pDevice, m_pRenderPasses[lightId].get(), m_width, m_height, 1, fbAttachments));
     }
 }
 
@@ -258,17 +224,15 @@ void ShadowMapRenderPass::initDepthSamplerDescriptor()
     uint32_t max = std::max(poolSizes[0].descriptorCount, poolSizes[1].descriptorCount);
     m_pDescriptorPool.reset(new VulkanDescriptorPool(m_pDevice, poolSizes, max));
 
-    for (int frameId = 0; frameId < m_pDepthSamplerDescriptorSets.size(); frameId++)
+
+    std::vector<VulkanImageSampler*> samplers;
+    std::vector<uint32_t> binding;
+    for (uint32_t bindingId = VulkanDescriptorSetLayout::DESCRIPTOR_SHADOWMAP1_BINDING_ID; bindingId <= VulkanDescriptorSetLayout::DESCRIPTOR_SHADOWMAP5_BINDING_ID; bindingId++)
     {
-        std::vector<VulkanImageSampler*> samplers;
-        std::vector<uint32_t> binding;
-        for (uint32_t bindingId = VulkanDescriptorSetLayout::DESCRIPTOR_SHADOWMAP1_BINDING_ID; bindingId <= VulkanDescriptorSetLayout::DESCRIPTOR_SHADOWMAP5_BINDING_ID; bindingId++)
-        {
-            samplers.push_back(m_pDepthSamplers[frameId][bindingId < m_num ? bindingId : m_num - 1].get());
-            binding.push_back(bindingId);
-        }
-        m_pDepthSamplerDescriptorSets[frameId] = m_pDescriptorPool->AllocSamplerDescriptorSet(m_pDevice->GetDescLayoutPresets().SHADOWMAP.get(), samplers, binding, vk::ImageLayout::eDepthStencilReadOnlyOptimal, 1);
+        samplers.push_back(m_pDepthSamplers[bindingId < m_num ? bindingId : m_num - 1].get());
+        binding.push_back(bindingId);
     }
+    m_pDepthSamplerDescriptorSets = m_pDescriptorPool->AllocSamplerDescriptorSet(m_pDevice->GetDescLayoutPresets().SHADOWMAP.get(), samplers, binding, vk::ImageLayout::eDepthStencilReadOnlyOptimal, 1);
 }
 
 void ShadowMapRenderPass::initPipelines()
@@ -310,6 +274,7 @@ void ShadowMapRenderPass::initPipelines()
 
     // switch off color blend state
     std::shared_ptr<VulkanColorBlendState> colorBlend = std::make_shared<VulkanColorBlendState>(std::vector<vk::PipelineColorBlendAttachmentState>{});
+    auto multisampleState = std::make_shared<VulkanMultisampleState>(vk::SampleCountFlagBits::e1);
     for (int i = 0; i < m_num; i++)
     {
         std::unique_ptr<VulkanRenderPipeline> pipeline =
@@ -318,6 +283,7 @@ void ShadowMapRenderPass::initPipelines()
                 .SetshaderSet(shaderSet)
                 .SetVulkanRasterizationState(rasterization)
                 .SetVulkanDynamicState(dynamic_state)
+                .SetVulkanMultisampleState(multisampleState)
                 .buildUnique();
         m_pRenderPasses[i]->AddGraphicRenderPipeline("shadowmap", std::move(pipeline));
     }
@@ -326,19 +292,18 @@ void ShadowMapRenderPass::initPipelines()
 // No.Light <==> (FRAMES) * No.UniformBuffer <==> (1)UniformBuffer <==> (No.UniformBuffer)UBODescriptorSets
 void ShadowMapRenderPass::initUniformBuffer()
 {
-    for (int frameId = 0; frameId < m_uniformBuffers.size(); frameId++)
-    {
-        m_uniformBuffers[frameId].resize(m_num);
 
-        for (int lightId = 0; lightId < m_num; lightId++)
-        {
-            m_uniformBuffers[frameId][lightId].reset(
-                new VulkanBuffer(
-                    m_pDevice, sizeof(CameraUniformBufferObject),
-                    vk::BufferUsageFlagBits::eUniformBuffer,
-                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-                vk::SharingMode::eExclusive
-                ));
-        }
+    m_uniformBuffers.resize(m_num);
+
+    for (int lightId = 0; lightId < m_num; lightId++)
+    {
+        m_uniformBuffers[lightId].reset(
+            new VulkanBuffer(
+                m_pDevice, sizeof(CameraUniformBufferObject),
+                vk::BufferUsageFlagBits::eUniformBuffer,
+            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+            vk::SharingMode::eExclusive
+            ));
     }
+
 }

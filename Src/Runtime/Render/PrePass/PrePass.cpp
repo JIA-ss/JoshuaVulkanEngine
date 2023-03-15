@@ -58,7 +58,7 @@ void PrePass::prepareAttachments(std::vector<RHI::VulkanFramebuffer::Attachment>
     m_attachmentResources.position = std::make_unique<RHI::VulkanImageSampler>(m_pDevice, nullptr, vk::MemoryPropertyFlagBits::eDeviceLocal, samplerConfig,  attachRTConfig);
     attachments[0].resource = m_attachmentResources.position->GetPImageResource()->GetNative();
     attachments[0].samples = sampleCount;
-    attachments[0].attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    attachments[0].attachmentReferenceLayout = vk::ImageLayout::eColorAttachmentOptimal;
 
     // 1: normal attachment samplable
     RHI::VulkanFramebuffer::Attachment normal;
@@ -66,7 +66,7 @@ void PrePass::prepareAttachments(std::vector<RHI::VulkanFramebuffer::Attachment>
     m_attachmentResources.normal = std::make_unique<RHI::VulkanImageSampler>(m_pDevice, nullptr, vk::MemoryPropertyFlagBits::eDeviceLocal, samplerConfig,  attachRTConfig);
     attachments[1].resource = m_attachmentResources.normal->GetPImageResource()->GetNative();
     attachments[1].samples = sampleCount;
-    attachments[1].attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    attachments[1].attachmentReferenceLayout = vk::ImageLayout::eColorAttachmentOptimal;
 
 
     // 2: albedo attachment samplable
@@ -74,7 +74,7 @@ void PrePass::prepareAttachments(std::vector<RHI::VulkanFramebuffer::Attachment>
     m_attachmentResources.albedo = std::make_unique<RHI::VulkanImageSampler>(m_pDevice, nullptr, vk::MemoryPropertyFlagBits::eDeviceLocal, samplerConfig,  attachRTConfig);
     attachments[2].resource = m_attachmentResources.albedo->GetPImageResource()->GetNative();
     attachments[2].samples = sampleCount;
-    attachments[2].attachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    attachments[2].attachmentReferenceLayout = vk::ImageLayout::eColorAttachmentOptimal;
 
 
     // 3: depth attachment
@@ -84,7 +84,7 @@ void PrePass::prepareAttachments(std::vector<RHI::VulkanFramebuffer::Attachment>
     attachments[3].resource = m_attachmentResources.depth->GetPImageResource()->GetNative();
     attachments[3].samples = sampleCount;
     attachments[3].resourceFinalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-    attachments[3].attachmentLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+    attachments[3].attachmentReferenceLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 }
 
 void PrePass::prepareRenderPass(const std::vector<RHI::VulkanFramebuffer::Attachment>& attachments)
@@ -95,13 +95,13 @@ void PrePass::prepareRenderPass(const std::vector<RHI::VulkanFramebuffer::Attach
     for (int i = 0; i < attachments.size(); i++)
     {
         desc[i] = attachments[i].GetVkAttachmentDescription();
-        auto attachmentLayout = attachments[i].attachmentLayout;
+        auto attachmentReferenceLayout = attachments[i].attachmentReferenceLayout;
         auto attachmentReference = attachments[i].GetVkAttachmentReference(i);
-        if (attachmentLayout == vk::ImageLayout::eColorAttachmentOptimal)
+        if (attachmentReferenceLayout == vk::ImageLayout::eColorAttachmentOptimal)
         {
             colorAttachRefs.push_back(attachmentReference);
         }
-        else if (attachmentLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+        else if (attachmentReferenceLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
         {
             depthAttachRef = attachmentReference;
         }

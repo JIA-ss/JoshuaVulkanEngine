@@ -4,6 +4,7 @@
 #include "Runtime/VulkanRHI/Graphic/Model.h"
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
+#include "Runtime/VulkanRHI/Resources/VulkanFramebuffer.h"
 #include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorPool.h"
 #include "Runtime/VulkanRHI/VulkanDescriptorSets.h"
@@ -31,7 +32,6 @@ public:
     void Render(vk::CommandBuffer cmd, std::vector<Model*> models, int frameId = 0);
 
 protected:
-    void initSyncPrimitive();
     void initDepthSampler();
     void initRenderPass();
     void initFramebuffer();
@@ -64,26 +64,24 @@ protected:
 
     // No.Light <==> (FRAMES) * No.Framebuffer
     // each Light(renderpass) corresponds to a framebuffer
-    std::array<std::vector<vk::Framebuffer>,                        MAX_FRAMES_IN_FLIGHT> m_vkFramebuffers;
+    std::vector<std::unique_ptr<VulkanFramebuffer>> m_pVulkanFramebuffers;
+
 
     // No.Framebuffer <==> No.DepthSampler
     // each framebuffer depthAttachment corresponds to a sampler
-    std::array<std::vector<std::unique_ptr<VulkanImageSampler>>,    MAX_FRAMES_IN_FLIGHT> m_pDepthSamplers;
+    std::vector<std::unique_ptr<VulkanImageSampler>>  m_pDepthSamplers;
 
     // ALL.DepthSampler <==> (1)DepthSamplerDescriptorSets
     // all sampler share one descriptorset
-    std::array<std::shared_ptr<VulkanDescriptorSets>,               MAX_FRAMES_IN_FLIGHT> m_pDepthSamplerDescriptorSets;
+    std::shared_ptr<VulkanDescriptorSets>  m_pDepthSamplerDescriptorSets;
 
     // No.Light <==> (FRAMES) * No.UniformBuffer
     // each light correponds to an UniformBuffer
-    std::array<std::vector<std::unique_ptr<VulkanBuffer>>,          MAX_FRAMES_IN_FLIGHT> m_uniformBuffers;
+    std::vector<std::unique_ptr<VulkanBuffer>> m_uniformBuffers;
 
         // No.UniformBuffer <==> (1)UBODescriptorSets <==> (No.UniformBuffer)DescriptorSet
         // each UniformBuffer corresponds to a descriptorset
     // obsolete, ubo descriptor will saved in model, it will be generated in InitShadowPassUniforDescriptorSets
     // std::array<std::shared_ptr<VulkanDescriptorSets>,               MAX_FRAMES_IN_FLIGHT> m_pUniformBufferDescriptorSets;
-
-    // No.Renderpass <==> (FRAMES) * No.Event
-    std::array<std::vector<vk::Event>,                              MAX_FRAMES_IN_FLIGHT> m_vkEvents;
 };
 RHI_NAMESPACE_END

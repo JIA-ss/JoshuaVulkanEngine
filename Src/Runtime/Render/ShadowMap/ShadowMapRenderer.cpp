@@ -2,6 +2,7 @@
 #include "Runtime/Render/ShadowMap/ShadowMapRenderer.h"
 #include "Runtime/VulkanRHI/Graphic/Mesh.h"
 #include "Runtime/VulkanRHI/Graphic/Model.h"
+#include "Runtime/VulkanRHI/PipelineStates/VulkanMultisampleState.h"
 #include "Runtime/VulkanRHI/PipelineStates/VulkanRasterizationState.h"
 #include "Runtime/VulkanRHI/RenderPass/ShadowMapRenderPass.h"
 #include "Runtime/VulkanRHI/Resources/VulkanImage.h"
@@ -15,6 +16,7 @@
 #include "vulkan/vulkan_structs.hpp"
 #include <glm/gtx/string_cast.hpp>
 #include <iostream>
+#include <memory>
 
 using namespace Render;
 
@@ -36,6 +38,11 @@ ShadowMapRenderer::~ShadowMapRenderer()
 void ShadowMapRenderer::prepare()
 {
     prepareLayout();
+    preparePresentFramebufferAttachments();
+    prepareRenderpass();
+    preparePresentFramebuffer();
+    preparePipeline();
+
     // prepare camera
     prepareCamera();
 
@@ -47,12 +54,7 @@ void ShadowMapRenderer::prepare()
     prepareModel();
     // prepare callback
     prepareInputCallback();
-    // prepare renderpass
-    prepareRenderpass();
-    // prepare pipeline
-    preparePipeline();
-    // prepare framebuffer
-    prepareFrameBuffer();
+
 }
 
 void ShadowMapRenderer::render()
@@ -135,6 +137,10 @@ void ShadowMapRenderer::render()
             std::vector<vk::ClearValue> clears(2);
             clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
             clears[1] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
+            if (m_pPhysicalDevice->IsUsingMSAA())
+            {
+                clears.push_back(clears[0]);
+            }
             m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{vk::Offset2D{0,0}, m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent}, m_pDevice->GetVulkanPresentFramebuffer(m_imageIdx)->GetVkFramebuffer());
             {
                 m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "default");
@@ -199,6 +205,7 @@ void ShadowMapRenderer::prepareLayout()
             )
         );
 }
+
 
 void ShadowMapRenderer::prepareLights()
 {
@@ -375,14 +382,6 @@ void ShadowMapRenderer::prepareShadowMapPass()
 }
 
 
-void ShadowMapRenderer::prepareRenderpass()
-{
-    vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
-    vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
-    vk::SampleCountFlagBits sampleCount = m_pDevice->GetVulkanPhysicalDevice()->GetSampleCount();
-    m_pRenderPass = std::make_shared<RHI::VulkanRenderPass>(m_pDevice.get(), colorFormat, depthForamt, sampleCount);
-}
-
 void ShadowMapRenderer::preparePipeline()
 {
     std::shared_ptr<RHI::VulkanShaderSet> shaderSet = std::make_shared<RHI::VulkanShaderSet>(m_pDevice.get());
@@ -391,10 +390,12 @@ void ShadowMapRenderer::preparePipeline()
 
     std::shared_ptr<RHI::VulkanRasterizationState> raster = RHI::VulkanRasterizationStateBuilder()
                                                                                     .SetCullMode(vk::CullModeFlagBits::eNone).build();
+    // auto multisampleState = std::make_shared<RHI::VulkanMultisampleState>(vk::SampleCountFlagBits::e1);
     auto pipeline = RHI::VulkanRenderPipelineBuilder(m_pDevice.get(), m_pRenderPass.get())
                             .SetshaderSet(shaderSet)
                             .SetVulkanPipelineLayout(m_pPipelineLayout)
                             .SetVulkanRasterizationState(raster)
+                            // .SetVulkanMultisampleState(multisampleState)
                             .buildUnique();
     m_pRenderPass->AddGraphicRenderPipeline("default", std::move(pipeline));
 
@@ -418,12 +419,6 @@ void ShadowMapRenderer::preparePipeline()
         m_pRenderPass->AddGraphicRenderPipeline("[debug]show shadowmap texture", std::move(pipeline));
     }
 }
-
-void ShadowMapRenderer::prepareFrameBuffer()
-{
-    // m_pDevice->CreatePresentFramebuffer(m_pRenderPass.get());
-}
-
 
 void ShadowMapRenderer::updateShadowMapMVPUniformBuf(uint32_t currentFrameIdx)
 {
