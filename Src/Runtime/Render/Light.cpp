@@ -33,31 +33,25 @@ Lights::Lights(RHI::VulkanDevice* device, const std::vector<Util::Math::VPMatrix
 
 Lights::~Lights()
 {
-    for (int frameId = 0; frameId < MAX_FRAMES_IN_FLIGHT; frameId++)
-    {
-        m_lightUniformBuffers[frameId].reset();
-    }
+    m_lightUniformBuffers.reset();
     m_shadowmapPass.reset();
 }
 
-std::array<RHI::Model::UBOLayoutInfo, MAX_FRAMES_IN_FLIGHT> Lights::GetUboInfo()
+RHI::Model::UBOLayoutInfo Lights::GetUboInfo()
 {
-    std::array<RHI::Model::UBOLayoutInfo, MAX_FRAMES_IN_FLIGHT> uboInfo;
-    for (int frameId = 0; frameId < uboInfo.size(); frameId++)
+    RHI::Model::UBOLayoutInfo uboInfo = RHI::Model::UBOLayoutInfo
     {
-        uboInfo[frameId] = RHI::Model::UBOLayoutInfo
-        {
-            m_lightUniformBuffers[frameId].get(),
-            RHI::VulkanDescriptorSetLayout::DESCRIPTOR_LIGHTUBO_BINDING_ID,
-            sizeof(RHI::LightInforUniformBufferObject)
-        };
+        m_lightUniformBuffers.get(),
+        RHI::VulkanDescriptorSetLayout::DESCRIPTOR_LIGHTUBO_BINDING_ID,
+        sizeof(RHI::LightInforUniformBufferObject)
     };
     return uboInfo;
 }
 
-void Lights::UpdateLightUBO(int frameId)
+void Lights::UpdateLightUBO()
 {
-    bool uboDirty = m_lightUniformBufferObjects[frameId].lightNum != m_lightNum;
+    ZoneScopedN("Lights::UpdateLightUBO");;
+    bool uboDirty = m_lightUniformBufferObjects.lightNum != m_lightNum;
 
     RHI::LightInforUniformBufferObject ubo;
     ubo.lightNum = m_lightNum;
@@ -71,31 +65,30 @@ void Lights::UpdateLightUBO(int frameId)
         ubo.direction[i] = glm::vec4(m_transformation[i].GetFrontDir(), 0.0f);
         uboDirty = (
             uboDirty
-            || ubo.viewProjMatrix[i] != m_lightUniformBufferObjects[frameId].viewProjMatrix[i]
-            || ubo.position[i] != m_lightUniformBufferObjects[frameId].position[i]
-            || ubo.color[i] != m_lightUniformBufferObjects[frameId].color[i]
-            || ubo.nearFar[i] != m_lightUniformBufferObjects[frameId].nearFar[i]);
+            || ubo.viewProjMatrix[i] != m_lightUniformBufferObjects.viewProjMatrix[i]
+            || ubo.position[i] != m_lightUniformBufferObjects.position[i]
+            || ubo.color[i] != m_lightUniformBufferObjects.color[i]
+            || ubo.nearFar[i] != m_lightUniformBufferObjects.nearFar[i]);
     }
 
     if (uboDirty)
     {
-        m_lightUniformBufferObjects[frameId] = ubo;
-        m_lightUniformBuffers[frameId]->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
+        m_lightUniformBufferObjects = ubo;
+        m_lightUniformBuffers->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
     }
 }
 
 void Lights::initLightUBO()
 {
-    for (int frameId = 0; frameId < m_lightUniformBuffers.size(); frameId++)
-    {
-        m_lightUniformBuffers[frameId].reset(
-            new RHI::VulkanBuffer(
-                    m_pDevice, sizeof(RHI::LightInforUniformBufferObject),
-                    vk::BufferUsageFlagBits::eUniformBuffer,
-                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-                    vk::SharingMode::eExclusive
-                )
-            );
-    }
+
+    m_lightUniformBuffers.reset(
+        new RHI::VulkanBuffer(
+                m_pDevice, sizeof(RHI::LightInforUniformBufferObject),
+                vk::BufferUsageFlagBits::eUniformBuffer,
+                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                vk::SharingMode::eExclusive
+            )
+        );
+
     m_color.resize(m_lightNum);
 }

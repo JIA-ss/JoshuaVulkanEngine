@@ -49,7 +49,6 @@ private:
     void queryInfo();
     void getImages();
     void createImageViews();
-    void createDepthAndResolveColorImage();
 
 };
 

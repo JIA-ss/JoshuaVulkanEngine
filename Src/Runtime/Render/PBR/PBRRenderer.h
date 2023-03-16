@@ -40,7 +40,7 @@ protected:
     void prepareLight();
     void prepareInputCallback();
     void prepareIbl();
-    void updateLightUniformBuf(uint32_t currentFrameIdx);
+    void updateLightUniformBuf();
 private:
     struct PushConstant
     {

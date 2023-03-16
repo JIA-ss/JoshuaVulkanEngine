@@ -24,11 +24,14 @@
 #include <stdint.h>
 #include <utility>
 #include <vector>
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyVulkan.hpp>
 
 namespace Render { namespace Prefilter {
 
 void Ibl::Prepare()
 {
+    ZoneScoped;
     prepareLayout();
     prepareCamera();
     prepareSamplerCubeModel();
@@ -44,6 +47,7 @@ void Ibl::Prepare()
 
 void Ibl::FillToBindingDescriptorSets(std::vector<vk::DescriptorSet>& tobinding)
 {
+    ZoneScoped;
     if (tobinding.size() <= 2)
     {
         tobinding.resize(3);
@@ -85,17 +89,16 @@ void Ibl::prepareCamera()
 
 void Ibl::prepareSamplerCubeModel()
 {
+    ZoneScoped;
     m_pLight.reset(new Lights(m_pDevice, 1));
     m_pSamplerCubeModel = RHI::ModelPresets::CreateSkyboxModel(m_pDevice, m_pPipelineLayout->GetPVulkanDescriptorSet(1));
 
-    std::array<std::vector<RHI::Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT> uboInfos;
+    std::vector<RHI::Model::UBOLayoutInfo> uboInfos;
     auto camUbo = m_pCamera->GetUboInfo();
     auto lightUbo = m_pLight->GetUboInfo();
-    for (int frameId = 0; frameId < uboInfos.size(); frameId++)
-    {
-        uboInfos[frameId].push_back(camUbo[frameId]);
-        uboInfos[frameId].push_back(lightUbo[frameId]);
-    }
+    uboInfos.push_back(camUbo);
+    uboInfos.push_back(lightUbo);
+
     m_pSamplerCubeModel->InitUniformDescriptorSets(uboInfos);
 }
 
@@ -106,6 +109,7 @@ void Ibl::prepareCmd()
 
 void Ibl::generateIrradianceCubeMap()
 {
+    ZoneScoped;
     auto tStart = std::chrono::high_resolution_clock::now();
 
     const vk::Format format = vk::Format::eR32G32B32A32Sfloat;
@@ -240,7 +244,7 @@ void Ibl::generateIrradianceCubeMap()
         cmd.setViewport(0,1,&viewport);
         cmd.setScissor(0,scissor);
 
-        m_pCamera->UpdateUniformBuffer(0);
+        m_pCamera->UpdateUniformBuffer();
 
         // Change image layout for all cubemap faces to transfer destination
         m_pIrradianceCubeMapSampler->GetPImageResource()->TransitionImageLayout(cmd, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
@@ -265,7 +269,7 @@ void Ibl::generateIrradianceCubeMap()
                     m_pPipelineLayout->PushConstantT<PushConstant>(cmd, 0, consts, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
                     m_pIrradianceRenderPass->BindGraphicPipeline(cmd, "irrandiance");
                     std::vector<vk::DescriptorSet> tobinding;
-                    m_pSamplerCubeModel->Draw(cmd, m_pPipelineLayout.get(), tobinding, 0);
+                    m_pSamplerCubeModel->Draw(cmd, m_pPipelineLayout.get(), tobinding);
                 }
                 m_pIrradianceRenderPass->End(cmd);
 
@@ -311,6 +315,7 @@ void Ibl::generateIrradianceCubeMap()
 
 void Ibl::generatePrefilterEnvCubeMap()
 {
+    ZoneScoped;
     auto tStart = std::chrono::high_resolution_clock::now();
 
     const vk::Format format = vk::Format::eR16G16B16A16Sfloat;
@@ -443,7 +448,7 @@ void Ibl::generatePrefilterEnvCubeMap()
         cmd.setViewport(0,1,&viewport);
         cmd.setScissor(0,scissor);
 
-        m_pCamera->UpdateUniformBuffer(0);
+        m_pCamera->UpdateUniformBuffer();
 
         // Change image layout for all cubemap faces to transfer destination
         m_pPrefilterEnvCubeMapSampler->GetPImageResource()->TransitionImageLayout(cmd, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
@@ -470,7 +475,7 @@ void Ibl::generatePrefilterEnvCubeMap()
                     m_pPipelineLayout->PushConstantT<PushConstant>(cmd, 0, consts, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
                     m_pPrefilterEnvRenderPass->BindGraphicPipeline(cmd, "prefilterEnvironment");
                     std::vector<vk::DescriptorSet> tobinding;
-                    m_pSamplerCubeModel->Draw(cmd, m_pPipelineLayout.get(), tobinding, 0);
+                    m_pSamplerCubeModel->Draw(cmd, m_pPipelineLayout.get(), tobinding);
                 }
                 m_pPrefilterEnvRenderPass->End(cmd);
 
@@ -525,6 +530,7 @@ void Ibl::generateBrdfLUT()
 
 void Ibl::generateOutputDiscriptorSet()
 {
+    ZoneScoped;
     std::vector<vk::DescriptorPoolSize> sizes
     {
         vk::DescriptorPoolSize {vk::DescriptorType::eCombinedImageSampler, 3}

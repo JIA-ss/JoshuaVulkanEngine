@@ -46,77 +46,76 @@ Model::~Model()
     m_vulkanDescriptorPool.reset();
 }
 
-void Model::InitShadowPassUniforDescriptorSets(const std::array<std::vector<UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT>& uboInfo, int lightIdx)
+void Model::InitShadowPassUniforDescriptorSets(const std::vector<UBOLayoutInfo>& uboInfo, int lightIdx)
 {
     constexpr const uint32_t BINDINGID = VulkanDescriptorSetLayout::DESCRIPTOR_MODELUBO_BINDING_ID;
     constexpr const uint32_t RANGE = sizeof(ModelUniformBufferObject);
-    for (int frameId = 0; frameId < uboInfo.size(); frameId++)
+
+    std::vector<VulkanBuffer*> buffer;
+    std::vector<uint32_t> binding, range;
+    for (auto& layoutInfo : uboInfo)
     {
-        std::vector<VulkanBuffer*> buffer;
-        std::vector<uint32_t> binding, range;
-        for (auto& layoutInfo : uboInfo[frameId])
-        {
-            buffer.push_back(layoutInfo.buffer);
-            binding.push_back(layoutInfo.bindingId);
-            range.push_back(layoutInfo.range);
-        }
-
-        buffer.push_back(m_uniformBuffers[frameId].get());
-        binding.push_back(BINDINGID);
-        range.push_back(RANGE);
-
-        if (m_shadowPassUniformSets[frameId].size() <= lightIdx)
-        {
-            m_shadowPassUniformSets[frameId].resize(lightIdx + 1);
-        }
-
-        m_shadowPassUniformSets[frameId][lightIdx] = m_vulkanDescriptorPool->AllocUniformDescriptorSet(m_pVulkanDevice->GetDescLayoutPresets().UBO.get(), buffer, binding, range, 1);
+        buffer.push_back(layoutInfo.buffer);
+        binding.push_back(layoutInfo.bindingId);
+        range.push_back(layoutInfo.range);
     }
+
+    buffer.push_back(m_uniformBuffer.get());
+    binding.push_back(BINDINGID);
+    range.push_back(RANGE);
+
+    if (m_shadowPassUniformSets.size() <= lightIdx)
+    {
+        m_shadowPassUniformSets.resize(lightIdx + 1);
+    }
+
+    m_shadowPassUniformSets[lightIdx] = m_vulkanDescriptorPool->AllocUniformDescriptorSet(m_pVulkanDevice->GetDescLayoutPresets().UBO.get(), buffer, binding, range, 1);
 }
 
-void Model::InitUniformDescriptorSets(const std::array<std::vector<UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT>& uboInfo)
+void Model::InitUniformDescriptorSets(const std::vector<UBOLayoutInfo>& uboInfo)
 {
     constexpr const uint32_t BINDINGID = VulkanDescriptorSetLayout::DESCRIPTOR_MODELUBO_BINDING_ID;
     constexpr const uint32_t RANGE = sizeof(ModelUniformBufferObject);
-    for (int frameId = 0; frameId < uboInfo.size(); frameId++)
+
+
+    std::vector<VulkanBuffer*> buffer;
+    std::vector<uint32_t> binding, range;
+    for (auto& layoutInfo : uboInfo)
     {
-        std::vector<VulkanBuffer*> buffer;
-        std::vector<uint32_t> binding, range;
-        for (auto& layoutInfo : uboInfo[frameId])
+        uint32_t bindingId = layoutInfo.bindingId;
+        if (buffer.size() <= bindingId)
         {
-            uint32_t bindingId = layoutInfo.bindingId;
-            if (buffer.size() <= bindingId)
-            {
-                buffer.resize(bindingId + 1);
-                binding.resize(bindingId + 1);
-                range.resize(bindingId + 1);
-            }
-
-            buffer[bindingId] = layoutInfo.buffer;
-            binding[bindingId] = layoutInfo.bindingId;
-            range[bindingId] = layoutInfo.range;
+            buffer.resize(bindingId + 1);
+            binding.resize(bindingId + 1);
+            range.resize(bindingId + 1);
         }
 
-        if (buffer.size() <= BINDINGID)
-        {
-            buffer.resize(BINDINGID + 1);
-            binding.resize(BINDINGID + 1);
-            range.resize(BINDINGID + 1);
-        }
-        buffer[BINDINGID] = m_uniformBuffers[frameId].get();
-        binding[BINDINGID] = BINDINGID;
-        range[BINDINGID] = RANGE;
-        m_uniformSets[frameId] = m_vulkanDescriptorPool->AllocUniformDescriptorSet(m_pVulkanDevice->GetDescLayoutPresets().UBO.get(), buffer, binding, range, 1);
+        buffer[bindingId] = layoutInfo.buffer;
+        binding[bindingId] = layoutInfo.bindingId;
+        range[bindingId] = layoutInfo.range;
     }
+
+    if (buffer.size() <= BINDINGID)
+    {
+        buffer.resize(BINDINGID + 1);
+        binding.resize(BINDINGID + 1);
+        range.resize(BINDINGID + 1);
+    }
+    buffer[BINDINGID] = m_uniformBuffer.get();
+    binding[BINDINGID] = BINDINGID;
+    range[BINDINGID] = RANGE;
+    m_uniformSet = m_vulkanDescriptorPool->AllocUniformDescriptorSet(m_pVulkanDevice->GetDescLayoutPresets().UBO.get(), buffer, binding, range, 1);
+
 }
 
-void Model::DrawShadowPass(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, int frameId, int lightId)
+void Model::DrawShadowPass(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, int lightId)
 {
+    ZoneScopedN("Model::DrawShadowPass");
     // bind shadowpass descriptor
     {
-        updateModelUniformBuffer(frameId);
+        updateModelUniformBuffer();
         std::vector<vk::DescriptorSet> CAMUBO_Descriptors;
-        m_shadowPassUniformSets[frameId][lightId]->FillToBindedDescriptorSetsVector(CAMUBO_Descriptors, pipelineLayout);
+        m_shadowPassUniformSets[lightId]->FillToBindedDescriptorSetsVector(CAMUBO_Descriptors, pipelineLayout);
         cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout->GetVkPieplineLayout(), 0, CAMUBO_Descriptors, {});
     }
 
@@ -128,12 +127,13 @@ void Model::DrawShadowPass(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelin
 }
 
 
-void Model::DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding, int frameId)
+void Model::DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding)
 {
+    ZoneScopedN("Model::DrawWithNoMaterial");
     // bind model ubo
     {
-        updateModelUniformBuffer(frameId);
-        m_uniformSets[frameId]->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
+        updateModelUniformBuffer();
+        m_uniformSet->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
         cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout->GetVkPieplineLayout(), 0, tobinding, {});
     }
 
@@ -144,12 +144,13 @@ void Model::DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout* pip
     }
 }
 
-void Model::Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding, int frameId)
+void Model::Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding)
 {
+    ZoneScopedN("Model::Draw");
     // bind model ubo
     {
-        updateModelUniformBuffer(0);
-        m_uniformSets[0]->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
+        updateModelUniformBuffer();
+        m_uniformSet->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
     }
 
     for (int meshIdx = 0; meshIdx < m_meshes.size(); meshIdx++)
@@ -166,6 +167,7 @@ void Model::Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, s
 
 void Model::init(Util::Model::ModelData&& modelData, VulkanDescriptorSetLayout* layout)
 {
+    ZoneScopedN("Model::init");
     m_materialIndexs = std::move(modelData.materialIndexs);
 
     initMatrials(modelData.materialDatas, layout);
@@ -175,6 +177,7 @@ void Model::init(Util::Model::ModelData&& modelData, VulkanDescriptorSetLayout* 
 }
 void Model::initMatrials(const std::vector<Util::Model::MaterialData>& materialDatas, VulkanDescriptorSetLayout* layout)
 {
+    ZoneScopedN("Model::initMatrials");
     // create image sampler
     for (auto& matData : materialDatas)
     {
@@ -225,7 +228,7 @@ void Model::initMatrials(const std::vector<Util::Model::MaterialData>& materialD
         std::vector<vk::DescriptorPoolSize> poolSizes
         {
             vk::DescriptorPoolSize{ vk::DescriptorType::eCombinedImageSampler, maxDescriptorNums },
-            vk::DescriptorPoolSize{ vk::DescriptorType::eUniformBuffer, (uint32_t)m_uniformBuffers.size() + 5 * (uint32_t)m_shadowPassUniformSets.size() }
+            vk::DescriptorPoolSize{ vk::DescriptorType::eUniformBuffer, 1 + 5 * (uint32_t)m_shadowPassUniformSets.size() }
         };
         m_vulkanDescriptorPool.reset(new VulkanDescriptorPool(m_pVulkanDevice, poolSizes, poolSizes[0].descriptorCount + poolSizes[1].descriptorCount));
     }
@@ -282,6 +285,7 @@ void Model::initMatrials(const std::vector<Util::Model::MaterialData>& materialD
 
 void Model::initMeshes(std::vector<Util::Model::MeshData>& meshData)
 {
+    ZoneScopedN("Model::initMeshes");
     for (int i = 0; i < meshData.size(); i++)
     {
         std::shared_ptr<Mesh> mesh(new Mesh(m_pVulkanDevice, std::move(meshData[i])));
@@ -291,30 +295,30 @@ void Model::initMeshes(std::vector<Util::Model::MeshData>& meshData)
 
 void Model::initModelUniformBuffers()
 {
-    for (int i = 0; i < m_uniformBuffers.size(); i++)
-    {
-        m_uniformBuffers[i].reset(
-            new RHI::VulkanBuffer(
-                    m_pVulkanDevice, sizeof(ModelUniformBufferObject),
-                    vk::BufferUsageFlagBits::eUniformBuffer,
-                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-                    vk::SharingMode::eExclusive
-                )
-            );
-    }
+    ZoneScopedN("Model::initModelUniformBuffers");
+
+    m_uniformBuffer.reset(
+        new RHI::VulkanBuffer(
+                m_pVulkanDevice, sizeof(ModelUniformBufferObject),
+                vk::BufferUsageFlagBits::eUniformBuffer,
+                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                vk::SharingMode::eExclusive
+            )
+        );
+
 }
 
-void Model::updateModelUniformBuffer(int frameId)
+void Model::updateModelUniformBuffer()
 {
     ModelUniformBufferObject ubo;
     ubo.model = m_transformation.GetMatrix();
     ubo.color = m_color;
 
-    if (m_uniformBufferObjects[frameId].model != ubo.model
-        || m_uniformBufferObjects[frameId].color  != ubo.color)
+    if (m_uniformBufferObject.model != ubo.model
+        || m_uniformBufferObject.color  != ubo.color)
     {
-        m_uniformBufferObjects[frameId] = ubo;
-        m_uniformBuffers[frameId]->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
+        m_uniformBufferObject = ubo;
+        m_uniformBuffer->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
     }
 }
 #pragma region === Model View For Debug ===
@@ -375,7 +379,7 @@ ModelView::ModelView(Model* model, VulkanDevice* device, VulkanDescriptorSetLayo
         std::vector<vk::DescriptorPoolSize> poolSizes
         {
             vk::DescriptorPoolSize{ vk::DescriptorType::eCombinedImageSampler, maxDescriptorNums },
-            vk::DescriptorPoolSize{ vk::DescriptorType::eUniformBuffer, (uint32_t)m_uniformBuffers.size()}
+            vk::DescriptorPoolSize{ vk::DescriptorType::eUniformBuffer, 1}
         };
         m_vulkanDescriptorPool.reset(new VulkanDescriptorPool(m_pVulkanDevice, poolSizes, poolSizes[0].descriptorCount + poolSizes[1].descriptorCount));
     }
@@ -430,17 +434,16 @@ ModelView::ModelView(Model* model, VulkanDevice* device, VulkanDescriptorSetLayo
     }
 
     // init uniform buffers
-    for (int i = 0; i < m_uniformBuffers.size(); i++)
-    {
-        m_uniformBuffers[i].reset(
-            new RHI::VulkanBuffer(
-                    m_pVulkanDevice, sizeof(ModelUniformBufferObject),
-                    vk::BufferUsageFlagBits::eUniformBuffer,
-                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-                    vk::SharingMode::eExclusive
-                )
-            );
-    }
+
+    m_uniformBuffer.reset(
+        new RHI::VulkanBuffer(
+                m_pVulkanDevice, sizeof(ModelUniformBufferObject),
+                vk::BufferUsageFlagBits::eUniformBuffer,
+                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                vk::SharingMode::eExclusive
+            )
+        );
+
 }
 
 ModelView::~ModelView()
@@ -448,48 +451,48 @@ ModelView::~ModelView()
 
 }
 
-void ModelView::InitUniformDescriptorSets(const std::array<std::vector<Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT>& uboInfo)
+void ModelView::InitUniformDescriptorSets(const std::vector<Model::UBOLayoutInfo>& uboInfo)
 {
     constexpr const uint32_t BINDINGID = VulkanDescriptorSetLayout::DESCRIPTOR_MODELUBO_BINDING_ID;
     constexpr const uint32_t RANGE = sizeof(ModelUniformBufferObject);
-    for (int frameId = 0; frameId < uboInfo.size(); frameId++)
+
+
+    std::vector<VulkanBuffer*> buffer;
+    std::vector<uint32_t> binding, range;
+    for (auto& layoutInfo : uboInfo)
     {
-        std::vector<VulkanBuffer*> buffer;
-        std::vector<uint32_t> binding, range;
-        for (auto& layoutInfo : uboInfo[frameId])
+        uint32_t bindingId = layoutInfo.bindingId;
+        if (buffer.size() <= bindingId)
         {
-            uint32_t bindingId = layoutInfo.bindingId;
-            if (buffer.size() <= bindingId)
-            {
-                buffer.resize(bindingId + 1);
-                binding.resize(bindingId + 1);
-                range.resize(bindingId + 1);
-            }
-
-            buffer[bindingId] = layoutInfo.buffer;
-            binding[bindingId] = layoutInfo.bindingId;
-            range[bindingId] = layoutInfo.range;
+            buffer.resize(bindingId + 1);
+            binding.resize(bindingId + 1);
+            range.resize(bindingId + 1);
         }
 
-        if (buffer.size() <= BINDINGID)
-        {
-            buffer.resize(BINDINGID + 1);
-            binding.resize(BINDINGID + 1);
-            range.resize(BINDINGID + 1);
-        }
-        buffer[BINDINGID] = m_uniformBuffers[frameId].get();
-        binding[BINDINGID] = BINDINGID;
-        range[BINDINGID] = RANGE;
-        m_uniformSets[frameId] = m_vulkanDescriptorPool->AllocUniformDescriptorSet(m_pVulkanDevice->GetDescLayoutPresets().UBO.get(), buffer, binding, range, 1);
+        buffer[bindingId] = layoutInfo.buffer;
+        binding[bindingId] = layoutInfo.bindingId;
+        range[bindingId] = layoutInfo.range;
     }
+
+    if (buffer.size() <= BINDINGID)
+    {
+        buffer.resize(BINDINGID + 1);
+        binding.resize(BINDINGID + 1);
+        range.resize(BINDINGID + 1);
+    }
+    buffer[BINDINGID] = m_uniformBuffer.get();
+    binding[BINDINGID] = BINDINGID;
+    range[BINDINGID] = RANGE;
+    m_uniformSet = m_vulkanDescriptorPool->AllocUniformDescriptorSet(m_pVulkanDevice->GetDescLayoutPresets().UBO.get(), buffer, binding, range, 1);
+
 }
 
-void ModelView::DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding, int frameId)
+void ModelView::DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding)
 {
     // bind model ubo
     {
-        updateModelUniformBuffer(frameId);
-        m_uniformSets[frameId]->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
+        updateModelUniformBuffer();
+        m_uniformSet->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
         cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout->GetVkPieplineLayout(), 0, tobinding, {});
     }
 
@@ -499,12 +502,13 @@ void ModelView::DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout*
         meshView->DrawIndexed(cmd);
     }
 }
-void ModelView::Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding, int frameId)
+void ModelView::Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding)
 {
+    ZoneScopedN("ModelView::Draw");
     // bind model ubo
     {
-        updateModelUniformBuffer(frameId);
-        m_uniformSets[frameId]->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
+        updateModelUniformBuffer();
+        m_uniformSet->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
     }
 
     for (int meshIdx = 0; meshIdx < m_meshViews.size(); meshIdx++)
@@ -525,17 +529,17 @@ Util::Math::SRTMatrix& ModelView::GetTransformation()
 }
 
 
-void ModelView::updateModelUniformBuffer(int frameId)
+void ModelView::updateModelUniformBuffer()
 {
     ModelUniformBufferObject ubo;
     ubo.model = m_model->m_transformation.GetMatrix();
     ubo.color = m_model->m_color;
 
-    if (m_uniformBufferObjects[frameId].model != ubo.model
-        || m_uniformBufferObjects[frameId].color != ubo.color)
+    if (m_uniformBufferObject.model != ubo.model
+        || m_uniformBufferObject.color != ubo.color)
     {
-        m_uniformBufferObjects[frameId] = ubo;
-        m_uniformBuffers[frameId]->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
+        m_uniformBufferObject = ubo;
+        m_uniformBuffer->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
     }
 }
 #pragma endregion

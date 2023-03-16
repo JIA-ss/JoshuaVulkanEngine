@@ -13,6 +13,7 @@ RHI_NAMESPACE_USING
 VulkanSwapchain::VulkanSwapchain(VulkanDevice* device)
     : m_pVulkanDevice(device)
 {
+    ZoneScopedN("VulkanSwapchain::VulkanSwapchain");
     std::cout << "=== === === VulkanSwapchain Construct Begin === === ===" << std::endl;
 
 
@@ -48,13 +49,13 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice* device)
 
     getImages();
     createImageViews();
-    createDepthAndResolveColorImage();
 
     std::cout << "=== === === VulkanSwapchain Construct End === === ===" << std::endl;
 }
 
 VulkanSwapchain::~VulkanSwapchain()
 {
+    ZoneScopedN("VulkanSwapchain::~VulkanSwapchain");
     m_pVulkanDepthImage.reset();
     m_pVulkanSuperSamplerColorImage.reset();
     for (auto& imgNativef : m_nativePresentImages)
@@ -112,6 +113,7 @@ void VulkanSwapchain::queryInfo()
 
 void VulkanSwapchain::getImages()
 {
+    ZoneScopedN("VulkanSwapchain::getImages");
     auto vkImages = m_pVulkanDevice->GetVkDevice().getSwapchainImagesKHR(m_vkSwapchain);
     m_nativePresentImages.resize(vkImages.size());
     for (int i = 0; i < vkImages.size(); i++)
@@ -122,7 +124,7 @@ void VulkanSwapchain::getImages()
 
 void VulkanSwapchain::createImageViews()
 {
-
+    ZoneScopedN("VulkanSwapchain::createImageViews");
     VulkanImageResource::Config config;
     config.subresourceRange
             .setBaseMipLevel(0)
@@ -149,34 +151,5 @@ void VulkanSwapchain::createImageViews()
     }
 }
 
-void VulkanSwapchain::createDepthAndResolveColorImage()
-{
-    VulkanImageResource::Config config;
-    config.format = m_pVulkanDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
-    config.sampleCount = m_pVulkanDevice->GetVulkanPhysicalDevice()->GetSampleCount();
-    config.extent = vk::Extent3D{ m_swapchainInfo.imageExtent, 1};
-    config.imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-    if (m_pVulkanDevice->GetVulkanPhysicalDevice()->HasStencilComponent(config.format))
-    {
-        config.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
-        // config.subresourceLayers.setAspectMask(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
-    }
-    else
-    {
-        config.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
-        // config.subresourceLayers.setAspectMask(vk::ImageAspectFlagBits::eDepth);
-    }
-    m_pVulkanDepthImage.reset(new VulkanImageResource(m_pVulkanDevice, vk::MemoryPropertyFlagBits::eDeviceLocal, config));
-    // m_pVulkanDepthImage->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-    if (m_pVulkanDevice->GetVulkanPhysicalDevice()->IsUsingMSAA())
-    {
-        config.format = m_swapchainInfo.format.format;
-        config.imageUsage = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
-        config.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
-        m_pVulkanSuperSamplerColorImage.reset(new VulkanImageResource(m_pVulkanDevice, vk::MemoryPropertyFlagBits::eDeviceLocal, config));
-        // m_pVulkanSuperSamplerColorImage->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
-    }
-}
 
 

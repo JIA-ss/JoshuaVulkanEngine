@@ -27,6 +27,7 @@ VulkanDescriptorSets::VulkanDescriptorSets(
     , m_binding(binding)
     , m_vkDescPool(descPool)
 {
+    ZoneScopedN("VulkanDescriptorSets::VulkanDescriptorSets");
     assert(binding.size() == uniformBuffers.size());
     assert(uniformBuffers.size() == range.size());
 
@@ -83,7 +84,7 @@ VulkanDescriptorSets::VulkanDescriptorSets(
     , m_pVulkanImageSamplers(imageSamplers)
     , m_vkDescPool(descPool)
 {
-
+    ZoneScopedN("VulkanDescriptorSets::VulkanDescriptorSets");
     assert(binding.size() == imageSamplers.size());
 
 
@@ -133,6 +134,7 @@ VulkanDescriptorSets::~VulkanDescriptorSets()
 
 void VulkanDescriptorSets::FillToBindedDescriptorSetsVector(std::vector<vk::DescriptorSet>& descList, VulkanPipelineLayout* pipelineLayout, int selfSetIndex)
 {
+    ZoneScopedN("VulkanDescriptorSets::FillToBindedDescriptorSetsVector");
     vk::DescriptorSet tobinding = m_vkDescSets[selfSetIndex];
     int setId = pipelineLayout->GetDescriptorSetId(this);
     if (setId != -1)

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iostream>
 #include <string.h>
+#include <tracy/Tracy.hpp>
 
 
 #if VULKAN_HPP_DISPATCH_LOADER_DYNAMIC
@@ -16,6 +17,7 @@ RHI_NAMESPACE_USING
 
 VulkanInstance::VulkanInstance(const VulkanInstance::Config& config)
 {
+    ZoneScopedN("VulkanInstance::VulkanInstance");
     std::cout << "=== === === VulkanInstance Construct Begin === === ===" << std::endl;
 
     static vk::DynamicLoader  dl;
@@ -168,6 +170,7 @@ void VulkanInstance::enableDebugValidationLayers()
 
 VulkanInstance::~VulkanInstance()
 {
+    ZoneScopedN("VulkanInstance::~VulkanInstance");
     m_vkInstance.destroyDebugUtilsMessengerEXT(m_vkDebugUtilMsgExt);
     m_vkInstance.destroy();
 }

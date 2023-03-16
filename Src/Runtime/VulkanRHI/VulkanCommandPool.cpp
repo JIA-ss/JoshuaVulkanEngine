@@ -22,6 +22,7 @@ VulkanCmdBeginEndRAII::~VulkanCmdBeginEndRAII()
 VulkanCommandPool::VulkanCommandPool(VulkanDevice* device, uint32_t queueFamilyIndex)
     : m_pVulkanDevice(device)
 {
+    ZoneScopedN("VulkanCommandPool::VulkanCommandPool");
     auto poolInfo = vk::CommandPoolCreateInfo()
             .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
             .setQueueFamilyIndex(queueFamilyIndex);
@@ -30,11 +31,13 @@ VulkanCommandPool::VulkanCommandPool(VulkanDevice* device, uint32_t queueFamilyI
 
 VulkanCommandPool::~VulkanCommandPool()
 {
+    ZoneScopedN("VulkanCommandPool::~VulkanCommandPool");
     m_pVulkanDevice->GetVkDevice().destroyCommandPool(m_vkCmdPool);
 }
 
 vk::CommandBuffer VulkanCommandPool::CreateReUsableCmd()
 {
+    ZoneScopedN("VulkanCommandPool::CreateReUsableCmd");
     vk::CommandBufferAllocateInfo allocateInfo;
     allocateInfo.setCommandBufferCount(1)
                 .setCommandPool(m_vkCmdPool)
@@ -44,12 +47,14 @@ vk::CommandBuffer VulkanCommandPool::CreateReUsableCmd()
 
 void VulkanCommandPool::FreeReUsableCmd(vk::CommandBuffer cmd)
 {
+    ZoneScopedN("VulkanCommandPool::FreeReUsableCmd");
     m_pVulkanDevice->GetVkDevice().freeCommandBuffers(m_vkCmdPool, cmd);
 }
 
 
 vk::CommandBuffer VulkanCommandPool::BeginSingleTimeCommand()
 {
+    ZoneScopedN("VulkanCommandPool::BeginSingleTimeCommand");
     auto allocInfo = vk::CommandBufferAllocateInfo()
                 .setLevel(vk::CommandBufferLevel::ePrimary)
                 .setCommandPool(m_vkCmdPool)
@@ -64,6 +69,7 @@ vk::CommandBuffer VulkanCommandPool::BeginSingleTimeCommand()
 
 void VulkanCommandPool::EndSingleTimeCommand(vk::CommandBuffer cmd, vk::Queue queue)
 {
+    ZoneScopedN("VulkanCommandPool::EndSingleTimeCommand");
     cmd.end();
 
     auto submitInfo = vk::SubmitInfo()

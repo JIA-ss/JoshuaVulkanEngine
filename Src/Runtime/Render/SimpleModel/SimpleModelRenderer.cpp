@@ -97,8 +97,8 @@ void SimpleModelRenderer::render()
         throw std::runtime_error("acquire next image failed");
     }
 
-    m_pCamera->UpdateUniformBuffer(m_frameIdxInFlight);
-    m_pLight->UpdateLightUBO(m_frameIdxInFlight);
+    m_pCamera->UpdateUniformBuffer();
+    m_pLight->UpdateLightUBO();
 
     // reset fence after acquiring the image
     m_pDevice->GetVkDevice().resetFences(m_vkFences[m_frameIdxInFlight]);
@@ -125,7 +125,7 @@ void SimpleModelRenderer::render()
             vk::Rect2D rect{{0,0},extent};
             m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{0,0,(float)extent.width, (float)extent.height,0,1});
             m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
-            m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+            m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
         }
         m_pRenderPass->End(m_vkCmds[m_frameIdxInFlight]);
     }
@@ -174,14 +174,11 @@ void SimpleModelRenderer::prepareModel()
     transformation.SetRotation(glm::vec3(0,90,0));
     transformation.SetScale(glm::vec3(0.05f));
 
-    std::array<std::vector<RHI::Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT> uboInfos;
+    std::vector<RHI::Model::UBOLayoutInfo> uboInfos;
     auto camUbo = m_pCamera->GetUboInfo();
     auto lightUbo = m_pLight->GetUboInfo();
-    for (int frameId = 0; frameId < uboInfos.size(); frameId++)
-    {
-        uboInfos[frameId].push_back(camUbo[frameId]);
-        uboInfos[frameId].push_back(lightUbo[frameId]);
-    }
+    uboInfos.push_back(camUbo);
+    uboInfos.push_back(lightUbo);
     m_pModel->InitUniformDescriptorSets(uboInfos);
 }
 

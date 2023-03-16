@@ -16,9 +16,9 @@ public:
     Lights(RHI::VulkanDevice* device, const std::vector<Util::Math::VPMatrix>& transformation, bool useShadowPass = false);
     ~Lights();
 
-    std::array<RHI::Model::UBOLayoutInfo, MAX_FRAMES_IN_FLIGHT> GetUboInfo();
+    RHI::Model::UBOLayoutInfo GetUboInfo();
 
-    void UpdateLightUBO(int frameId);
+    void UpdateLightUBO();
     inline Util::Math::VPMatrix& GetLightTransformation(int lightIdx = 0) { return m_transformation[lightIdx]; }
     inline void SetLightColor(const glm::vec4& color, int lightIdx = 0) { m_color[lightIdx] = color; }
     inline RHI::ShadowMapRenderPass* GetPShadowPass() { return m_shadowmapPass.get(); }
@@ -32,8 +32,8 @@ private:
     std::vector<Util::Math::VPMatrix> m_transformation;
     std::vector<glm::vec4> m_color;
 
-    std::array<std::unique_ptr<RHI::VulkanBuffer>, MAX_FRAMES_IN_FLIGHT> m_lightUniformBuffers;
-    std::array<RHI::LightInforUniformBufferObject, MAX_FRAMES_IN_FLIGHT> m_lightUniformBufferObjects;
+    std::unique_ptr<RHI::VulkanBuffer> m_lightUniformBuffers;
+    RHI::LightInforUniformBufferObject m_lightUniformBufferObjects;
 
     std::unique_ptr<RHI::ShadowMapRenderPass> m_shadowmapPass;
 };

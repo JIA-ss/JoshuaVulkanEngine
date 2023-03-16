@@ -11,6 +11,8 @@
 #include <Runtime/VulkanRHI/VulkanShaderSet.h>
 #include <iostream>
 #include <memory>
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyVulkan.hpp>
 using namespace Render;
 
 std::shared_ptr<RendererBase> RendererBase::StartUpRenderer(const std::string& demoName, const RHI::VulkanInstance::Config& instanceConfig, const RHI::VulkanPhysicalDevice::Config& physicalConfig)
@@ -42,6 +44,7 @@ std::shared_ptr<RendererBase> RendererBase::StartUpRenderer(const std::string& d
 RendererBase::RendererBase(const RHI::VulkanInstance::Config& instanceConfig,
     const RHI::VulkanPhysicalDevice::Config& physicalConfig)
 {
+    ZoneScopedN("RendererBase::RendererBase");
     m_pInstance.reset(new RHI::VulkanInstance(instanceConfig));
     m_pPhysicalDevice.reset(new RHI::VulkanPhysicalDevice(physicalConfig, m_pInstance.get()));
     m_pDevice.reset(new RHI::VulkanDevice(m_pPhysicalDevice.get()));
@@ -127,6 +130,7 @@ RendererBase::~RendererBase()
 
 void RendererBase::preparePresentFramebufferAttachments()
 {
+    ZoneScopedN("RendererBase::preparePresentFramebufferAttachments");
     vk::Format colorFormat = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().format.format;
     vk::Format depthForamt = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
 
@@ -203,6 +207,7 @@ void RendererBase::prepareRenderpass()
 
 void RendererBase::preparePresentFramebuffer()
 {
+    ZoneScopedN("RendererBase::preparePresentFramebuffer");
     m_pDevice->CreateVulkanPresentFramebuffer(
         m_pRenderPass.get(),
         m_pDevice->GetSwapchainExtent().width,
@@ -218,6 +223,7 @@ void RendererBase::initCmd()
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         m_vkCmds[i] = m_pDevice->GetPVulkanCmdPool()->CreateReUsableCmd();
+        m_tracyVkCtx[i] = TracyVkContext(m_pPhysicalDevice->GetVkPhysicalDevice(), m_pDevice->GetVkDevice(), m_pDevice->GetVkGraphicQueue(), m_vkCmds[i]);
     }
 }
 
@@ -252,6 +258,9 @@ void RendererBase::unInitCmd()
     {
         m_pDevice->GetPVulkanCmdPool()->FreeReUsableCmd(m_vkCmds[i]);
         m_vkCmds[i] = nullptr;
+
+        TracyVkDestroy(m_tracyVkCtx[i]);
+        m_tracyVkCtx[i] = nullptr;
     }
 }
 
@@ -360,5 +369,6 @@ void RendererList::RenderLoop()
     while (!m_renderers.empty())
     {
         renderFrame();
+        FrameMark;
     }
 }

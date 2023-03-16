@@ -47,6 +47,7 @@ VulkanImageResource::VulkanImageResource(
 )
     : m_vulkanDevice(device)
 {
+    ZoneScopedN("VulkanImageResource::VulkanImageResource");
     m_native.config = config;
     createImage();
 
@@ -59,6 +60,7 @@ VulkanImageResource::VulkanImageResource(
 
 VulkanImageResource::~VulkanImageResource()
 {
+    ZoneScopedN("VulkanImageResource::~VulkanImageResource");
     if (m_native.vkImageView)
     {
         m_vulkanDevice->GetVkDevice().destroyImageView(m_native.vkImageView.value());
@@ -77,6 +79,7 @@ void VulkanImageResource::TransitionImageLayout(
     vk::PipelineStageFlags dstStage
 )
 {
+    ZoneScopedN("VulkanImageResource::TransitionImageLayout");
     VulkanCommandPool* cmdPool = m_vulkanDevice->GetPVulkanCmdPool();
     vk::CommandBuffer cmd =
     cmdPool->BeginSingleTimeCommand();
@@ -94,6 +97,7 @@ void VulkanImageResource::TransitionImageLayout(
         vk::PipelineStageFlags dstStage
 )
 {
+    ZoneScopedN("VulkanImageResource::TransitionImageLayout");
     vk::ImageMemoryBarrier imageMemoryBarrier = vk::ImageMemoryBarrier()
                             .setImage(m_native.vkImage.value())
                             .setOldLayout(oldLayout)
@@ -204,11 +208,13 @@ void VulkanImageResource::TransitionImageLayout(
 
 void VulkanImageResource::CopyTo(vk::CommandBuffer cmd, VulkanImageResource* target, vk::ImageCopy copyRegion)
 {
+    ZoneScopedN("VulkanImageResource::CopyTo");
     cmd.copyImage(m_native.vkImage.value(), vk::ImageLayout::eTransferSrcOptimal, target->m_native.vkImage.value(), vk::ImageLayout::eTransferDstOptimal, copyRegion);
 }
 
 void VulkanImageResource::createImage()
 {
+    ZoneScopedN("VulkanImageResource::createImage");
     auto createInfo = vk::ImageCreateInfo()
                 .setImageType(m_native.config.value().imageType)
                 .setExtent(m_native.config.value().extent)
@@ -227,6 +233,7 @@ void VulkanImageResource::createImage()
 
 void VulkanImageResource::createImageView()
 {
+    ZoneScopedN("VulkanImageResource::createImageView");
     auto viewInfo = vk::ImageViewCreateInfo()
                 .setImage(m_native.vkImage.value())
                 .setViewType(m_native.config.value().imageViewType)
@@ -248,7 +255,7 @@ VulkanImageSampler::VulkanImageSampler(
     , m_config(config)
     , m_memProps(memProps)
 {
-
+    ZoneScopedN("VulkanImageSampler::VulkanImageSampler");
     m_pVulkanImageResource.reset(new VulkanImageResource(device, memProps, resourceConfig));
 
     createSampler();
@@ -262,6 +269,7 @@ VulkanImageSampler::VulkanImageSampler(
 
 VulkanImageSampler::~VulkanImageSampler()
 {
+    ZoneScopedN("VulkanImageSampler::~VulkanImageSampler");
     m_pVulkanStagingBuffer.reset();
     m_pRawData = nullptr;
 
@@ -271,6 +279,7 @@ VulkanImageSampler::~VulkanImageSampler()
 
 void VulkanImageSampler::UploadImageToGPU()
 {
+    ZoneScopedN("VulkanImageSampler::UploadImageToGPU");
     m_pVulkanImageResource->TransitionImageLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
     copyBufferToImage();
     m_pVulkanImageResource->TransitionImageLayout(vk::ImageLayout::eTransferDstOptimal, m_config.imageLayout);
@@ -278,10 +287,12 @@ void VulkanImageSampler::UploadImageToGPU()
 
 void VulkanImageSampler::copyBufferToImage()
 {
+    ZoneScopedN("VulkanImageSampler::copyBufferToImage");
     VulkanCommandPool* cmdPool = m_vulkanDevice->GetPVulkanCmdPool();
     vk::CommandBuffer cmd =
     cmdPool->BeginSingleTimeCommand();
     {
+        ZoneScopedN("VulkanImageSampler::copyBufferToImage:: cmd recording");
         std::vector<vk::BufferImageCopy> regions;
         for (uint32_t face = 0; face < m_pVulkanImageResource->GetConfig().arrayLayer; face++)
         {
@@ -311,6 +322,7 @@ void VulkanImageSampler::copyBufferToImage()
 
 void VulkanImageSampler::createStagingBuffer()
 {
+    ZoneScopedN("VulkanImageSampler::createStagingBuffer");
     m_pVulkanStagingBuffer.reset(
         new VulkanBuffer
         (
@@ -326,6 +338,7 @@ void VulkanImageSampler::createStagingBuffer()
 
 void VulkanImageSampler::createSampler()
 {
+    ZoneScopedN("VulkanImageSampler::createSampler");
     auto deviceProps = m_vulkanDevice->GetVulkanPhysicalDevice()->GetPhysicalDeviceInfo().deviceProps;
 
     auto samplerInfo = vk::SamplerCreateInfo()
@@ -351,6 +364,7 @@ void VulkanImageSampler::createSampler()
 
 std::shared_ptr<VulkanImageSampler> VulkanImageSampler::ConvertDevice(VulkanDevice* device)
 {
+    ZoneScopedN("VulkanImageSampler::ConvertDevice");
     std::shared_ptr<VulkanImageSampler> sampler(
         new VulkanImageSampler(device, m_pRawData, m_memProps, m_config, m_pVulkanImageResource->m_native.config.value())
     );

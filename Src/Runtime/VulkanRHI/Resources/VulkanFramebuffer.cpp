@@ -40,6 +40,7 @@ VulkanFramebuffer::VulkanFramebuffer(VulkanDevice* device,
     , m_layer(layer)
     , m_attachments(attachments)
 {
+    ZoneScopedN("VulkanFramebuffer::VulkanFramebuffer");
     std::vector<vk::ImageView> vkAtt;
     vkAtt.resize(m_attachments.size());
     for (int i = 0; i < m_attachments.size(); i++)
@@ -60,6 +61,7 @@ VulkanFramebuffer::VulkanFramebuffer(VulkanDevice* device,
 
 VulkanFramebuffer::~VulkanFramebuffer()
 {
+    ZoneScopedN("VulkanFramebuffer::~VulkanFramebuffer");
     m_attachments.clear();
     if (m_vkFramebuffer)
     {

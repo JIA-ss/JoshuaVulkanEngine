@@ -32,6 +32,7 @@ ShadowMapRenderPass::ShadowMapRenderPass(VulkanDevice* device, int num, uint32_t
     , m_height(height)
     , m_pDevice(device)
 {
+    ZoneScopedN("ShadowMapRenderPass::ShadowMapRenderPass");
     m_vkDepthFormat = m_pDevice->GetVulkanPhysicalDevice()->QuerySupportedDepthFormat();
     // No.Light <==> (FRAMES) * No.Framebuffer <==> No.DepthSampler
     initDepthSampler();
@@ -63,33 +64,32 @@ ShadowMapRenderPass::~ShadowMapRenderPass()
 
 void ShadowMapRenderPass::InitModelShadowDescriptor(Model* model)
 {
+    ZoneScopedN("ShadowMapRenderPass::InitModelShadowDescriptor");
     for (int lightId = 0; lightId < m_num; lightId++)
     {
-        std::array<std::vector<RHI::Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT> uboInfos;
+        std::vector<RHI::Model::UBOLayoutInfo> uboInfos;
         int bindingId = VulkanDescriptorSetLayout::DESCRIPTOR_CAMVPUBO_BINDING_ID;
-        for (int frameId = 0; frameId < uboInfos.size(); frameId++)
+        uboInfos.emplace_back(RHI::Model::UBOLayoutInfo
         {
-            uboInfos[frameId].emplace_back(RHI::Model::UBOLayoutInfo
-            {
-                m_uniformBuffers[lightId].get(), VulkanDescriptorSetLayout::DESCRIPTOR_CAMVPUBO_BINDING_ID, sizeof(CameraUniformBufferObject)
-            });
-        }
+            m_uniformBuffers[lightId].get(), VulkanDescriptorSetLayout::DESCRIPTOR_CAMVPUBO_BINDING_ID, sizeof(CameraUniformBufferObject)
+        });
         model->InitShadowPassUniforDescriptorSets(uboInfos, lightId);
     }
 }
 
-void ShadowMapRenderPass::SetShadowPassLightVPUBO(CameraUniformBufferObject& ubo, int frameId, int lightIdx)
+void ShadowMapRenderPass::SetShadowPassLightVPUBO(CameraUniformBufferObject& ubo, int lightIdx)
 {
     m_uniformBuffers[lightIdx]->FillingMappingBuffer(&ubo, 0, sizeof(ubo));
 }
 
-void ShadowMapRenderPass::FillDepthSamplerToBindedDescriptorSetsVector(std::vector<vk::DescriptorSet>& descList, VulkanPipelineLayout* pipelineLayout, int frameId)
+void ShadowMapRenderPass::FillDepthSamplerToBindedDescriptorSetsVector(std::vector<vk::DescriptorSet>& descList, VulkanPipelineLayout* pipelineLayout)
 {
     m_pDepthSamplerDescriptorSets->FillToBindedDescriptorSetsVector(descList, pipelineLayout);
 }
 
-void ShadowMapRenderPass::Render(vk::CommandBuffer cmd, std::vector<Model*> models, int frameId)
+void ShadowMapRenderPass::Render(vk::CommandBuffer cmd, std::vector<Model*> models)
 {
+    ZoneScopedN("ShadowMapRenderPass::Render");
     std::vector<vk::ClearValue> clears(1);
     clears[0] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
     vk::Extent2D extent = vk::Extent2D{m_width, m_height};
@@ -97,6 +97,7 @@ void ShadowMapRenderPass::Render(vk::CommandBuffer cmd, std::vector<Model*> mode
     {
         m_pRenderPasses[lightIdx]->Begin(cmd, clears, vk::Rect2D{vk::Offset2D{0,0}, extent}, m_pVulkanFramebuffers[lightIdx]->GetVkFramebuffer());
         {
+            ZoneScopedN("ShadowMapRenderPass::Render::renderpass recording");
             m_pRenderPasses[lightIdx]->BindGraphicPipeline(cmd, "shadowmap");
             // cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pPipelineLayout->GetVkPieplineLayout(), 0, tobinding, {});
 
@@ -106,7 +107,7 @@ void ShadowMapRenderPass::Render(vk::CommandBuffer cmd, std::vector<Model*> mode
             cmd.setDepthBias(DEPTH_BIAS_CONSTANT, 0.0f, DEPTH_BIAS_SLOP);
             for (auto& model : models)
             {
-                model->DrawShadowPass(cmd, m_pPipelineLayout.get(), frameId, lightIdx);
+                model->DrawShadowPass(cmd, m_pPipelineLayout.get(), lightIdx);
             }
         }
         //cmd.setEvent(m_vkEvents[frameId][lightIdx], vk::PipelineStageFlagBits::eEarlyFragmentTests);

@@ -50,6 +50,9 @@ find_package(tinyobjloader CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(Ktx CONFIG REQUIRED)
 
+find_dependency(Threads)
+find_package(Tracy CONFIG REQUIRED)
+
 add_executable(VulkanRHI ${MAIN_SRC_FILES})
 
 target_compile_definitions(VulkanRHI PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
@@ -63,6 +66,7 @@ target_link_libraries(VulkanRHI
     tinyobjloader::tinyobjloader
     assimp::assimp
     KTX::ktx
+    Tracy::TracyClient
 )
 
 

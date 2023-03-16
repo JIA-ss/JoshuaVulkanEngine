@@ -8,7 +8,6 @@
 #include <iterator>
 #include <set>
 #include <stdexcept>
-
 RHI_NAMESPACE_USING
 
 VulkanPhysicalDevice::VulkanPhysicalDevice(const Config& config, VulkanInstance* instance)

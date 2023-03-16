@@ -49,7 +49,7 @@ protected:
 
 
 
-    void updateLightUniformBuf(uint32_t currentFrameIdx);
+    void updateLightUniformBuf();
 protected:
     Render::RendererBase* m_runtimeRenderer;
 

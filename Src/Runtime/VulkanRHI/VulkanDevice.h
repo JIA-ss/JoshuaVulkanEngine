@@ -9,6 +9,8 @@
 #include "Runtime/VulkanRHI/VulkanSwapchain.h"
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_structs.hpp"
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyVulkan.hpp>
 RHI_NAMESPACE_BEGIN
 
 class VulkanRenderPipeline;

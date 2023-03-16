@@ -46,7 +46,7 @@ protected:
     void prepareLight();
     void prepareInputCallback();
 
-    void updateLightUniformBuf(uint32_t currentFrameIdx);
+    void updateLightUniformBuf();
 
 };
 

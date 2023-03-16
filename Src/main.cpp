@@ -8,18 +8,19 @@
 #include "Util/Fileutil.h"
 #include <GLFW/glfw3.h>
 #include <boost/filesystem/path.hpp>
+#include <client/TracyProfiler.hpp>
 #include <iostream>
 
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_enums.hpp"
-
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyVulkan.hpp>
 
 std::unique_ptr<platform::PlatformWindow> window = nullptr;
 std::shared_ptr<Render::RendererBase> render = nullptr;
 
 void StartUp(const boost::filesystem::path& exePath, const boost::filesystem::path& resourcesPath, const std::string& demoName)
 {
-
     window = platform::CreatePlatformWindow({1920, 1080, "RHI", 1, {-1920,820}, false});
     window->Init();
     auto extensions = window->GetRequiredExtensions();
@@ -51,6 +52,7 @@ void Shutdown()
     render.reset();
     window->Destroy();
     window.reset();
+
 }
 
 

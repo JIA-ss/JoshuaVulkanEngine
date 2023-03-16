@@ -42,7 +42,7 @@ protected:
     void prepareShadowMapPass();
     void prepareDebugPass();
 
-    void updateShadowMapMVPUniformBuf(uint32_t currentFrameIdx);
+    void updateShadowMapMVPUniformBuf();
 
 protected:
     std::unique_ptr<RHI::Model> m_pModel;

@@ -14,11 +14,13 @@
 #include <iostream>
 #include <memory>
 #include <string.h>
-
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyVulkan.hpp>
 RHI_NAMESPACE_USING
 
 VulkanDevice::VulkanDevice(VulkanPhysicalDevice* physicalDevice) : m_vulkanPhysicalDevice(physicalDevice)
 {
+    ZoneScopedN("VulkanDevice::VulkanDevice");
     std::cout << "=== === === VulkanDevice Construct Begin === === ===" << std::endl;
 
     assert(physicalDevice);
@@ -51,6 +53,7 @@ VulkanDevice::VulkanDevice(VulkanPhysicalDevice* physicalDevice) : m_vulkanPhysi
 
 VulkanDevice::~VulkanDevice()
 {
+    ZoneScopedN("VulkanDevice::~VulkanDevice");
     m_vkDevice.waitIdle();
     m_pVulkanFramebuffers.clear();
     for (auto& presentFramebuffer : m_pPresentVulkanFramebuffers)

@@ -79,8 +79,8 @@ void MultiPipelineRenderer::render()
         throw std::runtime_error("acquire next image failed");
     }
 
-    m_pCamera->UpdateUniformBuffer(m_imageIdx);
-    m_pLight->UpdateLightUBO(m_imageIdx);
+    m_pCamera->UpdateUniformBuffer();
+    m_pLight->UpdateLightUBO();
     // reset fence after acquiring the image
     m_pDevice->GetVkDevice().resetFences(m_vkFences[m_frameIdxInFlight]);
 
@@ -108,14 +108,14 @@ void MultiPipelineRenderer::render()
                 m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "fill");
                 m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{0,0,(float)extent.width / 2, (float)extent.height,0,1});
                 m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
-                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
             }
 
             {
                 m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "line");
                 m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{(float)extent.width / 2,0,(float)extent.width / 2, (float)extent.height,0,1});
                 m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
-                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
             }
         }
         m_pRenderPass->End(m_vkCmds[m_frameIdxInFlight]);

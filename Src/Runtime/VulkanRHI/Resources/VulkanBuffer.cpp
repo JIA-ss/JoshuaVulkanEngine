@@ -14,6 +14,7 @@ VulkanDeviceMemory::VulkanDeviceMemory(VulkanDevice* device, vk::MemoryRequireme
     , m_vkMemProps(props)
     , m_vkMemRequirements(requirements)
 {
+    ZoneScopedN("VulkanDeviceMemory::VulkanDeviceMemory");
     auto memoryAllocInfo = vk::MemoryAllocateInfo()
                         .setAllocationSize(m_vkMemRequirements.size)
                         .setMemoryTypeIndex(findMemoryType())
@@ -23,6 +24,7 @@ VulkanDeviceMemory::VulkanDeviceMemory(VulkanDevice* device, vk::MemoryRequireme
 
 VulkanDeviceMemory::~VulkanDeviceMemory()
 {
+    ZoneScopedN("VulkanDeviceMemory::~VulkanDeviceMemory");
     if (m_vkDeviceMemory)
     {
         m_vulkanDevice->GetVkDevice().freeMemory(m_vkDeviceMemory);
@@ -31,6 +33,7 @@ VulkanDeviceMemory::~VulkanDeviceMemory()
 
 void* VulkanDeviceMemory::MapMemory(std::size_t offset, std::size_t size)
 {
+    ZoneScopedN("VulkanDeviceMemory::MapMemory");
     assert(offset + size <= m_vkMemRequirements.size);
     assert(m_vkMemProps & vk::MemoryPropertyFlagBits::eHostVisible);
     assert(m_vkMemProps & vk::MemoryPropertyFlagBits::eHostCoherent);
@@ -40,16 +43,19 @@ void* VulkanDeviceMemory::MapMemory(std::size_t offset, std::size_t size)
 
 void VulkanDeviceMemory::UnMapMemory()
 {
+    ZoneScopedN("VulkanDeviceMemory::UnMapMemory");
     m_vulkanDevice->GetVkDevice().unmapMemory(m_vkDeviceMemory);
 }
 
 void VulkanDeviceMemory::Bind(VulkanBuffer* buf)
 {
+    ZoneScopedN("VulkanDeviceMemory::Bind");
     m_vulkanDevice->GetVkDevice().bindBufferMemory(*buf->GetPVkBuf(), m_vkDeviceMemory, 0);
 }
 
 void VulkanDeviceMemory::Bind(VulkanImageResource* img)
 {
+    ZoneScopedN("VulkanDeviceMemory::Bind");
     m_vulkanDevice->GetVkDevice().bindImageMemory(img->GetVkImage(), m_vkDeviceMemory, 0);
 }
 
@@ -79,6 +85,7 @@ VulkanBuffer::VulkanBuffer(VulkanDevice*device, vk::DeviceSize size, vk::BufferU
     , m_vkBufUsage(usage)
     , m_vkSharingMode(sharingMode)
 {
+    ZoneScopedN("VulkanBuffer::VulkanBuffer");
     auto bufferInfo = vk::BufferCreateInfo()
                     .setSize(m_vkSize)
                     .setUsage(m_vkBufUsage)
@@ -94,6 +101,7 @@ VulkanBuffer::VulkanBuffer(VulkanDevice*device, vk::DeviceSize size, vk::BufferU
 
 VulkanBuffer::~VulkanBuffer()
 {
+    ZoneScopedN("VulkanBuffer::~VulkanBuffer");
     destroy();
 }
 
@@ -130,6 +138,7 @@ uint32_t VulkanBuffer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFla
 
 void VulkanBuffer::FillingBufferOneTime(void* data, std::size_t offset, std::size_t size)
 {
+    ZoneScopedN("VulkanBuffer::FillingBufferOneTime");
     assert(offset + size <= m_vkSize);
 
     void* dstData = m_pVulkanDeviceMemory->MapMemory(offset, size);
@@ -140,6 +149,7 @@ void VulkanBuffer::FillingBufferOneTime(void* data, std::size_t offset, std::siz
 
 void VulkanBuffer::FillingMappingBuffer(void* data, std::size_t offset, std::size_t size)
 {
+    ZoneScopedN("VulkanBuffer::FillingMappingBuffer");
     assert(offset + size <= m_vkSize);
     if (m_mappedPointer == nullptr)
     {
@@ -150,6 +160,7 @@ void VulkanBuffer::FillingMappingBuffer(void* data, std::size_t offset, std::siz
 
 void VulkanBuffer::Unmapping()
 {
+    ZoneScopedN("VulkanBuffer::Unmapping");
     if (m_mappedPointer)
     {
         m_pVulkanDeviceMemory->UnMapMemory();
@@ -161,11 +172,13 @@ void VulkanBuffer::Unmapping()
 VulkanGPUBuffer::VulkanGPUBuffer(VulkanDevice*device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags props, vk::SharingMode sharingMode)
     : VulkanBuffer(device, size, usage, props, sharingMode)
 {
+    ZoneScopedN("VulkanGPUBuffer::VulkanGPUBuffer");
     m_pVulkanCPUBuffer.reset(new VulkanBuffer(device, size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, sharingMode));
 }
 
 VulkanGPUBuffer::~VulkanGPUBuffer() 
 {
+    ZoneScopedN("VulkanGPUBuffer::~VulkanGPUBuffer");
     m_pVulkanCPUBuffer.reset();
 }
 
@@ -173,11 +186,13 @@ VulkanGPUBuffer::~VulkanGPUBuffer()
 
 void VulkanGPUBuffer::FillingBufferOneTime(void* data, std::size_t size, std::size_t offset)
 {
+    ZoneScopedN("VulkanGPUBuffer::FillingBufferOneTime");
     m_pVulkanCPUBuffer->FillingBufferOneTime(data, offset, size);
 }
 
 void VulkanGPUBuffer::CopyDataToGPU(vk::CommandBuffer cmd, vk::Queue queue, std::size_t size, std::size_t dstOffset, std::size_t srcOffset)
 {
+    ZoneScopedN("VulkanGPUBuffer::CopyDataToGPU");
     auto beginInfo = vk::CommandBufferBeginInfo()
                     .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     cmd.begin(beginInfo);

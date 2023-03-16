@@ -27,9 +27,9 @@ public:
     ~ShadowMapRenderPass();
 
     void InitModelShadowDescriptor(Model* model);
-    void SetShadowPassLightVPUBO(CameraUniformBufferObject& ubo, int frameId, int lightIdx);
-    void FillDepthSamplerToBindedDescriptorSetsVector(std::vector<vk::DescriptorSet>& descList, VulkanPipelineLayout* pipelineLayout, int frameId);
-    void Render(vk::CommandBuffer cmd, std::vector<Model*> models, int frameId = 0);
+    void SetShadowPassLightVPUBO(CameraUniformBufferObject& ubo, int lightIdx);
+    void FillDepthSamplerToBindedDescriptorSetsVector(std::vector<vk::DescriptorSet>& descList, VulkanPipelineLayout* pipelineLayout);
+    void Render(vk::CommandBuffer cmd, std::vector<Model*> models);
 
 protected:
     void initDepthSampler();

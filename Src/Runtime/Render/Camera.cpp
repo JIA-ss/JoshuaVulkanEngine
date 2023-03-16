@@ -19,9 +19,8 @@ Camera::Camera(float fovDegree, float aspect, float near, float far)
 
 void Camera::InitUniformBuffer(RHI::VulkanDevice* device)
 {
-    for (int frameId = 0; frameId < m_uniformBuffers.size(); frameId++)
     {
-        m_uniformBuffers[frameId].reset(
+        m_uniformBuffer.reset(
         new RHI::VulkanBuffer(
                 device, sizeof(RHI::CameraUniformBufferObject),
                 vk::BufferUsageFlagBits::eUniformBuffer,
@@ -32,8 +31,9 @@ void Camera::InitUniformBuffer(RHI::VulkanDevice* device)
     }
 }
 
-void Camera::UpdateUniformBuffer(int frameId)
+void Camera::UpdateUniformBuffer()
 {
+    ZoneScopedN("Camera::UpdateUniformbuffer");
     RHI::CameraUniformBufferObject ubo;
     ubo.camPos = glm::vec4(m_vpMatrix.GetPosition(), 1.0f);
     ubo.proj = m_vpMatrix.GetProjMatrix();
@@ -42,21 +42,21 @@ void Camera::UpdateUniformBuffer(int frameId)
 
     constexpr const size_t ubosize = sizeof(ubo);
 
-    if (m_uniformBufferObjects[frameId].camPos != ubo.camPos
-        || m_uniformBufferObjects[frameId].proj != ubo.proj
-        || m_uniformBufferObjects[frameId].view != ubo.view
-        || m_uniformBufferObjects[frameId].model != ubo.model
+    if (m_uniformBufferObject.camPos != ubo.camPos
+        || m_uniformBufferObject.proj != ubo.proj
+        || m_uniformBufferObject.view != ubo.view
+        || m_uniformBufferObject.model != ubo.model
     )
     {
-        m_uniformBufferObjects[frameId] = ubo;
-        m_uniformBuffers[frameId]->FillingMappingBuffer(&ubo, 0, ubosize);
+        m_uniformBufferObject = ubo;
+        m_uniformBuffer->FillingMappingBuffer(&ubo, 0, ubosize);
     }
 }
 
-void Camera::SetUniformBufferObject(int frameId, RHI::CameraUniformBufferObject* ubo)
+void Camera::SetUniformBufferObject(RHI::CameraUniformBufferObject* ubo)
 {
-    m_uniformBuffers[frameId]->FillingMappingBuffer(ubo, 0, sizeof(RHI::CameraUniformBufferObject));
-    m_uniformBufferObjects[frameId] = *ubo;
+    m_uniformBuffer->FillingMappingBuffer(ubo, 0, sizeof(RHI::CameraUniformBufferObject));
+    m_uniformBufferObject = *ubo;
 }
 
 glm::mat4 Camera::GetModelMatrix()
@@ -71,17 +71,14 @@ glm::mat4 Camera::GetModelMatrix()
     return trot * zrot * yrot * xrot;
 }
 
-std::array<RHI::Model::UBOLayoutInfo, MAX_FRAMES_IN_FLIGHT> Camera::GetUboInfo()
+RHI::Model::UBOLayoutInfo Camera::GetUboInfo()
 {
-    std::array<RHI::Model::UBOLayoutInfo, MAX_FRAMES_IN_FLIGHT> uboInfo;
-    for (int frameId = 0; frameId < uboInfo.size(); frameId++)
+    RHI::Model::UBOLayoutInfo uboInfo = RHI::Model::UBOLayoutInfo
     {
-        uboInfo[frameId] = RHI::Model::UBOLayoutInfo
-        {
-            m_uniformBuffers[frameId].get(),
-            RHI::VulkanDescriptorSetLayout::DESCRIPTOR_CAMVPUBO_BINDING_ID,
-            sizeof(RHI::CameraUniformBufferObject)
-        };
+        m_uniformBuffer.get(),
+        RHI::VulkanDescriptorSetLayout::DESCRIPTOR_CAMVPUBO_BINDING_ID,
+        sizeof(RHI::CameraUniformBufferObject)
     };
+
     return uboInfo;
 }

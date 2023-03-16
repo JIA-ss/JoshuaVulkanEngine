@@ -7,6 +7,11 @@
             "label": "compile glsl shaders",
             "type": "shell",
             "command": "${workspaceFolder}/.vscode/compile_glsl_shader.bat ${workspaceFolder}/Resources/Shader/GLSL ${workspaceFolder}/Resources/Shader/GLSL/SPIR-V"
+        },
+        {
+            "label": "launch Tracy.exe",
+            "type": "shell",
+            "command": "${config:cmake.configureSettings.CMAKE_TOOLCHAIN_FILE}/../../../packages/tracy_x64-windows/tools/tracy/Tracy.exe"
         }
     ]
 }

@@ -20,6 +20,7 @@
 #include <Util/Modelutil.h>
 #include <Util/Fileutil.h>
 #include <Util/Mathutil.h>
+#include <client/TracyProfiler.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/quaternion_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -66,7 +67,7 @@ void PBRRenderer::prepare()
 
 void PBRRenderer::render()
 {
-
+    ZoneScoped;
     // wait for fence
     if (
         m_pDevice->GetVkDevice().waitForFences(m_vkFences[m_frameIdxInFlight], true, std::numeric_limits<uint64_t>::max())
@@ -107,18 +108,22 @@ void PBRRenderer::render()
         throw std::runtime_error("acquire next image failed");
     }
 
-    m_pCamera->UpdateUniformBuffer(m_imageIdx);
-    m_pLight->UpdateLightUBO(m_imageIdx);
+    m_pCamera->UpdateUniformBuffer();
+    m_pLight->UpdateLightUBO();
 
     // reset fence after acquiring the image
     m_pDevice->GetVkDevice().resetFences(m_vkFences[m_frameIdxInFlight]);
 
     // record command buffer
     m_vkCmds[m_frameIdxInFlight].reset();
+
     vk::CommandBufferBeginInfo beginInfo;
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     m_vkCmds[m_frameIdxInFlight].begin(beginInfo);
     {
+        ZoneScoped;
+        TracyVkCollect(m_tracyVkCtx[m_frameIdxInFlight], m_vkCmds[m_frameIdxInFlight]);
+        TracyVkZone(m_tracyVkCtx[m_frameIdxInFlight], m_vkCmds[m_frameIdxInFlight], "pbr");
         m_pPipelineLayout->PushConstantT(m_vkCmds[m_frameIdxInFlight], 0, m_pushConstant, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
         std::vector<vk::DescriptorSet> tobinding;
@@ -133,17 +138,18 @@ void PBRRenderer::render()
         }
         m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{vk::Offset2D{0,0}, m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent}, m_pDevice->GetVulkanPresentFramebuffer(m_imageIdx)->GetVkFramebuffer());
         {
+            ZoneScoped;
             auto& extent = m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent;
             vk::Rect2D rect{{0,0},extent};
             m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{0,0,(float)extent.width, (float)extent.height,0,1});
             m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
 
             m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "skybox");
-            m_pSkyboxModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+            m_pSkyboxModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
 
 
             m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "default");
-            m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+            m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
 
         }
         m_pRenderPass->End(m_vkCmds[m_frameIdxInFlight]);
@@ -192,14 +198,13 @@ void PBRRenderer::prepareModel()
     transformation.SetRotation(glm::vec3(0,90,90));
     m_pSkyboxModel = RHI::ModelPresets::CreateSkyboxModel(m_pDevice.get(), m_pSet1SamplerSetLayout.lock().get());
 
-    std::array<std::vector<RHI::Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT> uboInfos;
+    std::vector<RHI::Model::UBOLayoutInfo> uboInfos;
     auto camUbo = m_pCamera->GetUboInfo();
     auto lightUbo = m_pLight->GetUboInfo();
-    for (int frameId = 0; frameId < uboInfos.size(); frameId++)
-    {
-        uboInfos[frameId].push_back(camUbo[frameId]);
-        uboInfos[frameId].push_back(lightUbo[frameId]);
-    }
+
+    uboInfos.push_back(camUbo);
+    uboInfos.push_back(lightUbo);
+
     m_pModel->InitUniformDescriptorSets(uboInfos);
     m_pSkyboxModel->InitUniformDescriptorSets(uboInfos);
 }

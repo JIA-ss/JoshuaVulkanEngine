@@ -24,11 +24,12 @@ ShadowMapRenderer::ShadowMapRenderer(const RHI::VulkanInstance::Config& instance
    const RHI::VulkanPhysicalDevice::Config& physicalConfig)
    : RendererBase(instanceConfig, physicalConfig)
 {
-
+    ZoneScopedN("ShadowMapRenderer::ShadowMapRenderer");
 }
 
 ShadowMapRenderer::~ShadowMapRenderer()
 {
+    ZoneScopedN("ShadowMapRenderer::~ShadowMapRenderer");
     m_pDevice->GetVkDevice().waitIdle();
     m_pModel.reset();
     m_pCamera.reset();
@@ -37,6 +38,7 @@ ShadowMapRenderer::~ShadowMapRenderer()
 
 void ShadowMapRenderer::prepare()
 {
+    ZoneScopedN("ShadowMapRenderer::prepare");
     prepareLayout();
     preparePresentFramebufferAttachments();
     prepareRenderpass();
@@ -59,7 +61,7 @@ void ShadowMapRenderer::prepare()
 
 void ShadowMapRenderer::render()
 {
-
+    ZoneScopedN("ShadowMapRenderer::render");
     // wait for fence
     if (
         m_pDevice->GetVkDevice().waitForFences(m_vkFences[m_frameIdxInFlight], true, std::numeric_limits<uint64_t>::max())
@@ -100,7 +102,7 @@ void ShadowMapRenderer::render()
         throw std::runtime_error("acquire next image failed");
     }
 
-    m_pLights->UpdateLightUBO(m_imageIdx);
+    m_pLights->UpdateLightUBO();
 
     if (m_renderFromLight)
     {
@@ -108,11 +110,11 @@ void ShadowMapRenderer::render()
         ubo.camPos = glm::vec4(m_pLights->GetLightTransformation(0).GetPosition(),1.0f);
         ubo.view = m_pLights->GetLightTransformation(0).GetViewMatrix();
         ubo.proj = m_pLights->GetLightTransformation(0).GetProjMatrix();
-        m_pCamera->SetUniformBufferObject(m_imageIdx, &ubo);
+        m_pCamera->SetUniformBufferObject(&ubo);
     }
     else
     {
-        m_pCamera->UpdateUniformBuffer(m_imageIdx);
+        m_pCamera->UpdateUniformBuffer();
     }
 
     // reset fence after acquiring the image
@@ -126,14 +128,14 @@ void ShadowMapRenderer::render()
     {
         // shadow map pass
         {
-            updateShadowMapMVPUniformBuf(m_frameIdxInFlight);
-            m_pShadwomapPass->Render(m_vkCmds[m_frameIdxInFlight], {m_pModel.get(), m_pCubeModel.get()}, m_frameIdxInFlight);
+            updateShadowMapMVPUniformBuf();
+            m_pShadwomapPass->Render(m_vkCmds[m_frameIdxInFlight], {m_pModel.get(), m_pCubeModel.get()});
         }
 
         // scene pass
         {
             std::vector<vk::DescriptorSet> tobinding;
-            m_pShadwomapPass->FillDepthSamplerToBindedDescriptorSetsVector(tobinding, m_pPipelineLayout.get(), m_frameIdxInFlight);
+            m_pShadwomapPass->FillDepthSamplerToBindedDescriptorSetsVector(tobinding, m_pPipelineLayout.get());
             std::vector<vk::ClearValue> clears(2);
             clears[0] = vk::ClearValue{vk::ClearColorValue{std::array<float,4>{0.0f,0.0f,0.0f,1.0f}}};
             clears[1] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
@@ -149,11 +151,11 @@ void ShadowMapRenderer::render()
                 m_vkCmds[m_frameIdxInFlight].setViewport(0,vk::Viewport{0,0,(float)extent.width, (float)extent.height,0,1});
                 m_vkCmds[m_frameIdxInFlight].setScissor(0,rect);
 
-                m_pCubeModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
-                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+                m_pCubeModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
+                m_pModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
 
                 m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "[debug]show shadowmap texture");
-                m_pDebugShadowMapQuadModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+                m_pDebugShadowMapQuadModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
             }
             m_pRenderPass->End(m_vkCmds[m_frameIdxInFlight]);
         }
@@ -224,14 +226,13 @@ void ShadowMapRenderer::prepareLights()
 void ShadowMapRenderer::prepareModel()
 {
 
-    std::array<std::vector<RHI::Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT> uboInfos;
+    std::vector<RHI::Model::UBOLayoutInfo> uboInfos;
     auto camUbo = m_pCamera->GetUboInfo();
     auto lightUbo = m_pLights->GetUboInfo();
-    for (int frameId = 0; frameId < uboInfos.size(); frameId++)
-    {
-        uboInfos[frameId].push_back(camUbo[frameId]);
-        uboInfos[frameId].push_back(lightUbo[frameId]);
-    }
+
+        uboInfos.push_back(camUbo);
+        uboInfos.push_back(lightUbo);
+    
 
     m_pModel.reset(new RHI::Model(m_pDevice.get(), Util::File::getResourcePath() / "Model/Sponza-master/sponza.obj", m_pSet1SamplerSetLayout.lock().get()));
     auto& transformation = m_pModel->GetTransformation();
@@ -420,7 +421,7 @@ void ShadowMapRenderer::preparePipeline()
     }
 }
 
-void ShadowMapRenderer::updateShadowMapMVPUniformBuf(uint32_t currentFrameIdx)
+void ShadowMapRenderer::updateShadowMapMVPUniformBuf()
 {
     for (int i = 0; i < m_pLights->GetLightNum(); i++)
     {
@@ -429,6 +430,6 @@ void ShadowMapRenderer::updateShadowMapMVPUniformBuf(uint32_t currentFrameIdx)
         ubo.proj = m_pLights->GetLightTransformation(i).GetProjMatrix();
         ubo.camPos = glm::vec4(m_pLights->GetLightTransformation(i).GetPosition(), 1);
 
-        m_pShadwomapPass->SetShadowPassLightVPUBO(ubo, currentFrameIdx, i);
+        m_pShadwomapPass->SetShadowPassLightVPUBO(ubo, i);
     }
 }

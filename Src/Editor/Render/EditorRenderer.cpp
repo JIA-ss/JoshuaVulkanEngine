@@ -10,6 +10,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <iostream>
 #include <memory>
+#include <tracy/Tracy.hpp>
 
 EDITOR_NAMESPACE_USING
 
@@ -49,7 +50,7 @@ void EditorRenderer::prepare()
 
 void EditorRenderer::render()
 {
-
+    ZoneScopedN("EditorRenderer::render");
     // wait for fence
     if (
         m_pDevice->GetVkDevice().waitForFences(m_vkFences[m_frameIdxInFlight], true, std::numeric_limits<uint64_t>::max())
@@ -92,7 +93,7 @@ void EditorRenderer::render()
     }
 
 
-    m_pCamera->UpdateUniformBuffer(m_frameIdxInFlight);
+    m_pCamera->UpdateUniformBuffer();
     m_pSceneCameraFrustumModel->GetTransformation().SetPosition(m_sceneCamera->GetPosition())
                 .SetRotation(m_sceneCamera->GetVPMatrix().GetRotation());
 
@@ -111,6 +112,9 @@ void EditorRenderer::render()
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     m_vkCmds[m_frameIdxInFlight].begin(beginInfo);
     {
+        ZoneScopedN("EditorRenderer::render::cmd recording");
+        TracyVkCollect(m_tracyVkCtx[m_frameIdxInFlight], m_vkCmds[m_frameIdxInFlight]);
+        TracyVkZone(m_tracyVkCtx[m_frameIdxInFlight], m_vkCmds[m_frameIdxInFlight], "editor");
         std::vector<vk::DescriptorSet> tobinding;
 
         std::vector<vk::ClearValue> clears(2);
@@ -118,6 +122,7 @@ void EditorRenderer::render()
         clears[1] = vk::ClearValue {vk::ClearDepthStencilValue{1.0f, 0}};
         m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{vk::Offset2D{0,0}, m_pDevice->GetPVulkanSwapchain()->GetSwapchainInfo().imageExtent}, m_pDevice->GetVulkanPresentFramebuffer(m_imageIdx)->GetVkFramebuffer());
         {
+            ZoneScopedN("EditorRenderer::render::renderpass recording");
             {
                 // draw scene object
                 m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "default");
@@ -128,17 +133,17 @@ void EditorRenderer::render()
 
                 for (auto& modelView : m_sceneModels)
                 {
-                    modelView->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+                    modelView->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
                 }
             }
 
             {
                 // draw scene camera and light frustum
                 m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "frustum");
-                m_pSceneCameraFrustumModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+                m_pSceneCameraFrustumModel->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
                 for (auto& lightFrustum : m_pSceneLightFrustumModels)
                 {
-                    lightFrustum->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding, m_frameIdxInFlight);
+                    lightFrustum->Draw(m_vkCmds[m_frameIdxInFlight], m_pPipelineLayout.get(), tobinding);
                 }
             }
 
@@ -255,24 +260,21 @@ void EditorRenderer::prepareLight()
     m_pLight.reset(new Render::Lights(m_pDevice.get(), 1));
     m_pLight->GetLightTransformation().SetPosition(glm::vec3(1, 1, -2));
 
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        m_pLight->UpdateLightUBO(i);
-    }
+    m_pLight->UpdateLightUBO();
+
 
     m_sceneLights = m_runtimeRenderer->GetLights();
 }
 
 void EditorRenderer::prepareModel()
 {
-    std::array<std::vector<RHI::Model::UBOLayoutInfo>, MAX_FRAMES_IN_FLIGHT> uboInfos;
+    std::vector<RHI::Model::UBOLayoutInfo> uboInfos;
     auto camUbo = m_pCamera->GetUboInfo();
     auto lightUbo = m_pLight->GetUboInfo();
-    for (int frameId = 0; frameId < uboInfos.size(); frameId++)
-    {
-        uboInfos[frameId].push_back(camUbo[frameId]);
-        uboInfos[frameId].push_back(lightUbo[frameId]);
-    }
+
+    uboInfos.push_back(camUbo);
+    uboInfos.push_back(lightUbo);
+
 
     auto models = m_runtimeRenderer->GetModels();
     for (auto& model : models)

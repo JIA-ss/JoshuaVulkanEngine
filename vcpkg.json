@@ -10,6 +10,12 @@
     "stb",
     "tinyobjloader",
     "assimp",
-    "ktx"
+    "ktx",
+    {
+      "name": "tracy",
+      "features": [
+        "gui-tools"
+      ]
+    }
   ]
 }

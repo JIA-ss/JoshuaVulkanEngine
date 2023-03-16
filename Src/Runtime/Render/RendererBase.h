@@ -47,6 +47,7 @@ protected:
     std::shared_ptr<RHI::VulkanRenderPass> m_pRenderPass;
 
 protected:
+    std::array<TracyVkCtx, MAX_FRAMES_IN_FLIGHT> m_tracyVkCtx;
     std::array<vk::CommandBuffer, MAX_FRAMES_IN_FLIGHT> m_vkCmds;
     std::array<vk::Fence, MAX_FRAMES_IN_FLIGHT> m_vkFences;
     std::array<vk::Semaphore, MAX_FRAMES_IN_FLIGHT> m_vkSemaphoreImageAvaliables;

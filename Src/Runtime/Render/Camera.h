@@ -24,12 +24,12 @@ public:
     inline const glm::vec3& GetPosition() { return m_vpMatrix.GetPosition(); }
 
     void InitUniformBuffer(RHI::VulkanDevice* device);
-    void UpdateUniformBuffer(int frameId);
-    void SetUniformBufferObject(int frameId, RHI::CameraUniformBufferObject* ubo);
+    void UpdateUniformBuffer();
+    void SetUniformBufferObject(RHI::CameraUniformBufferObject* ubo);
     glm::mat4 GetModelMatrix();
-    std::array<RHI::Model::UBOLayoutInfo, MAX_FRAMES_IN_FLIGHT> GetUboInfo();
+    RHI::Model::UBOLayoutInfo GetUboInfo();
 private:
     Util::Math::VPMatrix m_vpMatrix;
-    std::array<std::unique_ptr<RHI::VulkanBuffer>, MAX_FRAMES_IN_FLIGHT> m_uniformBuffers;
-    std::array<RHI::CameraUniformBufferObject, MAX_FRAMES_IN_FLIGHT> m_uniformBufferObjects;
+    std::unique_ptr<RHI::VulkanBuffer> m_uniformBuffer;
+    RHI::CameraUniformBufferObject m_uniformBufferObject;
 };
