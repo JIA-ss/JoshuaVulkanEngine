@@ -109,6 +109,8 @@ void SimpleModelRenderer::render()
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     m_vkCmds[m_frameIdxInFlight].begin(beginInfo);
     {
+        TracyVkCollect(m_tracyVkCtx[m_frameIdxInFlight], m_vkCmds[m_frameIdxInFlight]);
+        TracyVkZone(m_tracyVkCtx[m_frameIdxInFlight], m_vkCmds[m_frameIdxInFlight], "simplemodel renderer");
         m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "default");
         std::vector<vk::DescriptorSet> tobinding;
 

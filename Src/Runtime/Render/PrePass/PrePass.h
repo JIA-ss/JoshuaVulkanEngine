@@ -33,7 +33,7 @@ private:
     Camera* m_pCamera;
     uint32_t m_fbWidth;
     uint32_t m_fbHeight;
-    std::array<std::unique_ptr<RHI::VulkanFramebuffer>, MAX_FRAMES_IN_FLIGHT> m_framebuffers;
+    std::unique_ptr<RHI::VulkanFramebuffer> m_framebuffers;
     std::unique_ptr<RHI::VulkanRenderPass> m_pRenderPass;
     AttachmentResources m_attachmentResources;
 

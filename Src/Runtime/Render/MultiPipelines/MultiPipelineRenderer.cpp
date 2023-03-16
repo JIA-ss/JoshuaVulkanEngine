@@ -103,6 +103,8 @@ void MultiPipelineRenderer::render()
 
         m_pRenderPass->Begin(m_vkCmds[m_frameIdxInFlight], clears, vk::Rect2D{{0,0},extent}, vkFramebuffer);
         {
+            TracyVkCollect(m_tracyVkCtx[m_frameIdxInFlight], m_vkCmds[m_frameIdxInFlight]);
+            TracyVkZone(m_tracyVkCtx[m_frameIdxInFlight], m_vkCmds[m_frameIdxInFlight], "multipipeline renderer");
             vk::Rect2D rect{{0,0},extent};
             {
                 m_pRenderPass->BindGraphicPipeline(m_vkCmds[m_frameIdxInFlight], "fill");
