@@ -48,6 +48,7 @@ public:
     inline vk::Buffer* GetPVkBuf() { return &m_vkBuf; }
     void FillingBufferOneTime(void* data, std::size_t offset, std::size_t size);
     void FillingMappingBuffer(void* data, std::size_t offset, std::size_t size);
+    void* MappingBuffer(std::size_t offset, std::size_t size);
     void Unmapping();
 protected:
     void destroy();

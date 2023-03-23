@@ -16,37 +16,19 @@ RHI_NAMESPACE_USING
 static const std::vector<uint32_t> FrontPlaneIndice = { 0,1,2,2,3,0 };
 static const std::vector<Util::Model::VertexData> FrontPlaneVertex =
 {
-    Util::Model::VertexData { glm::vec4(0,0,0,1), glm::vec4(0,0,0,0) },
-    Util::Model::VertexData { glm::vec4(0,1,0,1), glm::vec4(0,1,0,0) },
+    Util::Model::VertexData { glm::vec4(-1,-1,0,1), glm::vec4(0,0,0,0) },
+    Util::Model::VertexData { glm::vec4(-1,1,0,1), glm::vec4(0,1,0,0) },
     Util::Model::VertexData { glm::vec4(1,1,0,1), glm::vec4(1,1,0,0) },
-    Util::Model::VertexData { glm::vec4(1,0,0,1), glm::vec4(1,0,0,0) },
+    Util::Model::VertexData { glm::vec4(1,-1,0,1), glm::vec4(1,0,0,0) },
 };
 
 static const std::vector<uint32_t> BackPlaneIndice = { 3,2,1,1,0,3 };
 static const std::vector<Util::Model::VertexData> BackPlaneVertex =
 {
-    Util::Model::VertexData { glm::vec4(0,0,-1,1), glm::vec4(1,0,0,0) },
-    Util::Model::VertexData { glm::vec4(0,1,-1,1), glm::vec4(1,1,0,0) },
+    Util::Model::VertexData { glm::vec4(-1,-1,-1,1), glm::vec4(1,0,0,0) },
+    Util::Model::VertexData { glm::vec4(-1,1,-1,1), glm::vec4(1,1,0,0) },
     Util::Model::VertexData { glm::vec4(1,1,-1,1), glm::vec4(0,0,0,0) },
-    Util::Model::VertexData { glm::vec4(1,0,-1,1), glm::vec4(0,1,0,0) },
-};
-
-static const std::vector<uint32_t> LeftPlaneIndice = { 3,2,1,1,0,3 };
-static const std::vector<Util::Model::VertexData> LeftPlaneVertex =
-{
-    Util::Model::VertexData { glm::vec4(0,0,0,1), glm::vec4(0,0,0,0) },
-    Util::Model::VertexData { glm::vec4(0,1,0,1), glm::vec4(0,1,0,0) },
-    Util::Model::VertexData { glm::vec4(0,1,-1,1), glm::vec4(1,1,0,0) },
-    Util::Model::VertexData { glm::vec4(0,0,-1,1), glm::vec4(1,0,0,0) },
-};
-
-static const std::vector<uint32_t> RightPlaneIndice = { 0,1,2,2,3,0 };
-static const std::vector<Util::Model::VertexData> RightPlaneVertex =
-{
-    Util::Model::VertexData { glm::vec4(1,0,0,1), glm::vec4(1,0,0,0) },
-    Util::Model::VertexData { glm::vec4(1,1,0,1), glm::vec4(1,1,0,0) },
-    Util::Model::VertexData { glm::vec4(1,1,-1,1), glm::vec4(0,0,0,0) },
-    Util::Model::VertexData { glm::vec4(1,0,-1,1), glm::vec4(0,1,0,0) },
+    Util::Model::VertexData { glm::vec4(1,-1,-1,1), glm::vec4(0,1,0,0) },
 };
 
 
@@ -56,15 +38,15 @@ static Util::Model::MeshData cubeMeshData =
     "cube",
     std::vector<Util::Model::VertexData>
     {
-        Util::Model::VertexData { glm::vec4(-0.5,-0.5,0.5,1), glm::vec4(0,0,0,0) },
-        Util::Model::VertexData { glm::vec4(-0.5,0.5,0.5,1), glm::vec4(0,1,0,0) },
-        Util::Model::VertexData { glm::vec4(0.5,0.5,0.5,1), glm::vec4(1,1,0,0) },
-        Util::Model::VertexData { glm::vec4(0.5,-0.5,0.5,1), glm::vec4(1,0,0,0) },
+        Util::Model::VertexData { glm::vec4(-1,-1,1,1), glm::vec4(0,0,0,0) },
+        Util::Model::VertexData { glm::vec4(-1,1,1,1), glm::vec4(0,1,0,0) },
+        Util::Model::VertexData { glm::vec4(1,1,1,1), glm::vec4(1,1,0,0) },
+        Util::Model::VertexData { glm::vec4(1,-1,1,1), glm::vec4(1,0,0,0) },
 
-        Util::Model::VertexData { glm::vec4(-0.5,-0.5,-0.5,1), glm::vec4(1,1,0,0) },
-        Util::Model::VertexData { glm::vec4(-0.5,0.5,-0.5,1), glm::vec4(1,0,0,0) },
-        Util::Model::VertexData { glm::vec4(0.5,0.5,-0.5,1), glm::vec4(0,0,0,0) },
-        Util::Model::VertexData { glm::vec4(0.5,-0.5,-0.5,1), glm::vec4(0,1,0,0) },
+        Util::Model::VertexData { glm::vec4(-1,-1,-1,1), glm::vec4(1,1,0,0) },
+        Util::Model::VertexData { glm::vec4(-1,1,-1,1), glm::vec4(1,0,0,0) },
+        Util::Model::VertexData { glm::vec4(1,1,-1,1), glm::vec4(0,0,0,0) },
+        Util::Model::VertexData { glm::vec4(1,-1,-1,1), glm::vec4(0,1,0,0) },
     },
     std::vector<uint32_t> {
         0,1,2,2,3,0,

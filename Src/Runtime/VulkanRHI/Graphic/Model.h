@@ -54,18 +54,22 @@ public:
 
     void SetColor(const glm::vec4& color) { m_color = color; }
     void InitShadowPassUniforDescriptorSets(const std::vector<UBOLayoutInfo>& uboInfo, int lightIdx);
-    void InitUniformDescriptorSets(const std::vector<UBOLayoutInfo>& uboInfo);
+    void InitUniformDescriptorSets(const std::vector<UBOLayoutInfo>& uboInfo, RHI::VulkanDescriptorSetLayout* uboLayout = nullptr);
     void DrawShadowPass(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, int lightId);
     void DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding);
+    void DrawMesh(vk::CommandBuffer& cmd);
     void Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding);
 
+    void UpdateModelUniformBuffer();
+    inline VulkanBuffer* GetUniformBuffer() const { return m_uniformBuffer.get(); }
+    inline UBOLayoutInfo GetUboInfo() { return { m_uniformBuffer.get(), RHI::VulkanDescriptorSetLayout::DESCRIPTOR_MODELUBO_BINDING_ID, sizeof(ModelUniformBufferObject)}; }
     inline Util::Math::SRTMatrix& GetTransformation() { return m_transformation; }
 private:
     void init(Util::Model::ModelData&& modelData, VulkanDescriptorSetLayout* layout);
     void initMatrials(const std::vector<Util::Model::MaterialData>& materialData, VulkanDescriptorSetLayout* layout);
     void initMeshes(std::vector<Util::Model::MeshData>& meshData);
     void initModelUniformBuffers();
-    void updateModelUniformBuffer();
+
 };
 
 class ModelView
@@ -90,7 +94,7 @@ public:
     void InitUniformDescriptorSets(const std::vector<Model::UBOLayoutInfo>& uboInfo);
     void DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding);
     void Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, std::vector<vk::DescriptorSet>& tobinding);
-    void updateModelUniformBuffer();
+    void UpdateModelUniformBuffer();
     Util::Math::SRTMatrix& GetTransformation();
 };
 

@@ -14,9 +14,14 @@ VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice* device)
     : m_vulkanDevice(device)
 {
 
-
 }
 
+VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice* device, vk::DescriptorSetLayout vkDescriptorSetLayout)
+    : m_vulkanDevice(device)
+    , m_vkDescriptorSetLayout(vkDescriptorSetLayout)
+{
+
+}
 
 void VulkanDescriptorSetLayout::AddBinding(uint32_t id, vk::DescriptorSetLayoutBinding binding)
 {
@@ -51,6 +56,22 @@ VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout()
     m_vkDescriptorSetLayout= nullptr;
 }
 
+std::shared_ptr<VulkanDescriptorSetLayout> VulkanDescriptorSetLayoutPresets::CreateCustomUBO(VulkanDevice* device, vk::ShaderStageFlags stage)
+{
+    std::vector<vk::DescriptorSetLayoutBinding> binding = VulkanUBODescriptorSetLayout::GetVkBinding();
+    assert(binding.size() == 3);
+    binding.push_back(
+        vk::DescriptorSetLayoutBinding()
+            .setBinding(VulkanDescriptorSetLayout::DESCRIPTOR_CUSTOMUBO_BINDING_ID)
+            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+            .setDescriptorCount(1)
+            .setStageFlags(stage)
+        );
+    auto layoutInfo = vk::DescriptorSetLayoutCreateInfo()
+                .setBindings(binding);
+    auto vkDescriptorSetLayout = device->GetVkDevice().createDescriptorSetLayout(layoutInfo);
+    return std::make_shared<VulkanDescriptorSetLayout>(device, vkDescriptorSetLayout);
+}
 
 void VulkanDescriptorSetLayoutPresets::Init(VulkanDevice* device)
 {
@@ -82,7 +103,7 @@ const std::vector<vk::DescriptorSetLayoutBinding>& VulkanUBODescriptorSetLayout:
             .setBinding(DESCRIPTOR_CAMVPUBO_BINDING_ID);
         defaultBinding[1]
             .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-            .setStageFlags(vk::ShaderStageFlagBits::eVertex)
+            .setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
             .setDescriptorCount(1)
             .setBinding(DESCRIPTOR_LIGHTUBO_BINDING_ID);
         defaultBinding[2]

@@ -156,6 +156,24 @@ float Math::VPMatrix::GetFar() const
     return 0.0f;
 }
 
+Math::VPMatrix& Math::VPMatrix::SetNear(float near)
+{
+    if (m_mode == ProjectionMatrix::Mode::kPerspective)
+    {
+        m_perspMatrix.SetNear(near);
+    }
+    return *this;
+}
+
+Math::VPMatrix& Math::VPMatrix::SetFar(float far)
+{
+    if (m_mode == ProjectionMatrix::Mode::kPerspective)
+    {
+        m_perspMatrix.SetFar(far);
+    }
+    return *this;
+}
+
 Math::PerspectiveProjectMatrix* Math::VPMatrix::GetPPerspectiveMatrix()
 {
     if (m_mode == ProjectionMatrix::kPerspective)

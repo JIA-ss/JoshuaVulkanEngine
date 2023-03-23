@@ -158,6 +158,13 @@ void VulkanBuffer::FillingMappingBuffer(void* data, std::size_t offset, std::siz
     memcpy(m_mappedPointer, data, size);
 }
 
+void* VulkanBuffer::MappingBuffer(std::size_t offset, std::size_t size)
+{
+    ZoneScopedN("VulkanBuffer::MappingBuffer");
+    assert(offset + size <= m_vkSize);
+    return m_pVulkanDeviceMemory->MapMemory(offset, size);
+}
+
 void VulkanBuffer::Unmapping()
 {
     ZoneScopedN("VulkanBuffer::Unmapping");

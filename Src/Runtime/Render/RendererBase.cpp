@@ -1,6 +1,7 @@
 #include "RendererBase.h"
 #include "Runtime/Render/SimpleModel/SimpleModelRenderer.h"
 #include "Runtime/Render/MultiPipelines/MultiPipelineRenderer.h"
+#include "Runtime/Render/Deferred/DeferredRenderer.h"
 #include "Runtime/VulkanRHI/Layout/UniformBufferObject.h"
 #include "Runtime/VulkanRHI/Layout/VulkanDescriptorSetLayout.h"
 #include "Runtime/VulkanRHI/Layout/VulkanPipelineLayout.h"
@@ -28,6 +29,7 @@ std::shared_ptr<RendererBase> RendererBase::StartUpRenderer(const std::string& d
     MAKE_SHARED_WITH_NAME(MultiPipeline)
     MAKE_SHARED_WITH_NAME(ShadowMap)
     MAKE_SHARED_WITH_NAME(PBR)
+    MAKE_SHARED_WITH_NAME(Deferred)
 
     std::cout << "!!!!arg error!!!!" << std::endl
                 << "please input arg as the following demo name: " << std::endl;

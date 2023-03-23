@@ -56,5 +56,18 @@
             ],
             "preLaunchTask": "compile glsl shaders"
         },
+        {
+            "type": "cppvsdbg",
+            "console": "integratedTerminal",
+            "request": "launch",
+            "name": "Launch Deferred Rendering Demo",
+            "program": "${workspaceFolder}/build/Debug/VulkanRHI.exe",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "${workspaceFolder}/Resources",
+                "Deferred"
+            ],
+            "preLaunchTask": "compile glsl shaders"
+        },
     ]
 }

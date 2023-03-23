@@ -5,6 +5,7 @@
 #include "Runtime/VulkanRHI/VulkanDevice.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Util/Mathutil.h"
+#include <glm/fwd.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace Render {
@@ -17,6 +18,7 @@ public:
     ~Lights();
 
     RHI::Model::UBOLayoutInfo GetUboInfo();
+    RHI::Model::UBOLayoutInfo GetLargeUboInfo();
 
     void UpdateLightUBO();
     inline Util::Math::VPMatrix& GetLightTransformation(int lightIdx = 0) { return m_transformation[lightIdx]; }
@@ -27,6 +29,21 @@ public:
 private:
     void initLightUBO();
 private:
+
+    struct CustomLargeLightUBO
+    {
+        glm::vec4 header;
+        std::vector<glm::mat4> viewProjMatrix;
+        std::vector<glm::vec4> position_near;
+        std::vector<glm::vec4> color_far;
+        std::vector<glm::vec4> direction;
+        inline uint32_t GetSize()
+        {
+            uint32_t lightNum = viewProjMatrix.size();
+            return sizeof(glm::vec4) + lightNum * (sizeof(glm::mat4) + sizeof(glm::vec4) * 3);
+        }
+    };
+private:
     int m_lightNum;
     RHI::VulkanDevice* m_pDevice;
     std::vector<Util::Math::VPMatrix> m_transformation;
@@ -34,6 +51,10 @@ private:
 
     std::unique_ptr<RHI::VulkanBuffer> m_lightUniformBuffers;
     RHI::LightInforUniformBufferObject m_lightUniformBufferObjects;
+
+    std::unique_ptr<RHI::VulkanBuffer> m_pCustomUniformBuffer;
+    void* m_pMappingMemory = nullptr;
+    std::unique_ptr<CustomLargeLightUBO> m_customLightUBO;
 
     std::unique_ptr<RHI::ShadowMapRenderPass> m_shadowmapPass;
 };

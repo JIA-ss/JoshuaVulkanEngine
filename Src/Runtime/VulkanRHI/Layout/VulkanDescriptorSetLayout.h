@@ -15,6 +15,7 @@ public:
     static constexpr uint32_t DESCRIPTOR_CAMVPUBO_BINDING_ID = 0;
     static constexpr uint32_t DESCRIPTOR_LIGHTUBO_BINDING_ID = 1;
     static constexpr uint32_t DESCRIPTOR_MODELUBO_BINDING_ID = 2;
+    static constexpr uint32_t DESCRIPTOR_CUSTOMUBO_BINDING_ID = 3;
     // SET 1 (Custom Sampler)
     static constexpr uint32_t DESCRIPTOR_SAMPLER1_BINDING_ID = 1;
     static constexpr uint32_t DESCRIPTOR_SAMPLER2_BINDING_ID = 2;
@@ -36,6 +37,7 @@ protected:
     std::vector<vk::DescriptorSetLayoutBinding> m_bindings;
 public:
     explicit VulkanDescriptorSetLayout(VulkanDevice* device);
+    explicit VulkanDescriptorSetLayout(VulkanDevice* device, vk::DescriptorSetLayout vkDescriptorSetLayout);
     virtual ~VulkanDescriptorSetLayout();
     void AddBinding(uint32_t id, vk::DescriptorSetLayoutBinding binding);
     virtual void Finish();
@@ -48,6 +50,8 @@ struct VulkanDescriptorSetLayoutPresets
     std::shared_ptr<VulkanDescriptorSetLayout> UBO;
     std::shared_ptr<VulkanDescriptorSetLayout> CUSTOM5SAMPLER;
     std::shared_ptr<VulkanDescriptorSetLayout> SHADOWMAP;
+
+    std::shared_ptr<VulkanDescriptorSetLayout> CreateCustomUBO(VulkanDevice* device, vk::ShaderStageFlags stage);
     void Init(VulkanDevice* device);
     void UnInit();
 };

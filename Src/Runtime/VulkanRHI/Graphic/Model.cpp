@@ -72,11 +72,15 @@ void Model::InitShadowPassUniforDescriptorSets(const std::vector<UBOLayoutInfo>&
     m_shadowPassUniformSets[lightIdx] = m_vulkanDescriptorPool->AllocUniformDescriptorSet(m_pVulkanDevice->GetDescLayoutPresets().UBO.get(), buffer, binding, range, 1);
 }
 
-void Model::InitUniformDescriptorSets(const std::vector<UBOLayoutInfo>& uboInfo)
+void Model::InitUniformDescriptorSets(const std::vector<UBOLayoutInfo>& uboInfo, RHI::VulkanDescriptorSetLayout* uboLayout)
 {
     constexpr const uint32_t BINDINGID = VulkanDescriptorSetLayout::DESCRIPTOR_MODELUBO_BINDING_ID;
     constexpr const uint32_t RANGE = sizeof(ModelUniformBufferObject);
 
+    if (uboLayout == nullptr)
+    {
+        uboLayout = m_pVulkanDevice->GetDescLayoutPresets().UBO.get();
+    }
 
     std::vector<VulkanBuffer*> buffer;
     std::vector<uint32_t> binding, range;
@@ -104,8 +108,7 @@ void Model::InitUniformDescriptorSets(const std::vector<UBOLayoutInfo>& uboInfo)
     buffer[BINDINGID] = m_uniformBuffer.get();
     binding[BINDINGID] = BINDINGID;
     range[BINDINGID] = RANGE;
-    m_uniformSet = m_vulkanDescriptorPool->AllocUniformDescriptorSet(m_pVulkanDevice->GetDescLayoutPresets().UBO.get(), buffer, binding, range, 1);
-
+    m_uniformSet = m_vulkanDescriptorPool->AllocUniformDescriptorSet(uboLayout, buffer, binding, range, 1);
 }
 
 void Model::DrawShadowPass(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, int lightId)
@@ -113,7 +116,7 @@ void Model::DrawShadowPass(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelin
     ZoneScopedN("Model::DrawShadowPass");
     // bind shadowpass descriptor
     {
-        updateModelUniformBuffer();
+        UpdateModelUniformBuffer();
         std::vector<vk::DescriptorSet> CAMUBO_Descriptors;
         m_shadowPassUniformSets[lightId]->FillToBindedDescriptorSetsVector(CAMUBO_Descriptors, pipelineLayout);
         cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout->GetVkPieplineLayout(), 0, CAMUBO_Descriptors, {});
@@ -132,11 +135,20 @@ void Model::DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout* pip
     ZoneScopedN("Model::DrawWithNoMaterial");
     // bind model ubo
     {
-        updateModelUniformBuffer();
+        UpdateModelUniformBuffer();
         m_uniformSet->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
         cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout->GetVkPieplineLayout(), 0, tobinding, {});
     }
 
+    for (auto& mesh : m_meshes)
+    {
+        mesh->Bind(cmd);
+        mesh->DrawIndexed(cmd);
+    }
+}
+
+void Model::DrawMesh(vk::CommandBuffer& cmd)
+{
     for (auto& mesh : m_meshes)
     {
         mesh->Bind(cmd);
@@ -149,7 +161,7 @@ void Model::Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayout, s
     ZoneScopedN("Model::Draw");
     // bind model ubo
     {
-        updateModelUniformBuffer();
+        UpdateModelUniformBuffer();
         m_uniformSet->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
     }
 
@@ -308,7 +320,7 @@ void Model::initModelUniformBuffers()
 
 }
 
-void Model::updateModelUniformBuffer()
+void Model::UpdateModelUniformBuffer()
 {
     ModelUniformBufferObject ubo;
     ubo.model = m_transformation.GetMatrix();
@@ -491,7 +503,7 @@ void ModelView::DrawWithNoMaterial(vk::CommandBuffer& cmd, VulkanPipelineLayout*
 {
     // bind model ubo
     {
-        updateModelUniformBuffer();
+        UpdateModelUniformBuffer();
         m_uniformSet->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
         cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout->GetVkPieplineLayout(), 0, tobinding, {});
     }
@@ -507,7 +519,7 @@ void ModelView::Draw(vk::CommandBuffer& cmd, VulkanPipelineLayout* pipelineLayou
     ZoneScopedN("ModelView::Draw");
     // bind model ubo
     {
-        updateModelUniformBuffer();
+        UpdateModelUniformBuffer();
         m_uniformSet->FillToBindedDescriptorSetsVector(tobinding, pipelineLayout);
     }
 
@@ -529,7 +541,7 @@ Util::Math::SRTMatrix& ModelView::GetTransformation()
 }
 
 
-void ModelView::updateModelUniformBuffer()
+void ModelView::UpdateModelUniformBuffer()
 {
     ModelUniformBufferObject ubo;
     ubo.model = m_model->m_transformation.GetMatrix();

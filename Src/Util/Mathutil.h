@@ -132,6 +132,8 @@ public:
     glm::vec3 GetUpDirection() const;
     float GetNear() const;
     float GetFar() const;
+    VPMatrix& SetNear(float near);
+    VPMatrix& SetFar(float far);
     float GetFovDegree() const { return m_perspMatrix.GetFovDegree(); }
     float GetAspect() const { return m_perspMatrix.GetAspect(); }
 };

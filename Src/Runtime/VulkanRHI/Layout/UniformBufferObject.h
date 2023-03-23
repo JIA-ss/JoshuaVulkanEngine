@@ -30,4 +30,6 @@ struct ModelUniformBufferObject
     alignas(16) glm::mat4 model;
     alignas(16) glm::vec4 color;
 };
+
+// SET0 BINDING3 CUSTOM UBO
 RHI_NAMESPACE_END
