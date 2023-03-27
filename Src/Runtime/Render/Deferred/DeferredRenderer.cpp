@@ -239,7 +239,7 @@ void DeferredRenderer::preparePipeline()
 void DeferredRenderer::prepareGeometryPrePass()
 {
     constexpr const uint32_t geoPassFbDim = 2048;
-    m_pGeometryPass.reset(new PrePass(m_pDevice.get(), m_pCamera.get(), geoPassFbDim, geoPassFbDim));
+    m_pGeometryPass = PrePass::CreateGeometryPrePass(m_pDevice.get(), m_pCamera.get(), geoPassFbDim, geoPassFbDim);
 }
 
 void DeferredRenderer::prepareCamera()
