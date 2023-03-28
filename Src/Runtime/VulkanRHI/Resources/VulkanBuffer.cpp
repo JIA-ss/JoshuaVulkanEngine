@@ -200,6 +200,7 @@ void VulkanGPUBuffer::FillingBufferOneTime(void* data, std::size_t size, std::si
 void VulkanGPUBuffer::CopyDataToGPU(vk::CommandBuffer cmd, vk::Queue queue, std::size_t size, std::size_t dstOffset, std::size_t srcOffset)
 {
     ZoneScopedN("VulkanGPUBuffer::CopyDataToGPU");
+    assert(m_pVulkanCPUBuffer);
     auto beginInfo = vk::CommandBufferBeginInfo()
                     .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     cmd.begin(beginInfo);
@@ -216,4 +217,9 @@ void VulkanGPUBuffer::CopyDataToGPU(vk::CommandBuffer cmd, vk::Queue queue, std:
                     .setCommandBuffers(cmd);
     queue.submit(submitInfo);
     queue.waitIdle();
+}
+
+void VulkanGPUBuffer::DestroyCPUBuffer()
+{
+    m_pVulkanCPUBuffer.reset();
 }

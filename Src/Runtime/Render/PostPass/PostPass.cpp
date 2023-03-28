@@ -2,25 +2,35 @@
 
 using namespace Render;
 
-PostPass::PostPass(const RHI::VulkanInstance::Config& instanceConfig,
-   const RHI::VulkanPhysicalDevice::Config& physicalConfig)
-   : RendererBase(instanceConfig, physicalConfig)
+
+PostPass::PostPass(RHI::VulkanDevice* device, uint32_t fbWidth, uint32_t fbHeight)
+   : m_pDevice(device)
+   , m_width(fbWidth)
+   , m_height(fbHeight)
 {
 
 }
 
-PostPass::~PostPass()
+void PostPass::Prepare()
 {
-   //please implement deconstruct function
-   assert(false);
+      prepareLayout();
+      {
+         std::vector<RHI::VulkanFramebuffer::Attachment> attachments;
+         prepareAttachments(attachments);
+         prepareRenderPass(attachments);
+         prepareFramebuffer(std::move(attachments));
+      }
+      preparePipeline();
+      prepareOutputDescriptorSets();
 }
 
-void PostPass::prepare()
+void PostPass::prepareLayout()
 {
-
-}
-
-void PostPass::render()
-{
-
+   m_pPipelineLayout.reset(
+   new RHI::VulkanPipelineLayout(
+      m_pDevice,
+      {m_pDevice->GetDescLayoutPresets().CUSTOM5SAMPLER}
+      , {}
+      )
+   );
 }

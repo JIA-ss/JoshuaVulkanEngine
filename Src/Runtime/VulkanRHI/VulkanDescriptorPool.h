@@ -36,5 +36,10 @@ public:
                 vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
                 int descriptorNum = 1
             );
+
+    std::shared_ptr<VulkanDescriptorSets> AllocCustomToUpdatedDescriptorSet(
+                VulkanDescriptorSetLayout* layout,
+                int descriptorNum = 1
+            );
 };
 RHI_NAMESPACE_END

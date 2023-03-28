@@ -1,12 +1,18 @@
 #include "PrePass.h"
 
 #include "GeometryPrePass.h"
+#include "Runtime/Render/PrePass/ZPrePass.h"
 using namespace Render;
 
 
 std::unique_ptr<PrePass> PrePass::CreateGeometryPrePass(RHI::VulkanDevice* device, Camera* camera, uint32_t fbWidth, uint32_t fbHeight)
 {
     return std::make_unique<GeometryPrePass>(device, camera, fbWidth, fbHeight);
+}
+
+std::unique_ptr<PrePass> PrePass::CreateZPrePass(RHI::VulkanDevice* device, Camera* camera, uint32_t fbWidth, uint32_t fbHeight)
+{
+    return std::make_unique<ZPrePass>(device, camera, fbWidth, fbHeight);
 }
 
 

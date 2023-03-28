@@ -17,6 +17,7 @@ class PrePass
 public:
     // presets
     static std::unique_ptr<PrePass> CreateGeometryPrePass(RHI::VulkanDevice* device, Camera* camera, uint32_t fbWidth, uint32_t fbHeight);
+    static std::unique_ptr<PrePass> CreateZPrePass(RHI::VulkanDevice* device, Camera* camera, uint32_t fbWidth, uint32_t fbHeight);
 
 
 

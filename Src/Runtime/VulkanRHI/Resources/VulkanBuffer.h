@@ -66,6 +66,7 @@ public:
     ~VulkanGPUBuffer() override;
     void FillingBufferOneTime(void* data, std::size_t size, std::size_t offset = 0);
     void CopyDataToGPU(vk::CommandBuffer cmd, vk::Queue queue, std::size_t size, std::size_t dstOffset = 0, std::size_t srcOffset = 0);
+    void DestroyCPUBuffer();
 };
 
 template<typename T>

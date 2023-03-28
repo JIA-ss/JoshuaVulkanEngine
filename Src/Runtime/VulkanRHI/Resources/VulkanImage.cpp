@@ -197,6 +197,9 @@ void VulkanImageResource::TransitionImageLayout(
         }
         imageMemoryBarrier.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
         break;
+    case vk::ImageLayout::eGeneral:
+        imageMemoryBarrier.setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
+        break;
     default:
         // Other source layouts aren't handled (yet)
         assert(false);

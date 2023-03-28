@@ -46,3 +46,11 @@ std::shared_ptr<VulkanDescriptorSets> VulkanDescriptorPool::AllocSamplerDescript
     ZoneScopedN("VulkanDescriptorPool::AllocSamplerDescriptorSet");
     return std::make_shared<VulkanDescriptorSets>(m_vulkanDevice, m_vkDescriptorPool, layout, imageSamplers, binding, imageLayout, descriptorNum);
 }
+
+std::shared_ptr<VulkanDescriptorSets> VulkanDescriptorPool::AllocCustomToUpdatedDescriptorSet(
+    VulkanDescriptorSetLayout* layout,
+    int descriptorNum)
+{
+    ZoneScopedN("VulkanDescriptorPool::AllocCustomToUpdatedDescriptorSet");
+    return std::make_shared<VulkanDescriptorSets>(m_vulkanDevice, m_vkDescriptorPool, layout, descriptorNum);
+}

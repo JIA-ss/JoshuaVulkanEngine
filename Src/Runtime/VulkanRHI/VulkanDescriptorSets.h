@@ -45,12 +45,21 @@ public:
         int descriptorNum = 1
     );
 
+    explicit VulkanDescriptorSets(
+        VulkanDevice* device,
+        vk::DescriptorPool descPool,
+        VulkanDescriptorSetLayout* layout,
+        int descriptorNum = 1);
+
+
     ~VulkanDescriptorSets();
 
     VulkanDescriptorSetLayout* GetPDescriptorSetLayout() { return m_vulkanDescLayout; }
     std::vector<vk::DescriptorSet> GetVkDescriptorSets(const std::vector<int>& setIdx = {});
     inline vk::DescriptorSet& GetVkDescriptorSet(int idx) { return m_vkDescSets[idx]; }
     inline uint32_t GetBinding(int idx) { return m_binding[idx]; }
+
+    void UpdateDescriptorSets(std::vector<vk::WriteDescriptorSet>& writeDescs);
 
     void FillToBindedDescriptorSetsVector(std::vector<vk::DescriptorSet>& descList, VulkanPipelineLayout* pipelineLayout, int selfSetIndex = 0);
     void BindGraphicPipelinePoint(vk::CommandBuffer cmd, vk::PipelineLayout layout, const std::vector<int>& setIdx = {}, int firstIdx = 0);

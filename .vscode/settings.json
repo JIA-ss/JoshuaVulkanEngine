@@ -1,6 +1,6 @@
 {
     "cmake.useCMakePresets":"always",
     "cmake.configureSettings": {
-        "CMAKE_TOOLCHAIN_FILE": "f:/vscode_project/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "G:/Gdevelop_sunjiashuai_trunk_2/engine/vcpkg/scripts/buildsystems/vcpkg.cmake"
       }
 }

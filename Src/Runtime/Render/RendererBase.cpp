@@ -8,6 +8,7 @@
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 #include "Runtime/Render/ShadowMap/ShadowMapRenderer.h"
 #include "Runtime/Render/PBR/PBRRenderer.h"
+#include "Runtime/Render/OIT/OITRenderer.h"
 #include "vulkan/vulkan_enums.hpp"
 #include <Runtime/VulkanRHI/VulkanShaderSet.h>
 #include <iostream>
@@ -30,6 +31,7 @@ std::shared_ptr<RendererBase> RendererBase::StartUpRenderer(const std::string& d
     MAKE_SHARED_WITH_NAME(ShadowMap)
     MAKE_SHARED_WITH_NAME(PBR)
     MAKE_SHARED_WITH_NAME(Deferred)
+    MAKE_SHARED_WITH_NAME(OIT)
 
     std::cout << "!!!!arg error!!!!" << std::endl
                 << "please input arg as the following demo name: " << std::endl;
@@ -62,7 +64,7 @@ RendererBase::RendererBase(const RHI::VulkanInstance::Config& instanceConfig,
 void RendererBase::PreRenderLoop()
 {
     prepare();
-    assert(m_pRenderPass);
+    // assert(m_pRenderPass);
 
     for(auto& cb : m_enterRenderLoopCallbacks)
     {

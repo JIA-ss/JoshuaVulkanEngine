@@ -6,6 +6,7 @@
 #include "vulkan/vulkan_handles.hpp"
 #include "vulkan/vulkan_structs.hpp"
 #include <memory>
+#include <stdint.h>
 #include <vulkan/vulkan.hpp>
 
 RHI_NAMESPACE_USING
@@ -25,7 +26,7 @@ VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice* device, vk::D
 
 void VulkanDescriptorSetLayout::AddBinding(uint32_t id, vk::DescriptorSetLayoutBinding binding)
 {
-    if (id > m_bindings.size())
+    if (id >= m_bindings.size())
     {
         m_bindings.resize(id + 1);
     }
@@ -67,6 +68,28 @@ std::shared_ptr<VulkanDescriptorSetLayout> VulkanDescriptorSetLayoutPresets::Cre
             .setDescriptorCount(1)
             .setStageFlags(stage)
         );
+    auto layoutInfo = vk::DescriptorSetLayoutCreateInfo()
+                .setBindings(binding);
+    auto vkDescriptorSetLayout = device->GetVkDevice().createDescriptorSetLayout(layoutInfo);
+    return std::make_shared<VulkanDescriptorSetLayout>(device, vkDescriptorSetLayout);
+}
+
+
+std::shared_ptr<VulkanDescriptorSetLayout> VulkanDescriptorSetLayoutPresets::CreateSBO(VulkanDevice* device, vk::ShaderStageFlags stage, uint32_t num)
+{
+    static std::vector<vk::DescriptorSetLayoutBinding> binding;
+    if (binding.empty())
+    {
+        binding.resize(num);
+        for (int i = 0; i < num; i++)
+        {
+            binding[i]
+                .setDescriptorType(vk::DescriptorType::eStorageBuffer)
+                .setStageFlags(stage)
+                .setDescriptorCount(1)
+                .setBinding(i);
+        }
+    }
     auto layoutInfo = vk::DescriptorSetLayoutCreateInfo()
                 .setBindings(binding);
     auto vkDescriptorSetLayout = device->GetVkDevice().createDescriptorSetLayout(layoutInfo);

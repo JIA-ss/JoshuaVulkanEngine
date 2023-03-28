@@ -52,6 +52,7 @@ struct VulkanDescriptorSetLayoutPresets
     std::shared_ptr<VulkanDescriptorSetLayout> SHADOWMAP;
 
     std::shared_ptr<VulkanDescriptorSetLayout> CreateCustomUBO(VulkanDevice* device, vk::ShaderStageFlags stage);
+    std::shared_ptr<VulkanDescriptorSetLayout> CreateSBO(VulkanDevice* device, vk::ShaderStageFlags stage, uint32_t num);
     void Init(VulkanDevice* device);
     void UnInit();
 };

@@ -123,6 +123,24 @@ VulkanDescriptorSets::VulkanDescriptorSets(
     m_vulkanDevice->GetVkDevice().updateDescriptorSets((uint32_t)writeDescs.size(), writeDescs.data(), 0, nullptr);
 }
 
+VulkanDescriptorSets::VulkanDescriptorSets(
+        VulkanDevice* device,
+        vk::DescriptorPool descPool,
+        VulkanDescriptorSetLayout* layout,
+        int descriptorNum
+    )
+    : m_vulkanDevice(device)
+    , m_vulkanDescLayout(layout)
+    , m_vkDescPool(descPool)
+{
+    auto allocInfo = vk::DescriptorSetAllocateInfo()
+                .setDescriptorPool(descPool)
+                .setDescriptorSetCount(descriptorNum)
+                .setSetLayouts(layout->GetVkDescriptorSetLayout());
+    m_vkDescSets = m_vulkanDevice->GetVkDevice().allocateDescriptorSets(allocInfo);
+    assert(m_vkDescSets.size() == descriptorNum);
+}
+
 VulkanDescriptorSets::~VulkanDescriptorSets()
 {
     /*
@@ -131,6 +149,17 @@ VulkanDescriptorSets::~VulkanDescriptorSets()
     */
     // m_vulkanDevice->GetVkDevice().freeDescriptorSets(m_vkDescPool, m_vkDescSets);
 }
+
+void VulkanDescriptorSets::UpdateDescriptorSets(std::vector<vk::WriteDescriptorSet>& writeDescs)
+{
+    assert(m_vkDescSets.size() == 1);
+    for (int i = 0; i < writeDescs.size(); i++)
+    {
+        writeDescs[i].setDstSet(m_vkDescSets[0]);
+    }
+    m_vulkanDevice->GetVkDevice().updateDescriptorSets((uint32_t)writeDescs.size(), writeDescs.data(), 0, nullptr);
+}
+
 
 void VulkanDescriptorSets::FillToBindedDescriptorSetsVector(std::vector<vk::DescriptorSet>& descList, VulkanPipelineLayout* pipelineLayout, int selfSetIndex)
 {
