@@ -30,6 +30,6 @@ void main()
     {
         color = texture(samplerCubeMap, inUVW).rgb;
     }
-    // color = pow(color, vec3(1.0/2.2));
+    color = pow(color, vec3(1.0/2.2));
 	outFragColor = vec4(color, 1);
 }

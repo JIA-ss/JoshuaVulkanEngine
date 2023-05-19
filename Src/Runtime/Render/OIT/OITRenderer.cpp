@@ -349,7 +349,7 @@ void OITRenderer::prepareCamera()
 {
     auto extent = m_pDevice->GetSwapchainExtent();
     float aspect = extent.width / (float) extent.height;
-    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 500.f));
+    m_pCamera.reset(new Camera(45.f, aspect, 0.1f, 5000.f));
     m_pCamera->GetVPMatrix().SetPosition(glm::vec3(0,0,2));
 
     m_pCamera->InitUniformBuffer(m_pDevice.get());

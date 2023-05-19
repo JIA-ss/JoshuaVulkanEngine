@@ -1,6 +1,10 @@
 {
-    "cmake.useCMakePresets":"always",
-    "cmake.configureSettings": {
-        "CMAKE_TOOLCHAIN_FILE": "G:/Gdevelop_sunjiashuai_trunk_2/engine/vcpkg/scripts/buildsystems/vcpkg.cmake"
-      }
+  "cmake.useCMakePresets": "always",
+  "cmake.configureSettings": {
+    "CMAKE_TOOLCHAIN_FILE": "G:/Gdevelop_sunjiashuai_trunk_2/engine/vcpkg/scripts/buildsystems/vcpkg.cmake",
+  },
+  // format on save
+  "editor.formatOnSave": true,
+  "editor.tabCompletion": "on",
+  "diffEditor.codeLens": true
 }

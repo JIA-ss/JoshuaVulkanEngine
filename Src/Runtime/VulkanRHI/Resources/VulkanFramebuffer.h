@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <vector>
 #include <vulkan/vulkan.hpp>
 #include "Runtime/VulkanRHI/Resources/VulkanImage.h"
 #include "Runtime/VulkanRHI/VulkanRHI.h"
@@ -35,13 +36,14 @@ public:
         VulkanImageResource::Native resource;
         vk::AttachmentDescription GetVkAttachmentDescription() const;
         vk::AttachmentReference GetVkAttachmentReference(uint32_t attachmentId) const;
+
+        static std::vector<Attachment> Merge(const std::vector<Attachment>& a, const std::vector<Attachment>& b);
     };
+
 public:
-    VulkanFramebuffer(VulkanDevice* device,
-        VulkanRenderPass* renderpass,
-        uint32_t width, uint32_t height, uint32_t layer = 1,
-        const std::vector<Attachment>& attachments = {}
-    );
+    VulkanFramebuffer(
+        VulkanDevice* device, VulkanRenderPass* renderpass, uint32_t width, uint32_t height, uint32_t layer = 1,
+        const std::vector<Attachment>& attachments = {});
     ~VulkanFramebuffer();
 
     inline vk::Framebuffer GetVkFramebuffer() { return m_vkFramebuffer; }
@@ -49,6 +51,7 @@ public:
     inline uint32_t GetHeight() { return m_height; }
     inline uint32_t GetLayer() { return m_layer; }
     inline Attachment* GetPAttachment(int id) { return &m_attachments[id]; }
+
 private:
     VulkanDevice* m_pDevice;
     VulkanRenderPass* m_pRenderpass;

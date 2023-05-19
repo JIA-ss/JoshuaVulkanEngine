@@ -69,5 +69,18 @@
             ],
             "preLaunchTask": "compile glsl shaders"
         },
+        {
+            "type": "cppvsdbg",
+            "console": "integratedTerminal",
+            "request": "launch",
+            "name": "Launch OIT Rendering Demo",
+            "program": "${workspaceFolder}/build/Debug/VulkanRHI.exe",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "${workspaceFolder}/Resources",
+                "OIT"
+            ],
+            "preLaunchTask": "compile glsl shaders"
+        },
     ]
 }

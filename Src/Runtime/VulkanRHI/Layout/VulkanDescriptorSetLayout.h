@@ -3,7 +3,6 @@
 #include <vulkan/vulkan.hpp>
 #include "Runtime/VulkanRHI/VulkanRHI.h"
 
-
 RHI_NAMESPACE_BEGIN
 
 class VulkanShaderSet;
@@ -28,6 +27,7 @@ public:
     static constexpr uint32_t DESCRIPTOR_SHADOWMAP3_BINDING_ID = 3;
     static constexpr uint32_t DESCRIPTOR_SHADOWMAP4_BINDING_ID = 4;
     static constexpr uint32_t DESCRIPTOR_SHADOWMAP5_BINDING_ID = 5;
+
 protected:
     VulkanDevice* m_vulkanDevice = nullptr;
 
@@ -35,14 +35,17 @@ protected:
 
     vk::DescriptorSetLayout m_vkDescriptorSetLayout = nullptr;
     std::vector<vk::DescriptorSetLayoutBinding> m_bindings;
+
 public:
     explicit VulkanDescriptorSetLayout(VulkanDevice* device);
-    explicit VulkanDescriptorSetLayout(VulkanDevice* device, vk::DescriptorSetLayout vkDescriptorSetLayout);
+    explicit VulkanDescriptorSetLayout(
+        VulkanDevice* device, const std::vector<vk::DescriptorSetLayoutBinding>& bindings);
     virtual ~VulkanDescriptorSetLayout();
     void AddBinding(uint32_t id, vk::DescriptorSetLayoutBinding binding);
     virtual void Finish();
     vk::DescriptorSetLayout& GetVkDescriptorSetLayout();
     virtual const char* GetName() { return "empty"; }
+    const std::vector<vk::DescriptorSetLayoutBinding>& GetVkBindings() const { return m_bindings; }
 };
 
 struct VulkanDescriptorSetLayoutPresets
@@ -52,7 +55,8 @@ struct VulkanDescriptorSetLayoutPresets
     std::shared_ptr<VulkanDescriptorSetLayout> SHADOWMAP;
 
     std::shared_ptr<VulkanDescriptorSetLayout> CreateCustomUBO(VulkanDevice* device, vk::ShaderStageFlags stage);
-    std::shared_ptr<VulkanDescriptorSetLayout> CreateSBO(VulkanDevice* device, vk::ShaderStageFlags stage, uint32_t num);
+    std::shared_ptr<VulkanDescriptorSetLayout>
+    CreateSBO(VulkanDevice* device, vk::ShaderStageFlags stage, uint32_t num);
     void Init(VulkanDevice* device);
     void UnInit();
 };
@@ -60,7 +64,7 @@ struct VulkanDescriptorSetLayoutPresets
 class VulkanUBODescriptorSetLayout final : public VulkanDescriptorSetLayout
 {
 public:
-    explicit VulkanUBODescriptorSetLayout(VulkanDevice* device) : VulkanDescriptorSetLayout(device) { }
+    explicit VulkanUBODescriptorSetLayout(VulkanDevice* device) : VulkanDescriptorSetLayout(device) {}
     static const std::vector<vk::DescriptorSetLayoutBinding>& GetVkBinding();
     void Finish() override;
     const char* GetName() override { return "MVPUBO"; }
@@ -69,7 +73,7 @@ public:
 class VulkanCustom5SamplerDescriptorSetLayout : public VulkanDescriptorSetLayout
 {
 public:
-    explicit VulkanCustom5SamplerDescriptorSetLayout(VulkanDevice* device) : VulkanDescriptorSetLayout(device) { }
+    explicit VulkanCustom5SamplerDescriptorSetLayout(VulkanDevice* device) : VulkanDescriptorSetLayout(device) {}
     static const std::vector<vk::DescriptorSetLayoutBinding>& GetVkBinding();
     void Finish() override;
     const char* GetName() override { return "CUSTOM5SAMPLER"; }
@@ -78,7 +82,7 @@ public:
 class VulkanShadowMapDescriptorSetLayout : public VulkanDescriptorSetLayout
 {
 public:
-    explicit VulkanShadowMapDescriptorSetLayout(VulkanDevice* device) : VulkanDescriptorSetLayout(device) { }
+    explicit VulkanShadowMapDescriptorSetLayout(VulkanDevice* device) : VulkanDescriptorSetLayout(device) {}
     static const std::vector<vk::DescriptorSetLayoutBinding>& GetVkBinding();
     void Finish() override;
     const char* GetName() override { return "SHADOWMAP"; }

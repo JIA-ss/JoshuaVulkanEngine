@@ -11,17 +11,13 @@
 
 RHI_NAMESPACE_USING
 
-VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice* device)
-    : m_vulkanDevice(device)
+VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice* device) : m_vulkanDevice(device) {}
+
+VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(
+    VulkanDevice* device, const std::vector<vk::DescriptorSetLayoutBinding>& bindings)
+    : m_vulkanDevice(device), m_bindings(bindings)
 {
-
-}
-
-VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice* device, vk::DescriptorSetLayout vkDescriptorSetLayout)
-    : m_vulkanDevice(device)
-    , m_vkDescriptorSetLayout(vkDescriptorSetLayout)
-{
-
+    VulkanDescriptorSetLayout::Finish();
 }
 
 void VulkanDescriptorSetLayout::AddBinding(uint32_t id, vk::DescriptorSetLayoutBinding binding)
@@ -39,8 +35,7 @@ void VulkanDescriptorSetLayout::Finish()
     {
         return;
     }
-    auto layoutInfo = vk::DescriptorSetLayoutCreateInfo()
-                .setBindings(m_bindings);
+    auto layoutInfo = vk::DescriptorSetLayoutCreateInfo().setBindings(m_bindings);
 
     m_vkDescriptorSetLayout = m_vulkanDevice->GetVkDevice().createDescriptorSetLayout(layoutInfo);
 }
@@ -54,28 +49,25 @@ vk::DescriptorSetLayout& VulkanDescriptorSetLayout::GetVkDescriptorSetLayout()
 VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout()
 {
     m_vulkanDevice->GetVkDevice().destroyDescriptorSetLayout(m_vkDescriptorSetLayout);
-    m_vkDescriptorSetLayout= nullptr;
+    m_vkDescriptorSetLayout = nullptr;
 }
 
-std::shared_ptr<VulkanDescriptorSetLayout> VulkanDescriptorSetLayoutPresets::CreateCustomUBO(VulkanDevice* device, vk::ShaderStageFlags stage)
+std::shared_ptr<VulkanDescriptorSetLayout>
+VulkanDescriptorSetLayoutPresets::CreateCustomUBO(VulkanDevice* device, vk::ShaderStageFlags stage)
 {
     std::vector<vk::DescriptorSetLayoutBinding> binding = VulkanUBODescriptorSetLayout::GetVkBinding();
     assert(binding.size() == 3);
-    binding.push_back(
-        vk::DescriptorSetLayoutBinding()
-            .setBinding(VulkanDescriptorSetLayout::DESCRIPTOR_CUSTOMUBO_BINDING_ID)
-            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-            .setDescriptorCount(1)
-            .setStageFlags(stage)
-        );
-    auto layoutInfo = vk::DescriptorSetLayoutCreateInfo()
-                .setBindings(binding);
-    auto vkDescriptorSetLayout = device->GetVkDevice().createDescriptorSetLayout(layoutInfo);
-    return std::make_shared<VulkanDescriptorSetLayout>(device, vkDescriptorSetLayout);
+    binding.push_back(vk::DescriptorSetLayoutBinding()
+                          .setBinding(VulkanDescriptorSetLayout::DESCRIPTOR_CUSTOMUBO_BINDING_ID)
+                          .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                          .setDescriptorCount(1)
+                          .setStageFlags(stage));
+
+    return std::make_shared<VulkanDescriptorSetLayout>(device, binding);
 }
 
-
-std::shared_ptr<VulkanDescriptorSetLayout> VulkanDescriptorSetLayoutPresets::CreateSBO(VulkanDevice* device, vk::ShaderStageFlags stage, uint32_t num)
+std::shared_ptr<VulkanDescriptorSetLayout>
+VulkanDescriptorSetLayoutPresets::CreateSBO(VulkanDevice* device, vk::ShaderStageFlags stage, uint32_t num)
 {
     static std::vector<vk::DescriptorSetLayoutBinding> binding;
     if (binding.empty())
@@ -90,10 +82,8 @@ std::shared_ptr<VulkanDescriptorSetLayout> VulkanDescriptorSetLayoutPresets::Cre
                 .setBinding(i);
         }
     }
-    auto layoutInfo = vk::DescriptorSetLayoutCreateInfo()
-                .setBindings(binding);
-    auto vkDescriptorSetLayout = device->GetVkDevice().createDescriptorSetLayout(layoutInfo);
-    return std::make_shared<VulkanDescriptorSetLayout>(device, vkDescriptorSetLayout);
+
+    return std::make_shared<VulkanDescriptorSetLayout>(device, binding);
 }
 
 void VulkanDescriptorSetLayoutPresets::Init(VulkanDevice* device)
@@ -111,7 +101,6 @@ void VulkanDescriptorSetLayoutPresets::UnInit()
     CUSTOM5SAMPLER.reset();
     SHADOWMAP.reset();
 }
-
 
 const std::vector<vk::DescriptorSetLayoutBinding>& VulkanUBODescriptorSetLayout::GetVkBinding()
 {
@@ -144,11 +133,10 @@ void VulkanUBODescriptorSetLayout::Finish()
     {
         return;
     }
-    static auto layoutInfo = vk::DescriptorSetLayoutCreateInfo()
-                .setBindings(GetVkBinding());
+    m_bindings = GetVkBinding();
+    static auto layoutInfo = vk::DescriptorSetLayoutCreateInfo().setBindings(m_bindings);
     m_vkDescriptorSetLayout = m_vulkanDevice->GetVkDevice().createDescriptorSetLayout(layoutInfo);
 }
-
 
 const std::vector<vk::DescriptorSetLayoutBinding>& VulkanCustom5SamplerDescriptorSetLayout::GetVkBinding()
 {
@@ -158,10 +146,10 @@ const std::vector<vk::DescriptorSetLayoutBinding>& VulkanCustom5SamplerDescripto
         for (int i = DESCRIPTOR_SAMPLER1_BINDING_ID; i <= DESCRIPTOR_SAMPLER5_BINDING_ID; i++)
         {
             auto samplerBinding = vk::DescriptorSetLayoutBinding()
-                        .setBinding(i)
-                        .setStageFlags(vk::ShaderStageFlagBits::eFragment)
-                        .setDescriptorCount(1)
-                        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+                                      .setBinding(i)
+                                      .setStageFlags(vk::ShaderStageFlagBits::eFragment)
+                                      .setDescriptorCount(1)
+                                      .setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
             bindings.emplace_back(samplerBinding);
         }
     }
@@ -174,8 +162,8 @@ void VulkanCustom5SamplerDescriptorSetLayout::Finish()
     {
         return;
     }
-    static auto layoutInfo = vk::DescriptorSetLayoutCreateInfo()
-                .setBindings(GetVkBinding());
+    m_bindings = GetVkBinding();
+    static auto layoutInfo = vk::DescriptorSetLayoutCreateInfo().setBindings(m_bindings);
     m_vkDescriptorSetLayout = m_vulkanDevice->GetVkDevice().createDescriptorSetLayout(layoutInfo);
 }
 
@@ -187,10 +175,10 @@ const std::vector<vk::DescriptorSetLayoutBinding>& VulkanShadowMapDescriptorSetL
         for (int i = DESCRIPTOR_SHADOWMAP1_BINDING_ID; i <= DESCRIPTOR_SHADOWMAP5_BINDING_ID; i++)
         {
             auto samplerBinding = vk::DescriptorSetLayoutBinding()
-                        .setBinding(i)
-                        .setStageFlags(vk::ShaderStageFlagBits::eFragment)
-                        .setDescriptorCount(1)
-                        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+                                      .setBinding(i)
+                                      .setStageFlags(vk::ShaderStageFlagBits::eFragment)
+                                      .setDescriptorCount(1)
+                                      .setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
             bindings.emplace_back(samplerBinding);
         }
     }
@@ -203,7 +191,7 @@ void VulkanShadowMapDescriptorSetLayout::Finish()
     {
         return;
     }
-    static auto layoutInfo = vk::DescriptorSetLayoutCreateInfo()
-                .setBindings(GetVkBinding());
+    m_bindings = GetVkBinding();
+    static auto layoutInfo = vk::DescriptorSetLayoutCreateInfo().setBindings(m_bindings);
     m_vkDescriptorSetLayout = m_vulkanDevice->GetVkDevice().createDescriptorSetLayout(layoutInfo);
 }
